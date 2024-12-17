@@ -12,12 +12,12 @@
 [![](https://img.shields.io/static/v1?label=&message=Docker&style=for-the-badge&color=blue&logo=Docker)](https://www.docker.com/)
 [![](https://img.shields.io/static/v1?label=&message=traefik&style=for-the-badge&color=blue&logo=Traefik%20Mesh)](https://github.com/traefik/traefik/)
 [![](https://img.shields.io/static/v1?label=&message=cloudflare&style=for-the-badge&color=blue&logo=Cloudflare)](https://www.cloudflare.com/)
-## 项目目标
+## 1.项目目标
 基于`traefik`做为反向代理，基于`cloudflared tunnel`实现外网访问的私有化部署解决方案脚本
-### 网络
+### 1.1 网络
 - 大部分服务使用`bridge`网络
 - 部分服务使用`host`网络(如：qbittorrent等依赖host网络构建upnp映射的服务)
-### 部署后目录结构
+### 1.2 部署后目录结构
 ```
 /$base_data_dir/
 ---/public/ # 公共数据目录
@@ -32,23 +32,29 @@
 ---/ttyd/ # ttyd配置目录
 ---/duplicati/ # 备份工具配置目录
 ```
-## 快速开始
-### 前置条件
+## 2.快速开始
+### 2.1 前置条件
 - 安装docker
   - 参考[docker安装](https://docs.docker.com/engine/install/)
 - 准备域名且托管到cloudflare（可选）
   - 参考[cloudflare](https://www.cloudflare.com/)
-### 构建网络环境
-#### 安装traefik(必选)
+- 拉取本项目
+  - git clone https://github.com/dezhishen/self-hosted-server-traefik.git
+  - 或者直接下载[zip](https://github.com/dezhishen/self-hosted-server-traefik/archive/refs/heads/master.zip)
+### 2.2 构建网络环境
+```bash
+    sh create-docker-macvlan-network.sh
+```
+### 2.3 安装traefik(必选)
 ```bash
     sh install-one.sh traefik
 ```
-#### 安装cloudflared(可选)
+### 2.4 安装cloudflared(可选)
 如果需要外网访问，则需要安装cloudflared，ps:部分服务依赖https，如果不需要外网访问（如使用异地组网），可以考虑使用[noip](https://nip.io/)。
 ```bash
     sh install-one.sh cloudflared
 ```
-#### 推荐服务
+### 2.5 推荐服务
 ##### 备份工具[duplicati](https://www.duplicati.com/)
 配合alist使用，借助alist的webdav功能，可以实现备份到网盘
 ```bash
@@ -61,19 +67,22 @@
 ```bash
     sh install-one.sh vaultwarden
 ```
+### 2.6 安装[xiaoya](https://github.com/DDS-Derek/xiaoya-alist)
+```bash
+    sh xiaoya.sh
+```
 
-
-### 工具
-#### 更新本项目
+### 3.工具
+#### 3.1 更新本项目
 ```bash
     git pull
 ```
-#### 更新容器
-##### 更新所有容器
+#### 3.2 更新容器
+##### 3.2.1 更新所有容器
 ```bash
     sh update.sh
 ```
-##### 更新单个容器
+##### 3.2.2 更新单个容器
 ```bash
     sh update-one.sh 容器名
 ```
