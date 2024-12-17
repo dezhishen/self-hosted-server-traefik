@@ -42,20 +42,17 @@
   - git clone https://github.com/dezhishen/self-hosted-server-traefik.git
   - 或者直接下载[zip](https://github.com/dezhishen/self-hosted-server-traefik/archive/refs/heads/master.zip)
 ### 2.2 构建网络环境
-```bash
-    sh create-docker-macvlan-network.sh
-```
-### 2.3 安装traefik(必选)
+#### 2.2.1 安装traefik(必选)
 ```bash
     sh install-one.sh traefik
 ```
-### 2.4 安装cloudflared(可选)
+#### 2.2.2 安装cloudflared(可选)
 如果需要外网访问，则需要安装cloudflared，ps:部分服务依赖https，如果不需要外网访问（如使用异地组网），可以考虑使用[noip](https://nip.io/)。
 ```bash
     sh install-one.sh cloudflared
 ```
-### 2.5 推荐服务
-#### 2.5.1 备份工具[duplicati](https://www.duplicati.com/)
+### 2.3 推荐服务
+#### 2.3.1 备份工具[duplicati](https://www.duplicati.com/)
 配合alist使用，借助alist的webdav功能，可以实现备份到网盘
 ```bash
     # 安装duplicati
@@ -63,11 +60,11 @@
     # 安装alist
     sh install-one.sh alist
 ```     
-#### 2.5.2 密码管理器[vaultwarden](https://github.com/dani-garcia/vaultwarden)
+#### 2.3.2 密码管理器[vaultwarden](https://github.com/dani-garcia/vaultwarden)
 ```bash
     sh install-one.sh vaultwarden
 ```
-### 2.6 安装[xiaoya](https://github.com/DDS-Derek/xiaoya-alist)
+### 2.4 安装[xiaoya](https://github.com/DDS-Derek/xiaoya-alist)
 ```bash
     sh xiaoya.sh
 ```
