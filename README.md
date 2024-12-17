@@ -12,7 +12,7 @@
 [![](https://img.shields.io/static/v1?label=&message=Docker&style=for-the-badge&color=blue&logo=Docker)](https://www.docker.com/)
 [![](https://img.shields.io/static/v1?label=&message=traefik&style=for-the-badge&color=blue&logo=Traefik%20Mesh)](https://github.com/traefik/traefik/)
 [![](https://img.shields.io/static/v1?label=&message=cloudflare&style=for-the-badge&color=blue&logo=Cloudflare)](https://www.cloudflare.com/)
-## 1.项目目标
+## 1 项目目标
 基于`traefik`做为反向代理，基于`cloudflared tunnel`实现外网访问的私有化部署解决方案脚本
 ### 1.1 网络
 - 大部分服务使用`bridge`网络
@@ -32,7 +32,7 @@
 ---/ttyd/ # ttyd配置目录
 ---/duplicati/ # 备份工具配置目录
 ```
-## 2.快速开始
+## 2 快速开始
 ### 2.1 前置条件
 - 安装docker
   - 参考[docker安装](https://docs.docker.com/engine/install/)
@@ -55,7 +55,7 @@
     sh install-one.sh cloudflared
 ```
 ### 2.5 推荐服务
-##### 备份工具[duplicati](https://www.duplicati.com/)
+#### 2.5.1 备份工具[duplicati](https://www.duplicati.com/)
 配合alist使用，借助alist的webdav功能，可以实现备份到网盘
 ```bash
     # 安装duplicati
@@ -63,7 +63,7 @@
     # 安装alist
     sh install-one.sh alist
 ```     
-##### 密码管理器[vaultwarden](https://github.com/dani-garcia/vaultwarden)
+#### 2.5.2 密码管理器[vaultwarden](https://github.com/dani-garcia/vaultwarden)
 ```bash
     sh install-one.sh vaultwarden
 ```
@@ -72,7 +72,7 @@
     sh xiaoya.sh
 ```
 
-### 3.工具
+### 3 工具
 #### 3.1 更新本项目
 ```bash
     git pull
