@@ -66,7 +66,7 @@ case $yN in
     echo "密码: $TRAEFIK_AUTH_PASSWORD"
     digest="$(printf "%s:%s:%s" "$TRAEFIK_AUTH_USER" "traefik" "$TRAEFIK_AUTH_PASSWORD" | md5sum | awk '{print $1}' )"
     userlist=$(printf "%s:%s:%s\n" "$TRAEFIK_AUTH_USER" "traefik" "$digest")
-    #1179551960@qq.com
+    
     CF_API_EMAIL=$(`dirname $0`/get-args.sh CF_API_EMAIL Cloudflare的邮箱)
     if [ -z "$CF_API_EMAIL" ]; then
         read -p "请输入Cloudflare的邮箱:" CF_API_EMAIL
@@ -76,7 +76,7 @@ case $yN in
         `dirname $0`/set-args.sh CF_API_EMAIL "$CF_API_EMAIL"
 
     fi
-    #WBnqUrchjRyU7KLR9UeM3ACZpQPBqfLqutziV7z9
+    
     CF_DNS_API_TOKEN=$(`dirname $0`/get-args.sh CF_DNS_API_TOKEN Cloudflare的api令牌)
     if [ -z "$CF_DNS_API_TOKEN" ]; then
         read -p "请输入Cloudflare的api令牌:" CF_DNS_API_TOKEN
