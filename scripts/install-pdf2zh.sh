@@ -10,7 +10,7 @@ docker pull ${image}
 `dirname $0`/stop-container.sh ${container_name}
 docker run --name=${container_name} \
 -d --restart=always \
--m 256M \
+-m 512M \
 -e TZ="Asia/Shanghai" \
 -e LANG="zh_CN.UTF-8" \
 --network=$docker_network_name --network-alias=${container_name} \
