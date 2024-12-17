@@ -60,6 +60,7 @@ set_auth_site(){
             echo "未输入认证站点，退出安装。"
             exit 1
         fi
+        `dirname $0`/set-args.sh MOVIEPILOT_AUTH_SITE "$MOVIEPILOT_AUTH_SITE"
     fi
     auth_site_str=""
     case $MOVIEPILOT_AUTH_SITE in
@@ -69,6 +70,7 @@ set_auth_site(){
                 echo "未输入IYUU登录令牌，退出安装。"
                 exit 1
             fi
+            `dirname $0`/set-args.sh IYUU_SIGN "$IYUU_SIGN"
             auth_site_str="-e IYUU_SIGN=${IYUU_SIGN}"
             ;;
         hhclub)
