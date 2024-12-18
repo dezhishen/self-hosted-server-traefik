@@ -478,8 +478,14 @@ set_auth_site(){
             ;;
     esac
 }
-read -p "是否在环境变量中配置认证站点，请输入y/n：" is_env_auth_site
-case $is_env_auth_site in
+
+MOVIE_IS_ENV_AUTH_SITE=$(`dirname $0`/get-args.sh MOVIE_IS_ENV_AUTH_SITE "是否在环境变量中配置认证站点，请输入y/n：" )
+ if [ -z "$MOVIE_IS_ENV_AUTH_SITE" ]; then
+    echo "默认使用环境变量"
+    MOVIE_IS_ENV_AUTH_SITE="y"
+    `dirname $0`/set-args.sh MOVIE_IS_ENV_AUTH_SITE "$MOVIE_IS_ENV_AUTH_SITE"
+fi
+case $MOVIE_IS_ENV_AUTH_SITE in
     y)
         set_auth_site
         ;;
@@ -498,7 +504,7 @@ docker run --name=${container_name} \
 -e DOH=False \
 -e TZ="Asia/Shanghai" \
 -e LANG="zh_CN.UTF-8" \
-`if [ $is_env_auth_site = "y" ]; then echo "-e AUTH_SITE=${MOVIEPILOT_AUTH_SITE} ${auth_site_str}"; fi` \
+`if [ $MOVIE_IS_ENV_AUTH_SITE = "y" ]; then echo "-e AUTH_SITE=${MOVIEPILOT_AUTH_SITE} ${auth_site_str}"; fi` \
 --network=$docker_network_name --network-alias=${container_name} \
 -v $base_data_dir/${container_name}-v2/config:/config \
 -v $base_data_dir/public/:/data \
