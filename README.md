@@ -88,8 +88,13 @@ host网络的容器无法直接访问桥接网络内的容器，需要使用域�
     sh install-one.sh vaultwarden
 ```
 ### 2.4 安装[xiaoya](https://github.com/DDS-Derek/xiaoya-alist)
+#### 2.4.1 执行xiaoya脚本
 ```bash
     sh xiaoya.sh
+```
+#### 2.4.2 创建traefik配置文件
+```bash
+    sh xiaoya-traefik.sh
 ```
 
 ### 3 工具
