@@ -1,0 +1,16 @@
+http:
+  routers:
+    ${container_name}:
+      entryPoints:
+        - ${entryPoint}
+      rule: Host(`${container_name}.${domain}`)
+      service: ${container_name}
+      tls:
+        certresolver: traefik
+        domains:
+          - main: "*.${domain}"
+  services:
+    ${container_name}:
+      loadBalancer:
+        servers:
+          - url: http://${host_ip}:${port}

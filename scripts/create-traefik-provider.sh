@@ -12,31 +12,18 @@ mkdir -p $base_data_dir/traefik/config/providers
 # 检验 $base_data_dir/traefik/config/providers/${container_name}.yaml 是否存在
 if [ ! -f "$base_data_dir/traefik/config/providers/${container_name}.yaml" ]; then
     host_ip=$(docker network inspect ${docker_network_name} --format '{{range .IPAM.Config}}{{.Gateway}}{{end}}' | awk -F'.' '{print $1"."$2"."$3"."1}')
-    echo "http:" > $base_data_dir/traefik/config/providers/${container_name}.yaml
-    echo "  routers:" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
-    echo "    ${container_name}:" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
-    echo "      entryPoints:" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
-    # 如果tls为true,则加入https配置
-    if [ "$tls" = "true" ]; then
-        echo "        - websecure" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
-    else 
-        echo "        - web" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
-    fi
-        echo '      rule: Host(`'${container_name}.${domain}'`)' >> $base_data_dir/traefik/config/providers/${container_name}.yaml
-        echo "      service: ${container_name}" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
-    if [ "$tls" = "true" ]; then
-        echo "      tls:" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
-        echo "        certresolver: traefik" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
-        echo "        domains:" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
-        echo "        - main: '"*.${domain}"'" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
-    fi
-    echo "  services:" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
-    echo "    ${container_name}:" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
-    echo "      loadBalancer:" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
-    echo "        servers:" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
-    echo "         - url: http://${host_ip}:${port}" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
+    # 优先读取github上的traefik-providers-template.yaml文件内容到template变量，如果异常则读取本地文件../template/traefik-providers-template.yaml
+    template=$(curl -s https://raw.githubusercontent.com/dezhishen/self-hosted-server-traefik/master/template/traefik-providers-template.yaml || cat ../template/traefik-providers-template.yaml)
+    # 替换template中的变量
+    template=$(echo "$template" | sed "s/\${container_name}/${container_name}/g")
+    template=$(echo "$template" | sed "s/\${domain}/${domain}/g")
+    template=$(echo "$template" | sed "s/\${host_ip}/${host_ip}/g")
+    template=$(echo "$template" | sed "s/\${port}/${port}/g")
+    echo "$template" > $base_data_dir/traefik/config/providers/${container_name}.yaml
 else
     echo "已存在traefik代理配置文件，不需要创建"
 fi
 echo "文件内容:"
 cat $base_data_dir/traefik/config/providers/${container_name}.yaml
+
+
