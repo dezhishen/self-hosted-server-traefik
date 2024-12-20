@@ -44,7 +44,7 @@ fi
 
 read -p "是否创建xiaoya-alist的traefik配置文件[y/n]:" create_xiaoya_alist_traefik_config
 if [ "$create_xiaoya_alist_traefik_config" = "y" ]; then
-    sh ./scripts/create-traefik-provider.sh $domain $base_data_dir $docker_network_name $tls xiaoya-alist 5244
+    sh ./scripts/create-traefik-provider.sh $domain $base_data_dir $docker_network_name $tls xiaoya-alist 5678
 fi
 
 read -p "是否创建xiaoya-emby的traefik配置文件[y/n]:" create_xiaoya_emby_traefik_config
