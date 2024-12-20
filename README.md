@@ -15,8 +15,24 @@
 ## 1 项目目标
 基于`traefik`做为反向代理，基于`cloudflared tunnel`实现外网访问的私有化部署解决方案脚本
 ### 1.1 网络
-- 大部分服务使用`bridge`网络
+#### 1.1.1 网络模式
+- 大部分服务使用`bridge`**模式**网络，默认使用`traefik`网络
 - 部分服务使用`host`网络(如：qbittorrent等依赖host网络构建upnp映射的服务)
+#### 1.1.2 桥接网络容器之间访问
+通过容器名进行访问，如在moviepilot容器内，访问jellyfin为`http://jellyfin:8096`
+#### 1.1.3 桥接网络内的容器访问host模式的容器
+桥接网络容器访问宿主机的服务，则使用`traefik`网络的网关地址进行访问，通过如下命令可以获取网关地址
+```bash
+docker network inspect traefik --format '{{range .IPAM.Config}}{{.Gateway}}{{end}}' | awk -F'.' '{print $1"."$2"."$3"."1}'
+```
+- 假设上面的地址输出的网络为`172.18.0.1`,moviepilot容器需要访问宿主机的qbittorrent服务，则使用`http://172.18.0.1:8080`进行访问
+#### 1.1.4 host网络容器访问桥接网络内的容器
+host网络的容器无法直接访问桥接网络内的容器，需要使用域名访问，如在qbittorrent容器内，webhook到moviepilot容器，则使用`http(s)://moviepilot.${domain}`进行访问
+
+#### 1.1.5 host网络之间访问
+- 直接使用宿主机ip访问
+- 使用域名地址访问
+
 ### 1.2 部署后目录结构
 ```
 /$base_data_dir/
