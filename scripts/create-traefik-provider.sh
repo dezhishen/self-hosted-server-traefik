@@ -15,10 +15,18 @@ if [ ! -f "$base_data_dir/traefik/config/providers/${container_name}.yaml" ]; th
     # 优先读取github上的traefik-providers-template.yaml文件内容到template变量，如果异常则读取本地文件../template/traefik-providers-template.yaml
     template=$(curl -s https://raw.githubusercontent.com/dezhishen/self-hosted-server-traefik/master/template/traefik-providers-template.yaml || cat ../template/traefik-providers-template.yaml)
     # 替换template中的变量
+    # 如果tls为true,则替换entryPoint为websecure,否则替换为web
+    if [ "$tls" = "true" ]; then
+        entryPoint="websecure"
+    else
+        entryPoint="web"
+    fi
+    # 替换template中的变量
     template=$(echo "$template" | sed "s/\${container_name}/${container_name}/g")
     template=$(echo "$template" | sed "s/\${domain}/${domain}/g")
     template=$(echo "$template" | sed "s/\${host_ip}/${host_ip}/g")
     template=$(echo "$template" | sed "s/\${port}/${port}/g")
+    template=$(echo "$template" | sed "s/\${entryPoint}/${entryPoint}/g")
     echo "$template" > $base_data_dir/traefik/config/providers/${container_name}.yaml
 else
     echo "已存在traefik代理配置文件，不需要创建"
