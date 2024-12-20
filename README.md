@@ -32,6 +32,13 @@
 ---/ttyd/ # ttyd配置目录
 ---/duplicati/ # 备份工具配置目录
 ```
+### 1.3 容器之间挂载目录结构
+> 部分情况下，容器之间需要共享数据，如：
+- iyuu容器需要挂载qbittorrent和transmission的目录
+
+> 假设A容器需要挂载B容器的目录，则B容器的所有挂载目录在A容器中都存在于 `/A` 目录下：
+- 如iyuu容器需要挂载qbittorrent的目录，则在iyuu容器内，访问qbittorrent的路径为`/qbittorrent/`
+
 ## 2 快速开始
 ### 2.1 前置条件
 - 安装docker
