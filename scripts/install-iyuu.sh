@@ -16,6 +16,27 @@ y|Y|yes|Yes|YES)
     image=iyuucn/iyuuplus-dev
     ;;
 esac
+
+# 检查是否安装了qbittorrent
+docker inspect qbittorrent > /dev/null 2>&1
+qbittorrent_installed=$?
+# 检查是否安装了transmission
+docker inspect transmission > /dev/null 2>&1
+transmission_installed=$?
+
+# 如果安装了qbittorrent，将qbittorrent的目录挂载到iyuu容器内
+if [ $qbittorrent_installed -eq 0 ]; then
+    qbittorrent_dir="-v ${base_data_dir}/qbittorrent:/qbittorrent"
+else 
+    qbittorrent_dir=""
+fi
+# 如果安装了transmission，将transmission的目录挂载到iyuu容器内
+if [ $transmission_installed -eq 0 ]; then
+    transmission_dir="-v ${base_data_dir}/transmission:/transmission"
+else 
+    transmission_dir=""
+fi
+
 docker pull ${image}
 `dirname $0`/stop-container.sh ${container_name}
 docker run --name=${container_name} \
@@ -26,7 +47,8 @@ docker run --name=${container_name} \
 -e PUID=`id -u` -e PGID=`id -g` \
 -v ${base_data_dir}/${container_name}/data:/data \
 -v ${base_data_dir}/${container_name}/iyuu:/iyuu \
--v $base_data_dir/qbittorrent:/qbittorrent \
+${qbittorrent_dir} \
+${transmission_dir} \
 --network=$docker_network_name --network-alias=${container_name} \
 --hostname=${container_name} \
 --label "traefik.enable=true" \
