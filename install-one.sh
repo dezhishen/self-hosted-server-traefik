@@ -2,11 +2,6 @@
 # 授予可执行权限
 chmod +x ./scripts/*.sh
 chmod +x ./*.sh
-read -p "是否更新本项目[y/n]" yN
-if [ "$yN" = "y" ]; then
-    git pull
-fi
-
 app=$1
 domain=`./scripts/get-args.sh domain "主域名(如 baidu.com或者app.baidu.com)"`
 if [ -z "$domain" ]; then

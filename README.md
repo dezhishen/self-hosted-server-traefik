@@ -72,6 +72,10 @@
 ### 3 工具
 #### 3.1 更新本项目
 ```bash
+    sh update-self.sh
+```
+或者
+```bash
     git pull
 ```
 #### 3.2 更新容器
