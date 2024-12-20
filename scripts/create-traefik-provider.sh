@@ -28,7 +28,7 @@ if [ ! -f "$base_data_dir/traefik/config/providers/${container_name}.yaml" ]; th
         echo "      tls:" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
         echo "        certresolver: traefik" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
         echo "        domains:" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
-        echo "        - main: "*.${domain}"" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
+        echo "        - main: '"*.${domain}"'" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
     fi
     echo "  services:" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
     echo "    ${container_name}:" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
