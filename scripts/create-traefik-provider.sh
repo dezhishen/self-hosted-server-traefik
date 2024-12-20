@@ -22,13 +22,13 @@ if [ ! -f "$base_data_dir/traefik/config/providers/${container_name}.yaml" ]; th
     else 
         echo "        - web" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
     fi
-        echo '      rule: Host(`'${container_name}.sdniu.top'`)' >> $base_data_dir/traefik/config/providers/${container_name}.yaml
+        echo '      rule: Host(`'${container_name}.${domain}'`)' >> $base_data_dir/traefik/config/providers/${container_name}.yaml
         echo "      service: ${container_name}" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
     if [ "$tls" = "true" ]; then
         echo "      tls:" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
         echo "        certresolver: traefik" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
         echo "        domains:" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
-        echo "        - main: "*.sdniu.top"" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
+        echo "        - main: "*.${domain}"" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
     fi
     echo "  services:" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
     echo "    ${container_name}:" >> $base_data_dir/traefik/config/providers/${container_name}.yaml
