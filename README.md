@@ -81,8 +81,18 @@ host网络的容器无法直接访问桥接网络内的容器，需要使用域�
 ```bash
     sh install-one.sh cloudflared
 ```
-### 2.3 推荐服务
-#### 2.3.1 备份工具[duplicati](https://www.duplicati.com/)
+### 2.3 使用说明
+使用 sh install-one.sh 服务名 安装服务，如：
+- 安装qbittorrent
+```bash
+    sh install-one.sh qbittorrent
+```
+- 安装alist
+```bash
+    sh install-one.sh alist
+```
+### 2.4 推荐服务
+#### 2.4.1 备份工具[duplicati](https://www.duplicati.com/)
 配合alist使用，借助alist的webdav功能，可以实现备份到网盘
 ```bash
     # 安装duplicati
@@ -90,16 +100,16 @@ host网络的容器无法直接访问桥接网络内的容器，需要使用域�
     # 安装alist
     sh install-one.sh alist
 ```     
-#### 2.3.2 密码管理器[vaultwarden](https://github.com/dani-garcia/vaultwarden)
+#### 2.4.2 密码管理器[vaultwarden](https://github.com/dani-garcia/vaultwarden)
 ```bash
     sh install-one.sh vaultwarden
 ```
-### 2.4 安装[xiaoya](https://github.com/DDS-Derek/xiaoya-alist)
-#### 2.4.1 执行xiaoya脚本
+### 2.5 安装[xiaoya](https://github.com/DDS-Derek/xiaoya-alist)
+#### 2.5.1 执行xiaoya脚本
 ```bash
     sh xiaoya.sh
 ```
-#### 2.4.2 创建traefik配置文件
+#### 2.5.2 创建traefik配置文件
 ```bash
     sh xiaoya-traefik.sh
 ```
