@@ -18,6 +18,7 @@
 #### 1.1.1 网络模式
 - 大部分服务使用`bridge`**模式**网络，默认使用`traefik`网络
 - 部分服务使用`host`网络(如：qbittorrent等依赖host网络构建upnp映射的服务)
+- **xiaoya相关服务的网络模式由xiaoya官方脚本决定**，但因xiaoya容器均有端口映射，其他容器如需访问，可按照`host`网络方法进行访问
 #### 1.1.2 桥接网络容器之间访问
 通过容器名进行访问，如在moviepilot容器内，访问jellyfin为`http://jellyfin:8096`
 #### 1.1.3 桥接网络内的容器访问host模式的容器
