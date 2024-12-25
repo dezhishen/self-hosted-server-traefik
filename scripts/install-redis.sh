@@ -38,7 +38,7 @@ if [ -z "$REDIS_PORT_MAPPING" ]; then
 fi
 docker pull $image
 `dirname $0`/stop-container.sh ${container_name}
-docker run --restart=always -d --name redis -m 512M \
+docker run --restart=always -d --name ${container_name} -m 512M \
 `if [ $REDIS_PORT_MAPPING = "y" ]; then echo "-p ${port}:${port}"; fi` \
 -v ${base_data_dir}/${container_name}/data:/data \
 --network=${docker_network_name} --network-alias=${container_name} \
