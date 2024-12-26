@@ -114,7 +114,7 @@ case $yN in
         then \
             echo "-e \"CF_API_EMAIL=${CF_API_EMAIL}\" -e \"CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}\""; \
         else \
-            echo ""; \    
+            echo ""; \
         fi \
     fi `\
     --network=$docker_network_name --network-alias=traefik \
