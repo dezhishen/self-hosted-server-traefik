@@ -31,7 +31,7 @@ read -p "是否重装 traefik (y/n)" yN
 case $yN in
     [Yy]* )
     container_name=traefik
-
+    nip_enabled="false"
     TRAEFIK_AUTH_USER=$(`dirname $0`/get-args.sh TRAEFIK_AUTH_USER 用户名)
     if [ -z "$TRAEFIK_AUTH_USER" ]; then
         read -p "请输入用户名:" TRAEFIK_AUTH_USER
@@ -57,32 +57,40 @@ case $yN in
     digest="$(printf "%s:%s:%s" "$TRAEFIK_AUTH_USER" "traefik" "$TRAEFIK_AUTH_PASSWORD" | md5sum | awk '{print $1}' )"
     userlist=$(printf "%s:%s:%s\n" "$TRAEFIK_AUTH_USER" "traefik" "$digest")
     if [ "$tls" = "true" ]; then
-        acme_email=$(`dirname $0`/get-args.sh acme_email acme的email)
-        if [ -z "$acme_email" ]; then
-            read -p "请输入acme的email: " acme_email
+        # 检查domain是否是nip.io
+        if [[ "$domain" =~ "nip.io" ]]; then
+            nip_enabled="true"
+            echo "使用nip.io域名"
+        else
+            echo "使用nip.io域名，跳过cf配置"
+            nip_enabled="false"
+            acme_email=$(`dirname $0`/get-args.sh acme_email acme的email)
             if [ -z "$acme_email" ]; then
-                echo "acme的email不能为空"
-                exit 1
+                read -p "请输入acme的email: " acme_email
+                if [ -z "$acme_email" ]; then
+                    echo "acme的email不能为空"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh acme_email $acme_email
             fi
-            `dirname $0`/set-args.sh acme_email $acme_email
-        fi
-        CF_API_EMAIL=$(`dirname $0`/get-args.sh CF_API_EMAIL Cloudflare的邮箱)
-        if [ -z "$CF_API_EMAIL" ]; then
-            read -p "请输入Cloudflare的邮箱:" CF_API_EMAIL
+            CF_API_EMAIL=$(`dirname $0`/get-args.sh CF_API_EMAIL Cloudflare的邮箱)
             if [ -z "$CF_API_EMAIL" ]; then
-                echo "Cloudflare的邮箱不能为空"
-                exit 1
+                read -p "请输入Cloudflare的邮箱:" CF_API_EMAIL
+                if [ -z "$CF_API_EMAIL" ]; then
+                    echo "Cloudflare的邮箱不能为空"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh CF_API_EMAIL "$CF_API_EMAIL"
             fi
-            `dirname $0`/set-args.sh CF_API_EMAIL "$CF_API_EMAIL"
-        fi
-        CF_DNS_API_TOKEN=$(`dirname $0`/get-args.sh CF_DNS_API_TOKEN Cloudflare的api令牌)
-        if [ -z "$CF_DNS_API_TOKEN" ]; then
-            read -p "请输入Cloudflare的api令牌:" CF_DNS_API_TOKEN
+            CF_DNS_API_TOKEN=$(`dirname $0`/get-args.sh CF_DNS_API_TOKEN Cloudflare的api令牌)
             if [ -z "$CF_DNS_API_TOKEN" ]; then
-                echo "Cloudflare的api令牌不能为空"
-                exit 1
+                read -p "请输入Cloudflare的api令牌:" CF_DNS_API_TOKEN
+                if [ -z "$CF_DNS_API_TOKEN" ]; then
+                    echo "Cloudflare的api令牌不能为空"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh CF_DNS_API_TOKEN "$CF_DNS_API_TOKEN"
             fi
-            `dirname $0`/set-args.sh CF_DNS_API_TOKEN "$CF_DNS_API_TOKEN"
         fi
     fi
     echo "停止之前的traefik容器"
@@ -99,7 +107,14 @@ case $yN in
     `if [ "$tls" = "true" ]; then echo  "-p 443:443/udp -p 443:443"; fi` \
     -e UID=`id -u` \
     -e GID=`id -g` \
-    `if [ "$tls" = "true" ]; then echo "-e \"CF_API_EMAIL=${CF_API_EMAIL}\" -e \"CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}\""; fi` \
+    `if [ "$tls" = "true" ]; then \
+        if [ "nip_enabeld" = "false" ];
+        then \
+            echo "-e \"CF_API_EMAIL=${CF_API_EMAIL}\" -e \"CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}\""; \
+        else \
+            echo ""; \    
+        fi \
+    fi `\
     --network=$docker_network_name --network-alias=traefik \
     --label 'traefik.http.routers.traefik.rule=Host(`traefik'.$domain'`)' \
     --label "traefik.http.routers.traefik.tls=${tls}" \
@@ -123,17 +138,27 @@ case $yN in
     --providers.docker.exposedbydefault=false \
     --entrypoints.web.address=":80" \
     `if [ "$tls" = "true" ]; then \
-    echo """
+    echo """ \
     --entrypoints.websecure.address=":443" \
     --entrypoints.web.http.redirections.entryPoint.to=websecure \
     --entrypoints.web.http.redirections.entryPoint.scheme=https \
-    --certificatesresolvers.traefik.acme.dnschallenge=true \
-    --certificatesresolvers.traefik.acme.dnschallenge.provider=cloudflare \
-    --certificatesResolvers.traefik.acme.dnsChallenge.delayBeforeCheck=10 \
-    --certificatesResolvers.traefik.acme.dnsChallenge.resolvers="1.1.1.1:53,8.8.8.8:53" \
-    --certificatesresolvers.traefik.acme.email=$acme_email \
-    --certificatesresolvers.traefik.acme.storage=/acme/acme.json \
-    """
+    """ \
+    fi` \
+    `if [ "$tls" = "true" ]; then \
+        if [ "nip_enabeld" = "false" ]; then \
+        echo """ \
+            --certificatesresolvers.traefik.acme.dnschallenge=true \
+            --certificatesresolvers.traefik.acme.dnschallenge.provider=cloudflare \
+            --certificatesResolvers.traefik.acme.dnsChallenge.delayBeforeCheck=10 \
+            --certificatesResolvers.traefik.acme.dnsChallenge.resolvers="1.1.1.1:53,8.8.8.8:53" \
+            --certificatesresolvers.traefik.acme.email=$acme_email \
+            --certificatesresolvers.traefik.acme.storage=/acme/acme.json \
+            """ \
+        else \
+            echo """ \
+            --certificatesresolvers.traefik=false \
+            """ \
+        fi \
     fi` \
     --providers.file.directory=/config/providers \
     --global.sendAnonymousUsage \
