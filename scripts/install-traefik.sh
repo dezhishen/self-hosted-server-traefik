@@ -57,8 +57,10 @@ case $yN in
     digest="$(printf "%s:%s:%s" "$TRAEFIK_AUTH_USER" "traefik" "$TRAEFIK_AUTH_PASSWORD" | md5sum | awk '{print $1}' )"
     userlist=$(printf "%s:%s:%s\n" "$TRAEFIK_AUTH_USER" "traefik" "$digest")
     if [ "$tls" = "true" ]; then
-        # 检查domain是否是nip.io
-        if [[ "$domain" =~ "nip.io" ]]; then
+        # 检查domain结尾是否是nip.io
+        echo "检查domain结尾是否是nip.io"
+        if echo "$domain" | grep -q -E '\.nip.io$'
+        then
             nip_enabled="true"
             echo "使用nip.io域名"
         else
