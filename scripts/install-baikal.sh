@@ -15,7 +15,9 @@ mkdir -p ${base_data_dir}/${container_name}/data
 docker run --name=${container_name} \
 -m 128M \
 -d --restart=always \
-  --user `id -u`:`id -g` \
+--user `id -u`:`id -g` \
+-e BAIKAL_SERVERNAME=${container_name}.$domain \
+-e BAIKAL_SKIP_CHOWN=False \
 --network=$docker_network_name --network-alias=${container_name} --hostname=${container_name} \
 -v ${base_data_dir}/${container_name}/config:/var/www/baikal/config \
 -v ${base_data_dir}/${container_name}/data:/var/www/baikal/Specific \
