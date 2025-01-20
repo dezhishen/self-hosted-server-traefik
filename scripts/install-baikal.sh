@@ -12,15 +12,28 @@ docker pull ${image}
 # 创建文件夹
 mkdir -p ${base_data_dir}/${container_name}/config
 mkdir -p ${base_data_dir}/${container_name}/data
+mkdir -p ${base_data_dir}/${container_name}/docker-entrypoint
+# 创建docker-entrypoint.d/40-fix-baikal-file-permissions.sh
+cat > ${base_data_dir}/${container_name}/docker-entrypoint/40-fix-baikal-file-permissions.sh <<EOF
+#!/bin/sh
+groupmod -o -g ${PGID} www-data
+usermod -o -u ${PUID} -g www-data www-data
+# Ensure correct file permissions, unless behaviour is explicitly disabled
+if [ -z ${BAIKAL_SKIP_CHOWN+x} ]
+then
+  chown -R www-data:www-data /var/www/baikal
+fi
+EOF
 docker run --name=${container_name} \
 -m 128M \
 -d --restart=always \
---user `id -u`:`id -g` \
 -e BAIKAL_SERVERNAME=${container_name}.$domain \
 -e BAIKAL_SKIP_CHOWN=False \
+-e PUID=`id -u` -e PGID=`id -g` \
 --network=$docker_network_name --network-alias=${container_name} --hostname=${container_name} \
 -v ${base_data_dir}/${container_name}/config:/var/www/baikal/config \
 -v ${base_data_dir}/${container_name}/data:/var/www/baikal/Specific \
+-v ${base_data_dir}/${container_name}/docker-entrypoint/40-fix-baikal-file-permissions.sh:/docker-entrypoint.d/40-fix-baikal-file-permissions.sh\
 --label "traefik.enable=true" \
 --label 'traefik.http.routers.'${container_name}'.rule=Host(`'${container_name}.$domain'`)' \
 --label "traefik.http.routers.${container_name}.tls=${tls}" \
