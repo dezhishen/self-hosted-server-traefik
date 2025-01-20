@@ -36,7 +36,7 @@ docker run --name=${container_name} \
 --network=$docker_network_name --network-alias=${container_name} --hostname=${container_name} \
 -v ${base_data_dir}/${container_name}/config:/var/www/baikal/config \
 -v ${base_data_dir}/${container_name}/data:/var/www/baikal/Specific \
--v ${base_data_dir}/${container_name}/docker-entrypoint/40-fix-baikal-file-permissions.sh:/docker-entrypoint.d/40-fix-baikal-file-permissions.sh\
+-v ${base_data_dir}/${container_name}/docker-entrypoint/40-fix-baikal-file-permissions.sh:/docker-entrypoint.d/40-fix-baikal-file-permissions.sh \
 --label "traefik.enable=true" \
 --label 'traefik.http.routers.'${container_name}'.rule=Host(`'${container_name}.$domain'`)' \
 --label "traefik.http.routers.${container_name}.tls=${tls}" \
