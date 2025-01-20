@@ -1,0 +1,47 @@
+#!/bin/bash
+domain=$1
+base_data_dir=$2
+docker_network_name=$3
+tls=$4
+container_name=baikal
+image=ckulka/baikal:nginx
+port=80
+
+docker pull ${image}
+`dirname $0`/stop-container.sh ${container_name}
+# 创建文件夹
+mkdir -p ${base_data_dir}/${container_name}/config
+mkdir -p ${base_data_dir}/${container_name}/data
+docker run --name=${container_name} \
+-m 128M \
+-d --restart=always \
+  --user `id -u`:`id -g` \
+--network=$docker_network_name --network-alias=${container_name} --hostname=${container_name} \
+-v ${base_data_dir}/${container_name}/config:/var/www/baikal/config \
+-v ${base_data_dir}/${container_name}/data:/var/www/baikal/Specific \
+--label "traefik.enable=true" \
+--label 'traefik.http.routers.'${container_name}'.rule=Host(`'${container_name}.$domain'`)' \
+--label "traefik.http.routers.${container_name}.tls=${tls}" \
+--label "traefik.http.routers.${container_name}.tls.certresolver=traefik" \
+--label "traefik.http.routers.${container_name}.tls.domains[0].main=*.$domain" \
+--label "traefik.http.services.${container_name}.loadbalancer.server.port=${port}" \
+${image}
+
+# 是否安装infcloud
+read -p "是否安装infcloud(y/n):" install_infcloud
+if [ "$install_infcloud" == "y" ]; then
+    echo "暂不支持安装infcloud"
+#  container_name=infcloud
+#  image=ckulka/infcloud
+#  port=80
+#  docker pull ${image}
+#  `dirname $0`/stop-container.sh ${container_name}
+#  # 创建文件夹
+#  mkdir -p ${base_data_dir}/${container_name}/config
+#  docker run --name=${container_name} \
+#  -m 128M \
+#  -d --restart=always \
+#  --user `id -u`:`id -g` \
+#  --network=$docker_network_name --network-alias=${container_name} --hostname=${container_name} \
+#  -v ${base_data_dir}/${container_name}/config:/var/www/html/config \
+fi
