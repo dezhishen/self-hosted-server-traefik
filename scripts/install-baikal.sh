@@ -13,7 +13,8 @@ docker pull ${image}
 mkdir -p ${base_data_dir}/${container_name}/config
 mkdir -p ${base_data_dir}/${container_name}/data
 mkdir -p ${base_data_dir}/${container_name}/docker-entrypoint
-# 创建docker-entrypoint.d/40-fix-baikal-file-permissions.sh
+# 如果文件不存，创建docker-entrypoint.d/40-fix-baikal-file-permissions.sh
+if [ ! -f "${base_data_dir}/${container_name}/docker-entrypoint/40-fix-baikal-file-permissions.sh" ]; then
 cat > ${base_data_dir}/${container_name}/docker-entrypoint/40-fix-baikal-file-permissions.sh <<EOF
 #!/bin/sh
 groupmod -o -g ${PGID} www-data
@@ -24,6 +25,8 @@ then
   chown -R www-data:www-data /var/www/baikal
 fi
 EOF
+  chmod +x ${base_data_dir}/${container_name}/docker-entrypoint/40-fix-baikal-file-permissions.sh
+fi
 docker run --name=${container_name} \
 -m 128M \
 -d --restart=always \
