@@ -19,7 +19,7 @@ if [ ! -f "${base_data_dir}/${container_name}/docker-entrypoint/40-fix-baikal-fi
   cat > ${base_data_dir}/${container_name}/docker-entrypoint/40-fix-baikal-file-permissions.sh <<EOF
 #!/bin/sh
 groupmod -o -g \${PGID} nginx
-usermod -o -u \${PUID} -g nginx
+usermod -o -u \${PUID} -g nginx nginx
 # Ensure correct file permissions, unless behaviour is explicitly disabled
 if [ -z \${BAIKAL_SKIP_CHOWN+x} ]
 then
