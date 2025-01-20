@@ -18,12 +18,12 @@ if [ ! -f "${base_data_dir}/${container_name}/docker-entrypoint/40-fix-baikal-fi
   # 创建文件，且不转义变量
   cat > ${base_data_dir}/${container_name}/docker-entrypoint/40-fix-baikal-file-permissions.sh <<EOF
 #!/bin/sh
-groupmod -o -g \${PGID} www-data
-usermod -o -u \${PUID} -g www-data www-data
+groupmod -o -g \${PGID} nginx
+usermod -o -u \${PUID} -g nginx
 # Ensure correct file permissions, unless behaviour is explicitly disabled
-if [ -z ${BAIKAL_SKIP_CHOWN+x} ]
+if [ -z \${BAIKAL_SKIP_CHOWN+x} ]
 then
-  chown -R www-data:www-data /var/www/baikal
+  chown -R nginx:nginx /var/www/baikal
 fi
 EOF
   chmod +x ${base_data_dir}/${container_name}/docker-entrypoint/40-fix-baikal-file-permissions.sh
