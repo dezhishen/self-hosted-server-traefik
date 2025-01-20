@@ -15,10 +15,11 @@ mkdir -p ${base_data_dir}/${container_name}/data
 mkdir -p ${base_data_dir}/${container_name}/docker-entrypoint
 # 如果文件不存，创建docker-entrypoint.d/40-fix-baikal-file-permissions.sh
 if [ ! -f "${base_data_dir}/${container_name}/docker-entrypoint/40-fix-baikal-file-permissions.sh" ]; then
-cat > ${base_data_dir}/${container_name}/docker-entrypoint/40-fix-baikal-file-permissions.sh <<EOF
+  # 创建文件，且不转义变量
+  cat > ${base_data_dir}/${container_name}/docker-entrypoint/40-fix-baikal-file-permissions.sh <<EOF
 #!/bin/sh
-groupmod -o -g ${PGID} www-data
-usermod -o -u ${PUID} -g www-data www-data
+groupmod -o -g \${PGID} www-data
+usermod -o -u \${PUID} -g www-data www-data
 # Ensure correct file permissions, unless behaviour is explicitly disabled
 if [ -z ${BAIKAL_SKIP_CHOWN+x} ]
 then
@@ -47,19 +48,6 @@ ${image}
 
 # 是否安装infcloud
 read -p "是否安装infcloud(y/n):" install_infcloud
-if [ "$install_infcloud" == "y" ]; then
+if [ "$install_infcloud" = "y" ]; then
     echo "暂不支持安装infcloud"
-#  container_name=infcloud
-#  image=ckulka/infcloud
-#  port=80
-#  docker pull ${image}
-#  `dirname $0`/stop-container.sh ${container_name}
-#  # 创建文件夹
-#  mkdir -p ${base_data_dir}/${container_name}/config
-#  docker run --name=${container_name} \
-#  -m 128M \
-#  -d --restart=always \
-#  --user `id -u`:`id -g` \
-#  --network=$docker_network_name --network-alias=${container_name} --hostname=${container_name} \
-#  -v ${base_data_dir}/${container_name}/config:/var/www/html/config \
 fi
