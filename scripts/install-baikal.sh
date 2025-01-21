@@ -68,7 +68,7 @@ case $yN in
       --restart=always -d -m 128M \
       -e TZ="Asia/Shanghai" \
       --network=$docker_network_name --network-alias=${container_name} --hostname=${container_name} \
-      -e AGENDAV_SERVER_NAME=${container_name}.$domain \
+      -e AGENDAV_SERVER_NAME=127.0.0.1 \
       -e AGENDAV_TITLE="AgendaV" \
       -e AGENDAV_FOOTER="host by $domain" \
       -e AGENDAV_ENC_KEY=${AGENDAV_ENC_KEY} \
@@ -77,6 +77,12 @@ case $yN in
       -e AGENDAV_TIMEZONE=Asia/Shanghai \
       -e AGENDAV_LANG=zh_CN \
       -e AGENDAV_LOG_DIR=/log/ \
+      --label "traefik.enable=true" \
+      --label 'traefik.http.routers.'${container_name}'.rule=Host(`'${container_name}.$domain'`)' \
+      --label "traefik.http.routers.${container_name}.tls=${tls}" \
+      --label "traefik.http.routers.${container_name}.tls.certresolver=traefik" \
+      --label "traefik.http.routers.${container_name}.tls.domains[0].main=*.$domain" \
+      --label "traefik.http.services.${container_name}.loadbalancer.server.port=${port}" \
       ${image}
     ;;
 esac
