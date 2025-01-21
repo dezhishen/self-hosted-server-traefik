@@ -35,6 +35,7 @@ docker pull ${image}
 docker run --name=${container_name} \
 -m 128M \
 -d --restart=always \
+-e VIKUNJA_SERVICE_ENABLETASKATTACHMENTS=false \
 -e VIKUNJA_SERVICE_PUBLICURL=https://${container_name}.$domain \
 -e VIKUNJA_DATABASE_HOST=mariadb \
 -e VIKUNJA_DATABASE_PASSWORD=${MYSQL_PASSWORD} \
