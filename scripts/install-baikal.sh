@@ -55,7 +55,7 @@ read -p "是否安装infcloud(y/n):" yN
 case $yN in
     [Yy]* )
       # 安装 php-fpm
-      container_name=infcloud-php
+      container_name=php
       image=php:7.3-fpm-alpine
 
       docker pull ${image}
@@ -90,6 +90,7 @@ case $yN in
       --label "traefik.http.routers.${container_name}.tls.domains[0].main=*.$domain" \
       --label "traefik.http.services.${container_name}.loadbalancer.server.port=${port}" \
       ${image}
+      
     ;;
 esac
 
