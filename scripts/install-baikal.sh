@@ -70,11 +70,9 @@ case $yN in
       image=ckulka/infcloud:latest
       port=80
       mkdir -p ${base_data_dir}/${container_name}
-      # 如果文件 ${base_data_dir}/${container_name}/config-baikal.js 不存在，则下载 
-      if [ ! -f "${base_data_dir}/${container_name}/config-baikal.js" ]; then
-        wget -O ${base_data_dir}/${container_name}/config-baikal.js https://raw.githubusercontent.com/ckulka/infcloud-docker/refs/heads/master/examples/config-baikal.js
-        # 修改 baikal.localhost => baikal.$domain
-        sed -i "s/baikal.localhost/baikal.$domain/g" ${base_data_dir}/${container_name}/config-baikal.js
+      # 如果文件 ${base_data_dir}/${container_name}/config.js 不存在，则下载 
+      if [ ! -f "${base_data_dir}/${container_name}/config.js" ]; then
+        wget -O ${base_data_dir}/${container_name}/config.js https://raw.githubusercontent.com/ckulka/infcloud-docker/refs/heads/master/examples/config.js
       fi
       docker pull ${image}
       `dirname $0`/stop-container.sh ${container_name}
@@ -82,8 +80,9 @@ case $yN in
       --restart=always -d -m 128M \
       -e TZ="Asia/Shanghai" \
       --network=$docker_network_name --network-alias=${container_name} --hostname=${container_name} \
+      --link infcloud-php:php \
       -v ${base_data_dir}/${container_name}/nginx:/usr/share/nginx/infcloud \
-      -v ${base_data_dir}/${container_name}/config-baikal.js:/usr/share/nginx/infcloud/config.js:ro \
+      -v ${base_data_dir}/${container_name}/config.js:/usr/share/nginx/infcloud/config.js:ro \
       --label "traefik.enable=true" \
       --label 'traefik.http.routers.'${container_name}'.rule=Host(`'${container_name}.$domain'`)' \
       --label "traefik.http.routers.${container_name}.tls=${tls}" \
