@@ -3,6 +3,9 @@ domain=$1
 base_data_dir=$2
 docker_network_name=$3
 tls=$4
+read -p "是否重装baikal(y/n):" yN
+case $yN in
+    [Yy]* )
 container_name=baikal
 image=ckulka/baikal:nginx
 port=80
@@ -45,7 +48,8 @@ docker run --name=${container_name} \
 --label "traefik.http.routers.${container_name}.tls.domains[0].main=*.$domain" \
 --label "traefik.http.services.${container_name}.loadbalancer.server.port=${port}" \
 ${image}
-
+;;
+esac
 # 是否安装infcloud
 read -p "是否安装infcloud(y/n):" yN
 case $yN in
@@ -63,7 +67,7 @@ case $yN in
 
       # 安装infcloud
       container_name=infcloud
-      image=infcloud/infcloud:latest
+      image=ckulka/infcloud:latest
       port=80
       mkdir -p ${base_data_dir}/${container_name}
       # 如果文件 ${base_data_dir}/${container_name}/config-baikal.js 不存在，则下载 
