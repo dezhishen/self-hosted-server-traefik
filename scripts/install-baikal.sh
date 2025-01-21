@@ -55,7 +55,7 @@ read -p "是否安装infcloud(y/n):" yN
 case $yN in
     [Yy]* )
       # 安装 php-fpm
-      container_name=php
+      container_name=infcloud-php
       image=php:7.3-fpm-alpine
 
       docker pull ${image}
@@ -63,6 +63,7 @@ case $yN in
       docker run --name=${container_name} \
       --restart=always -d -m 128M \
       -v ${base_data_dir}/${container_name}/nginx:/usr/share/nginx/infcloud:ro \
+      --network=$docker_network_name --network-alias=${container_name} --hostname=${container_name} \
       ${image}
 
       # 安装infcloud
@@ -80,6 +81,7 @@ case $yN in
       --restart=always -d -m 128M \
       -e TZ="Asia/Shanghai" \
       --network=$docker_network_name --network-alias=${container_name} --hostname=${container_name} \
+      --link infcloud-php:php \
       -v ${base_data_dir}/${container_name}/nginx:/usr/share/nginx/infcloud \
       -v ${base_data_dir}/${container_name}/config.js:/usr/share/nginx/infcloud/config.js:ro \
       --label "traefik.enable=true" \
