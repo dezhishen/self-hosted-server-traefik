@@ -65,6 +65,7 @@ case $yN in
       container_name=infcloud
       image=infcloud/infcloud:latest
       port=80
+      mkdir -p ${base_data_dir}/${container_name}
       # 如果文件 ${base_data_dir}/${container_name}/config-baikal.js 不存在，则下载 
       if [ ! -f "${base_data_dir}/${container_name}/config-baikal.js" ]; then
         wget -O ${base_data_dir}/${container_name}/config-baikal.js https://raw.githubusercontent.com/ckulka/infcloud-docker/refs/heads/master/examples/config-baikal.js
