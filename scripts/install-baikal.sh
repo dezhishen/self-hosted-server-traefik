@@ -47,7 +47,36 @@ docker run --name=${container_name} \
 ${image}
 
 # 是否安装infcloud
-read -p "是否安装infcloud(y/n):" install_infcloud
-if [ "$install_infcloud" = "y" ]; then
-    echo "暂不支持安装infcloud"
-fi
+read -p "是否安装agendav(y/n):" yN
+case $yN in
+    [Yy]* )
+      container_name=agendav
+      image=ghcr.io/nagimov/agendav-docker:latest
+      port=8080
+      AGENDAV_ENC_KEY=$(`dirname $0`/get-args.sh AGENDAV_ENC_KEY php加密key)
+      if [ -z "$AGENDAV_ENC_KEY" ]; then
+          read -p "请输入php加密key:" AGENDAV_ENC_KEY
+          if [ -z "$AGENDAV_ENC_KEY" ]; then
+              echo "随机生成php加密key"
+              AGENDAV_ENC_KEY=`$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1)`
+          fi
+          `dirname $0`/set-args.sh AGENDAV_ENC_KEY "$AGENDAV_ENC_KEY"
+      fi
+      docker pull ${image}
+      `dirname $0`/stop-container.sh ${container_name}
+      docker run --name=${container_name} \
+      --restart=always -d -m 128M \
+      -e TZ="Asia/Shanghai" \
+      --network=$docker_network_name --network-alias=${container_name} --hostname=${container_name} \
+      -e AGENDAV_SERVER_NAME=${container_name}.$domain \
+      -e AGENDAV_TITLE="AgendaV" \
+      -e AGENDAV_FOOTER="host by $domain" \
+      -e AGENDAV_ENC_KEY=${AGENDAV_ENC_KEY} \
+      -e AGENDAV_CALDAV_SERVER=http://baikal/cal.php \
+      -e AGENDAV_CALDAV_PUBLIC_URL=https://baikal.$domain \
+      -e AGENDAV_TIMEZONE=Asia/Shanghai \
+      -e AGENDAV_LANG=zh_CN \
+      -e AGENDAV_LOG_DIR=/log/ \
+      ${image}
+    ;;
+esac
