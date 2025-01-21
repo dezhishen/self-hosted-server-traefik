@@ -76,7 +76,7 @@ case $yN in
       -e AGENDAV_CALDAV_PUBLIC_URL=https://baikal.$domain \
       -e AGENDAV_TIMEZONE=Asia/Shanghai \
       -e AGENDAV_LANG=zh_CN \
-      -e AGENDAV_LOG_DIR=/log/ \
+      -e AGENDAV_LOG_DIR=/tmp/ \
       --label "traefik.enable=true" \
       --label 'traefik.http.routers.'${container_name}'.rule=Host(`'${container_name}.$domain'`)' \
       --label "traefik.http.routers.${container_name}.tls=${tls}" \
