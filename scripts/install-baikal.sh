@@ -80,7 +80,6 @@ case $yN in
       --restart=always -d -m 128M \
       -e TZ="Asia/Shanghai" \
       --network=$docker_network_name --network-alias=${container_name} --hostname=${container_name} \
-      --link infcloud-php:php \
       -v ${base_data_dir}/${container_name}/nginx:/usr/share/nginx/infcloud \
       -v ${base_data_dir}/${container_name}/config.js:/usr/share/nginx/infcloud/config.js:ro \
       --label "traefik.enable=true" \
