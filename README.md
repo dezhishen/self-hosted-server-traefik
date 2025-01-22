@@ -78,7 +78,8 @@ host网络的容器无法直接访问桥接网络内的容器，需要使用域�
     sh install-one.sh traefik
 ```
 #### 2.2.2 安装cloudflared(可选)
-如果需要外网访问，则需要安装cloudflared，ps:部分服务依赖https，如果不需要外网访问（如使用异地组网），可以考虑使用[noip](https://nip.io/)。
+如果需要外网访问，则需要安装cloudflared，ps:部分服务依赖https，如果不需要外网访问（如使用异地组网），可以考虑使用
+[~~nip~~](https://nip.io/)，ps:nip与traefik的证书问题暂未解决。
 ```bash
     sh install-one.sh cloudflared
 ```
