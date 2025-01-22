@@ -89,10 +89,10 @@ case $yN in
     docker ps -a -q --filter "name=$container_name" | grep -q . && docker rm -fv $container_name
     echo "启动traefik容器"
     # 使用cloudflare，需要设置CF_API_EMAIL和CF_DNS_API_TOKEN
-    CLOUDFLARE_ENVS="-e \"CF_API_EMAIL=${CF_API_EMAIL}\" -e \"CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}"
-    entrypoints_cmd="--entrypoints.web.address=\":80\""
+    CLOUDFLARE_ENVS="-e CF_API_EMAIL=${CF_API_EMAIL} -e CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}"
+    entrypoints_cmd="--entrypoints.web.address=:80"
     if [ "$tls" = "true" ]; then
-      entrypoints_cmd="${entrypoints_cmd} --entrypoints.websecure.address=\":443\""
+      entrypoints_cmd="${entrypoints_cmd} --entrypoints.websecure.address=:443"
       entrypoints_cmd="${entrypoints_cmd} --entrypoints.web.http.redirections.entryPoint.to=websecure"
       entrypoints_cmd="${entrypoints_cmd} --entrypoints.web.http.redirections.entryPoint.scheme=https"
     fi
