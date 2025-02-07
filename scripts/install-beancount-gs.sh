@@ -18,7 +18,6 @@ docker run --restart=always -d --name ${container_name} -m 512M \
 -v ${base_data_dir}/${container_name}/config:/app/config:Z \
 -v ${base_data_dir}/${container_name}/bak:/app/bak:Z \
 -v ${base_data_dir}/${container_name}/logs:/app/logs:Z \
--p ${port}:80 \
 --network=${docker_network_name} --network-alias=${container_name} --hostname=${container_name} \
 --label 'traefik.http.routers.'${container_name}'.rule=Host(`'${container_name}.$domain'`)' \
 --label "traefik.http.routers.${container_name}.tls=${tls}" \
