@@ -8,7 +8,8 @@ image=xdbin/beancount-gs
 port=80
 
 docker pull $image
-`dirname $0`/stop.sh $container_name
+`dirname $0`/stop-container.sh ${container_name}
+
 docker run --restart=always -d --name ${container_name} -m 512M \
 --user=`id -u`:`id -g` \
 -e TZ=Asia/Shanghai \
