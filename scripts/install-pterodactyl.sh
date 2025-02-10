@@ -3,7 +3,7 @@ domain=$1
 base_data_dir=$2
 docker_network_name=$3
 tls=$4
-container_name=peterodactyl
+container_name=pterodactyl
 
 MYSQL_HOST=$(`dirname $0`/get-args.sh MYSQL_HOST "mysql主机" )
 MYSQL_PORT=$(`dirname $0`/get-args.sh MYSQL_PORT "mysql主机端口" )
@@ -19,7 +19,7 @@ fi
 
 REDIS_HOST="redis"
 app=panel
-image=ghcr.docker.sdniu.top/pterodactyl/panel:latest
+image=pterodactylchina/panel
 port=80
 docker pull ${image}
 `dirname $0`/stop-container.sh ${container_name}-${app}
