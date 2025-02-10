@@ -27,7 +27,6 @@ docker pull ${image}
 docker run --name=${container_name}-${app} \
 -m 256M \
 -d --restart=always \
---user=`id -u`:`id -g` \
 -e PUID=`id -u` -e PGID=`id -g` \
 -e TZ="Asia/Shanghai" \
 -e LANG="zh_CN.UTF-8" \
