@@ -21,11 +21,13 @@ REDIS_HOST="redis"
 app=panel
 image=pterodactylchina/panel
 port=80
+mkdir -p ${base_data_dir}/${container_name}
 docker pull ${image}
 `dirname $0`/stop-container.sh ${container_name}-${app}
 docker run --name=${container_name}-${app} \
 -m 256M \
 -d --restart=always \
+--user=`id -u`:`id -g` \
 -e PUID=`id -u` -e PGID=`id -g` \
 -e TZ="Asia/Shanghai" \
 -e LANG="zh_CN.UTF-8" \
