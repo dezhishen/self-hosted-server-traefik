@@ -14,7 +14,7 @@ case $is_mysql in
     y)
         MYSQL_HOST=$(`dirname $0`/get-args.sh MYSQL_HOST "mysql主机" )
         MYSQL_PASSWORD=$(`dirname $0`/get-args.sh MYSQL_PASSWORD "mysql密码" )
-        MYSQL_DB_NAME=$(`dirname $0`/get-args.sh MYSQL_DB_NAME "mysql数据库名" )
+        MYSQL_DB_NAME=music-tag-web #$(`dirname $0`/get-args.sh MYSQL_DB_NAME "mysql数据库名" )
         MYSQL_USER=$(`dirname $0`/get-args.sh MYSQL_USER "mysql用户名" )
         if [ -z "$MYSQL_HOST" ] || [ -z "$MYSQL_PASSWORD" ] || [ -z "$MYSQL_DB_NAME" ] || [ -z "$MYSQL_USER" ]; then
             echo "未输入mysql主机、密码、数据库名或用户名，退出安装。"
