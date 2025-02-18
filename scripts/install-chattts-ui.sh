@@ -6,7 +6,8 @@ tls=$4
 container_name=chattts-ui
 image=dezhishen/chattts-ui  #xhofe/alist
 port=9966
-
+mkdir -p ${base_data_dir}/${container_name}/data
+chmod -R `id -u`:`id -g` ${base_data_dir}/${container_name}/data
 docker pull ${image}
 `dirname $0`/stop-container.sh ${container_name}
 docker run --name=${container_name} \
