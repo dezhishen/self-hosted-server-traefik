@@ -21,7 +21,7 @@ fi
 docker pull ${image}
 `dirname $0`/stop-container.sh ${container_name}
 docker run --name=${container_name} \
--m 128M \
+-m 256M \
 --network=$docker_network_name --network-alias=${container_name} --hostname=${container_name} \
 -d --restart=always \
 -e MEILI_ENV=development \
