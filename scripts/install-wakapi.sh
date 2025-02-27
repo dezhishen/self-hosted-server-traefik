@@ -18,9 +18,42 @@ if [ -z "$WAKAPI_PASSWORD_SALT" ]; then
     `dirname $0`/set-args.sh WAKAPI_PASSWORD_SALT "$WAKAPI_PASSWORD_SALT"
 fi
 MYSQL_HOST=$(`dirname $0`/get-args.sh MYSQL_HOST "mysql主机" )
+if [ -z "$MYSQL_HOST" ]; then
+    read -p "请输入mysql主机:" MYSQL_HOST
+    if [ -z "$MYSQL_HOST" ]; then
+        echo "mysql主机为空，退出"
+        exit 1
+    fi
+    `dirname $0`/set-args.sh MYSQL_HOST "$MYSQL_HOST"
+fi
+    
 MYSQL_PORT=$(`dirname $0`/get-args.sh MYSQL_PORT "mysql端口" )
+if [ -z "$MYSQL_PORT" ]; then
+    read -p "请输入mysql主机:" MYSQL_PORT
+    if [ -z "$MYSQL_PORT" ]; then
+        echo "mysql端口为空，退出"
+        exit 1
+    fi
+    `dirname $0`/set-args.sh MYSQL_PORT "$MYSQL_PORT"
+fi
 MYSQL_USER=$(`dirname $0`/get-args.sh MYSQL_USER "mysql用户名" )
+if [ -z "$MYSQL_USER" ]; then
+    read -p "请输入mysql用户名:" MYSQL_USER
+    if [ -z "$MYSQL_USER" ]; then
+        echo "mysql用户名为空，退出"
+        exit 1
+    fi
+    `dirname $0`/set-args.sh MYSQL_USER "$MYSQL_USER"
+fi
 MYSQL_PASSWORD=$(`dirname $0`/get-args.sh MYSQL_PASSWORD "mysql密码" )
+if [ -z "$MYSQL_PASSWORD" ]; then
+    read -p "请输入mysql密码:" MYSQL_PASSWORD
+    if [ -z "$MYSQL_PASSWORD" ]; then
+        echo "mysql密码为空，退出"
+        exit 1
+    fi
+    `dirname $0`/set-args.sh MYSQL_PASSWORD "$MYSQL_PASSWORD"
+fi
 MYSQL_DB_NAME=wakapi
 if [ -z "$MYSQL_HOST" ] || [ -z "$MYSQL_PASSWORD" ] || [ -z "$MYSQL_DB_NAME" ] || [ -z "$MYSQL_USER" ]; then
     echo "未输入mysql主机、密码、数据库名或用户名，退出安装。"
@@ -36,7 +69,7 @@ docker run --name=${container_name} \
 -e LANG="zh_CN.UTF-8" \
 -e WAKAPI_DB_TYPE=mysql \
 -e WAKAPI_DB_HOST=${MYSQL_HOST} \
--e WAKAPI_DB_PORT=${MYSQL_PORT} \
+-e WAKAPI_DB_PORT=${MYSQL_PORT:3306} \
 -e WAKAPI_DB_NAME=${MYSQL_DB_NAME} \
 -e WAKAPI_DB_USER=${MYSQL_USER} \
 -e WAKAPI_DB_PASSWORD=${MYSQL_PASSWORD} \
