@@ -29,7 +29,7 @@ fi
     
 MYSQL_PORT=$(`dirname $0`/get-args.sh MYSQL_PORT "mysql端口" )
 if [ -z "$MYSQL_PORT" ]; then
-    read -p "请输入mysql主机:" MYSQL_PORT
+    read -p "请输入mysql端口:" MYSQL_PORT
     if [ -z "$MYSQL_PORT" ]; then
         echo "mysql端口为空，退出"
         exit 1
