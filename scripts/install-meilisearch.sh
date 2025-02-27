@@ -9,11 +9,11 @@ port=7700
 
 MEILI_MASTER_KEY=$(`dirname $0`/get-args.sh MEILI_MASTER_KEY MasterKey)
 if [ -z "$MEILI_MASTER_KEY" ]; then
-    read -p "请输入密码盐:" MEILI_MASTER_KEY
+    read -p "请输入MasterKey:" MEILI_MASTER_KEY
     if [ -z "$MEILI_MASTER_KEY" ]; then
         echo "随机生成MasterKey"
         MEILI_MASTER_KEY="$(cat /dev/urandom | LC_ALL=C tr -dc 'a-zA-Z0-9' | fold -w 16 | head -n 1)"
-        echo "随机盐为：${MEILI_MASTER_KEY}"
+        echo "随机MasterKey为：${MEILI_MASTER_KEY}"
     fi
     `dirname $0`/set-args.sh MEILI_MASTER_KEY "$MEILI_MASTER_KEY"
 fi
