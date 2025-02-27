@@ -13,6 +13,7 @@ if [ -z "$WAKAPI_PASSWORD_SALT" ]; then
     if [ -z "$WAKAPI_PASSWORD_SALT" ]; then
         echo "随机生成密码盐"
         WAKAPI_PASSWORD_SALT="$(cat /dev/urandom | LC_ALL=C tr -dc 'a-zA-Z0-9' | fold -w ${1:-32} | head -n 1)"
+        echo "随机盐为：${WAKAPI_PASSWORD_SALT}"
     fi
     `dirname $0`/set-args.sh WAKAPI_PASSWORD_SALT "$WAKAPI_PASSWORD_SALT"
 fi
