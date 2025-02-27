@@ -67,6 +67,7 @@ docker run --name=${container_name} \
 -d --restart=always \
 -e TZ="Asia/Shanghai" \
 -e LANG="zh_CN.UTF-8" \
+-e WAKAPI_PASSWORD_SALT=${WAKAPI_PASSWORD_SALT} \
 -e WAKAPI_DB_TYPE=mysql \
 -e WAKAPI_DB_HOST=${MYSQL_HOST} \
 -e WAKAPI_DB_PORT=${MYSQL_PORT:-3306} \
