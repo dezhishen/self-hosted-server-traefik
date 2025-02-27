@@ -58,8 +58,6 @@ if [ "$install_jellysearch" == "y" ]; then
     -e INDEX_CRON="0 0 0/2 ? * * *" \
     --user=`id -u`:`id -g` \
     --name=${container_name} \
-    --network=$docker_network_name \
-    --network-alias=${container_name} \
     -e TZ="Asia/Shanghai" \
     -e LANG="zh_CN.UTF-8" \
     -v $base_data_dir/jellyfin/config:/config \
