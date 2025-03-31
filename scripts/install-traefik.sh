@@ -55,32 +55,44 @@ case $yN in
     echo "密码: $TRAEFIK_AUTH_PASSWORD"
     digest="$(printf "%s:%s:%s" "$TRAEFIK_AUTH_USER" "traefik" "$TRAEFIK_AUTH_PASSWORD" | md5sum | awk '{print $1}' )"
     userlist=$(printf "%s:%s:%s\n" "$TRAEFIK_AUTH_USER" "traefik" "$digest")
-    acme_email=$(`dirname $0`/get-args.sh acme_email acme的email)
-    if [ -z "$acme_email" ]; then
-      read -p "请输入acme的email: " acme_email
-      if [ -z "$acme_email" ]; then
-          echo "acme的email不能为空"
-          exit 1
-      fi
-      `dirname $0`/set-args.sh acme_email $acme_email
-    fi
-    CF_API_EMAIL=$(`dirname $0`/get-args.sh CF_API_EMAIL Cloudflare的邮箱)
-    if [ -z "$CF_API_EMAIL" ]; then
-        read -p "请输入Cloudflare的邮箱:" CF_API_EMAIL
+    entrypoints_cmd="--entrypoints.web.address=:80"
+    certificatesresolvers_cmd=""
+    if [ "$tls" = "true" ]; then
+        acme_email=$(`dirname $0`/get-args.sh acme_email acme的email)
+        if [ -z "$acme_email" ]; then
+        read -p "请输入acme的email: " acme_email
+        if [ -z "$acme_email" ]; then
+            echo "acme的email不能为空"
+            exit 1
+        fi
+        `dirname $0`/set-args.sh acme_email $acme_email
+        fi
+        CF_API_EMAIL=$(`dirname $0`/get-args.sh CF_API_EMAIL Cloudflare的邮箱)
         if [ -z "$CF_API_EMAIL" ]; then
-            echo "Cloudflare的邮箱不能为空"
-            exit 1
+            read -p "请输入Cloudflare的邮箱:" CF_API_EMAIL
+            if [ -z "$CF_API_EMAIL" ]; then
+                echo "Cloudflare的邮箱不能为空"
+                exit 1
+            fi
+            `dirname $0`/set-args.sh CF_API_EMAIL "$CF_API_EMAIL"
         fi
-        `dirname $0`/set-args.sh CF_API_EMAIL "$CF_API_EMAIL"
-    fi
-    CF_DNS_API_TOKEN=$(`dirname $0`/get-args.sh CF_DNS_API_TOKEN Cloudflare的api令牌)
-    if [ -z "$CF_DNS_API_TOKEN" ]; then
-        read -p "请输入Cloudflare的api令牌:" CF_DNS_API_TOKEN
+        CF_DNS_API_TOKEN=$(`dirname $0`/get-args.sh CF_DNS_API_TOKEN Cloudflare的api令牌)
         if [ -z "$CF_DNS_API_TOKEN" ]; then
-            echo "Cloudflare的api令牌不能为空"
-            exit 1
+            read -p "请输入Cloudflare的api令牌:" CF_DNS_API_TOKEN
+            if [ -z "$CF_DNS_API_TOKEN" ]; then
+                echo "Cloudflare的api令牌不能为空"
+                exit 1
+            fi
+            `dirname $0`/set-args.sh CF_DNS_API_TOKEN "$CF_DNS_API_TOKEN"
         fi
-        `dirname $0`/set-args.sh CF_DNS_API_TOKEN "$CF_DNS_API_TOKEN"
+        CLOUDFLARE_ENVS="-e CF_API_EMAIL=${CF_API_EMAIL} -e CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}"
+        entrypoints_cmd="${entrypoints_cmd} --entrypoints.websecure.address=:443"
+        entrypoints_cmd="${entrypoints_cmd} --entrypoints.web.http.redirections.entryPoint.to=websecure"
+        entrypoints_cmd="${entrypoints_cmd} --entrypoints.web.http.redirections.entryPoint.scheme=https"
+        certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.dnschallenge=true"
+        certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.dnschallenge.provider=cloudflare"
+        certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesResolvers.traefik.acme.email=$acme_email"
+        certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.storage=/acme/acme.json"
     fi
     echo "停止之前的traefik容器"
     container_name=traefik
@@ -88,22 +100,6 @@ case $yN in
     docker pull ${image}
     docker ps -a -q --filter "name=$container_name" | grep -q . && docker rm -fv $container_name
     echo "启动traefik容器"
-    # 使用cloudflare，需要设置CF_API_EMAIL和CF_DNS_API_TOKEN
-    CLOUDFLARE_ENVS="-e CF_API_EMAIL=${CF_API_EMAIL} -e CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}"
-    entrypoints_cmd="--entrypoints.web.address=:80"
-    if [ "$tls" = "true" ]; then
-      entrypoints_cmd="${entrypoints_cmd} --entrypoints.websecure.address=:443"
-      entrypoints_cmd="${entrypoints_cmd} --entrypoints.web.http.redirections.entryPoint.to=websecure"
-      entrypoints_cmd="${entrypoints_cmd} --entrypoints.web.http.redirections.entryPoint.scheme=https"
-    fi
-    certificatesresolvers_cmd=""
-    if [ "$tls" = "true" ]; then
-      certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.dnschallenge=true"
-      certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.dnschallenge.provider=cloudflare"
-      certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesResolvers.traefik.acme.email=$acme_email"
-      certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.storage=/acme/acme.json"
-    fi
-
 
     docker run --name=traefik \
     --restart=always -d -m 128M \
