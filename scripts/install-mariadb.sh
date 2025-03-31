@@ -16,6 +16,14 @@ if [ -z "$MYSQL_PASSWORD" ]; then
     `dirname $0`/set-args.sh MYSQL_PASSWORD "$MYSQL_PASSWORD"                          
 fi                                                                                             
 MYSQL_PORT_MAPPING=$(`dirname $0`/get-args.sh MYSQL_PORT_MAPPING 是否映射端口[y/n])
+if [ -z "$MYSQL_PORT_MAPPING" ]; then                                                          
+    read -p "是否映射端口[y/n]:" MYSQL_PORT_MAPPING                                                        
+    if [ -z "$MYSQL_PORT_MAPPING" ]; then                                                      
+        echo "是否映射端口[y/n]为空，默认不映射端口"
+        MYSQL_PORT_MAPPING="n"                                                                       
+    fi                                                                                         
+    `dirname $0`/set-args.sh MYSQL_PORT_MAPPING "$MYSQL_PORT_MAPPING"                          
+fi    
 docker pull $image
 docker stop $container_name > /dev/null
 docker rm $container_name
