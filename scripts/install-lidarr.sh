@@ -14,7 +14,7 @@ echo """
 #!/usr/bin/with-contenv bash
 # shellcheck shell=bash
 if [ ! -f "/app/lidarr/bin/Localization/Core/zh.json/zh.json" ];then
-    cp -f /app/lidarr/bin/Localization/Core/zh.json/zh_CN.json /app/lidarr/bin/Localization/Core/zh.json  
+    ln -s /app/lidarr/bin/Localization/Core/zh_CN.json /app/lidarr/bin/Localization/Core/zh.json > /dev/null
 fi
 """ > $base_data_dir/${container_name}/init.d/create-ln-zh-json
 chmod +x $base_data_dir/${container_name}/init.d/create-ln-zh-json
