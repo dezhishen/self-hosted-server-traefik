@@ -16,7 +16,7 @@ echo """
 ln -s /app/lidarr/bin/Localization/Core/zh.json/zh_CN.json /app/lidarr/bin/Localization/Core/zh.json/zh.json > /dev/null
 """ > $base_data_dir/${container_name}/init/init-lidarr-resource/run
 echo "oneshot" > $base_data_dir/${container_name}/init/init-lidarr-resource/type
-echo "up" > /etc/s6-overlay/s6-rc.d/init-lidarr-resource/run
+echo "/etc/s6-overlay/s6-rc.d/init-lidarr-resource/run" > $base_data_dir/${container_name}/init/init-lidarr-resource/up
 docker run -d --name=${container_name} \
 --restart=always \
 -m 512M --memory-swap=1G \
