@@ -17,6 +17,7 @@ if [ ! -f "/app/lidarr/bin/Localization/Core/zh.json/zh.json" ];then
     ln -s /app/lidarr/bin/Localization/Core/zh.json/zh_CN.json /app/lidarr/bin/Localization/Core/zh.json/zh.json > /dev/null
 fi
 """ > $base_data_dir/${container_name}/init.d/create-ln-zh-json
+chmod +x $base_data_dir/${container_name}/init.d/create-ln-zh-json
 docker run -d --name=${container_name} \
 --restart=always \
 -m 512M --memory-swap=1G \
