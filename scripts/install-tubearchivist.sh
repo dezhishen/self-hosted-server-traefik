@@ -7,6 +7,18 @@ container_name=tubearchivist
 image=bbilly1/tubearchivist
 port=8000
 
+
+ZINCSEARCH_HOST=$(`dirname $0`/get-args.sh ZINCSEARCH_HOST ZINCSEARCH地址)
+if [ -z "$ZINCSEARCH_HOST" ]; then
+    echo "zincsearch 地址为空，检测是否安装了 zincsearch"
+    exit
+fi
+
+ZINCSEARCH_PORT=$(`dirname $0`/get-args.sh ZINCSEARCH_PORT ZINCSEARCH端口)
+    echo "zincsearch 端口为空，检测是否安装了 zincsearch"
+    exit 1
+fi
+
 ZINCSEARCH_AUTH_USER=$(`dirname $0`/get-args.sh ZINCSEARCH_AUTH_USER ZINCSEARCH用户名)
 if [ -z "$ZINCSEARCH_AUTH_USER" ]; then
     echo "必须输入ZINCSEARCH的用户名"
@@ -85,7 +97,7 @@ docker run -d --restart=always \
 -e TA_PORT=${port} \
 -e TA_USERNAME=${TUBEARCHIVIST_AUTH_USER} \
 -e TA_PASSWORD=${TUBEARCHIVIST_AUTH_PASSWORD} \
--e ES_URL=http://${zincsearch}:4080 \
+-e ES_URL=http://${ZINCSEARCH_HOST}:${ZINCSEARCH_PORT} \
 -e ELASTIC_USER=${ZINCSEARCH_AUTH_USER} \
 -e ELASTIC_PASSWORD=${ZINCSEARCH_AUTH_PASSWORD} \
 -v ${base_data_dir}/${container_name}/youtube:/youtube \
