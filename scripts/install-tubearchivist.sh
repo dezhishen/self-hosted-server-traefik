@@ -98,7 +98,7 @@ docker run -d --restart=always \
 -e TA_PORT=${port} \
 -e TA_USERNAME=${TUBEARCHIVIST_AUTH_USER} \
 -e TA_PASSWORD=${TUBEARCHIVIST_AUTH_PASSWORD} \
--e ES_URL=http://${ZINCSEARCH_HOST}:${ZINCSEARCH_PORT} \
+-e ES_URL=http://${ZINCSEARCH_HOST}:${ZINCSEARCH_PORT}/es \
 -e ELASTIC_USER=${ZINCSEARCH_AUTH_USER} \
 -e ELASTIC_PASSWORD=${ZINCSEARCH_AUTH_PASSWORD} \
 -v ${base_data_dir}/${container_name}/youtube:/youtube \
