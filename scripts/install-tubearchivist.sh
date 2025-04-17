@@ -37,7 +37,7 @@ else
     REDIS_CON="redis://${REDIS_HOST}:6379"
 fi
 
-if [ "$tls" = "true "]; then
+if [ "$tls" = "true " ]; then
     TA_HOST=https://${container_name}.$domain
 else
     TA_HOST=http://${container_name}.$domain
