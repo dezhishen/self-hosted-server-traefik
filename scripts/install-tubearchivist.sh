@@ -15,6 +15,7 @@ if [ -z "$ZINCSEARCH_HOST" ]; then
 fi
 
 ZINCSEARCH_PORT=$(`dirname $0`/get-args.sh ZINCSEARCH_PORT ZINCSEARCH端口)
+if [ -z "$ZINCSEARCH_PORT" ]; then
     echo "zincsearch 端口为空，检测是否安装了 zincsearch"
     exit 1
 fi
