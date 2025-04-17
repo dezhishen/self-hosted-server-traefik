@@ -56,3 +56,9 @@ docker run -d --restart=always \
 --label "traefik.http.services.${container_name}.loadbalancer.server.port=${port}" \
 ${image}
 
+echo "设置 ZINCSEARCH_HOST=${container_name}"
+`dirname $0`/set-args.sh ZINCSEARCH_HOST ${container_name}
+
+echo "设置 ZINCSEARCH_PORT=${port}"
+`dirname $0`/set-args.sh ZINCSEARCH_PORT ${port}
+
