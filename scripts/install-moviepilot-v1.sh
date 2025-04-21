@@ -4,7 +4,7 @@ base_data_dir=$2
 docker_network_name=$3
 tls=$4
 container_name=moviepilot #pthelper
-image=jxxghp/moviepilot-v2:latest
+image=jxxghp/moviepilot:latest 
 port=3000
 #  **各认证站点对应参数配置如下：**
 
@@ -478,21 +478,7 @@ set_auth_site(){
             ;;
     esac
 }
-
-MOVIE_IS_ENV_AUTH_SITE=$(`dirname $0`/get-args.sh MOVIE_IS_ENV_AUTH_SITE "是否在环境变量中配置认证站点，请输入y/n：" )
- if [ -z "$MOVIE_IS_ENV_AUTH_SITE" ]; then
-    echo "默认使用环境变量"
-    MOVIE_IS_ENV_AUTH_SITE="y"
-    `dirname $0`/set-args.sh MOVIE_IS_ENV_AUTH_SITE "$MOVIE_IS_ENV_AUTH_SITE"
-fi
-case $MOVIE_IS_ENV_AUTH_SITE in
-    y)
-        set_auth_site
-        ;;
-    n)
-        ;;
-    *)
-esac
+set_auth_site
 docker pull ${image}
 `dirname $0`/stop-container.sh ${container_name}
 docker run --name=${container_name} \
@@ -504,11 +490,12 @@ docker run --name=${container_name} \
 -e DOH=False \
 -e TZ="Asia/Shanghai" \
 -e LANG="zh_CN.UTF-8" \
-`if [ $MOVIE_IS_ENV_AUTH_SITE = "y" ]; then echo "-e AUTH_SITE=${MOVIEPILOT_AUTH_SITE} ${auth_site_str}"; fi` \
+-e AUTH_SITE=${MOVIEPILOT_AUTH_SITE} \
+${auth_site_str} \
 --network=$docker_network_name --network-alias=${container_name} \
--v $base_data_dir/${container_name}-v2/config:/config \
+-v $base_data_dir/${container_name}/config:/config \
 -v $base_data_dir/public/:/data \
--v $base_data_dir/${container_name}-v2/core:/moviepilot/.cache/ms-playwright \
+-v $base_data_dir/${container_name}/core:/moviepilot/.cache/ms-playwright \
 -v /var/run/docker.sock:/var/run/docker.sock:ro \
 --label "traefik.enable=true" \
 --label 'traefik.http.routers.'${container_name}'.rule=Host(`'${container_name}.$domain'`)' \
