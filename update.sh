@@ -19,6 +19,15 @@ if [ ! -f $HOME/.docker/config.json ]; then
 else
     mount_volumns="-v $HOME/.docker/config.json:/config.json"
 fi
+# 排除xiaoya容器 遍历 cat /etc/DDSRem/container_name/*.txt
+# 读取文件内容到数组中
+container_name_list=""
+while read line
+do
+    container_name_list="$container_name_list $line"
+done < /etc/DDSRem/container_name/*.txt
+echo "排除的容器: $container_name_list"
+# 运行watchtower
 docker run --name=watchtower --rm \
 -d ${mount_volumns} -v /var/run/docker.sock:/var/run/docker.sock \
---network=traefik containrrr/watchtower -c -x `cat /etc/DDSRem/container_name/*.txt` --run-once  $@
+--network=traefik containrrr/watchtower -c --disable-containers ${container_name_list} --run-once  $@
