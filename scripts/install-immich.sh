@@ -27,7 +27,7 @@ case $yN in
     `dirname $0`/stop-container.sh ${container_name}
     docker run --name=${container_name} \
     --hostname=${container_name} \
-    --user=`id -u`:`id -g` \
+    -m 256M \
     -d --restart=always \
     -e POSTGRES_PASSWORD=${IMMICH_DATA_PASSWORD} \
     -e POSTGRES_USER=postgres \
@@ -67,6 +67,7 @@ case $yN in
     docker run --name=${container_name} \
     --hostname=${container_name} \
     --privileged -d --restart=always \
+    -m 1G \
     -e PUID=`id -u` -e GUID=`id -g` \
     -e TZ="Asia/Shanghai" \
     -e LANG="C.UTF-8" \
