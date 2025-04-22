@@ -8,6 +8,9 @@ container_name=youtubedl
 image=tzahi12345/youtubedl-material:latest
 port=17442
 
+docker pull ${image}
+`dirname $0`/stop-container.sh ${container_name}
+
 docker run -d --name ${container_name} \
 --restart=unless-stopped \
 --network=traefik --network-alias=${container_name} \
