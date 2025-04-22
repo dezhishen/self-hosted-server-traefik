@@ -21,4 +21,4 @@ else
 fi
 docker run --name=watchtower --rm \
 -d ${mount_volumns} -v /var/run/docker.sock:/var/run/docker.sock \
---network=traefik containrrr/watchtower -c `cat /etc/DDSRem/container_name/*.txt` --run-once -x ` $@
+--network=traefik containrrr/watchtower -c -x `cat /etc/DDSRem/container_name/*.txt` --run-once  $@
