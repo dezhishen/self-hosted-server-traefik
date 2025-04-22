@@ -20,12 +20,13 @@ else
     mount_volumns="-v $HOME/.docker/config.json:/config.json"
 fi
 # 排除xiaoya容器 遍历 cat /etc/DDSRem/container_name/*.txt
+cat /etc/DDSRem/container_name/*.txt > /tmp/watchtower_container_name.txt
 # 读取文件内容到数组中
 container_name_list=""
 while read line
 do
     container_name_list="$container_name_list -x $line"
-done < `cat /etc/DDSRem/container_name/*.txt`
+done < /tmp/watchtower_container_name.txt
 echo "排除的容器: $container_name_list"
 # 运行watchtower
 docker run --name=watchtower --rm \
