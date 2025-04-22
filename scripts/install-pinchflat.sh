@@ -39,7 +39,7 @@ docker run --name=${container_name} \
 -e BASIC_AUTH_USERNAME=${PINCHFLAT_AUTH_USER} \
 -e BASIC_AUTH_PASSWORD=${PINCHFLAT_AUTH_PASSWORD} \
 -v /docker_data/${container_name}/config:/config \
--v /docker_data/public/youtube:/youtube \
+-v /docker_data/public/youtube:/downloads \
 --label "traefik.enable=true" \
 --label 'traefik.http.routers.'${container_name}'.rule=Host(`'${container_name}.$domain'`)' \
 --label "traefik.http.routers.${container_name}.tls=${tls}" \
