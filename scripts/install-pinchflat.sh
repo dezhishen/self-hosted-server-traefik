@@ -30,12 +30,13 @@ docker pull ${image}
 `dirname $0`/stop-container.sh ${container_name}
 
 docker run --name=${container_name} \
--m 256M \
+-m 512M \
 --network=$docker_network_name --network-alias=${container_name} --hostname=${container_name} \
 -d --restart=always \
 --user `id -u`:`id -g` \
 -e TZ="Asia/Shanghai" \
 -e LANG="zh_CN.UTF-8" \
+-e LOG_LEVEL=info \
 -e BASIC_AUTH_USERNAME=${PINCHFLAT_AUTH_USER} \
 -e BASIC_AUTH_PASSWORD=${PINCHFLAT_AUTH_PASSWORD} \
 -v /docker_data/${container_name}/config:/config \
