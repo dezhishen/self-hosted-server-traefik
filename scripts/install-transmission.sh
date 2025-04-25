@@ -31,7 +31,7 @@ fi
 `dirname $0`/stop-container.sh ${container_name}
 docker run -d --name=${container_name} \
 --restart=always \
--m 1G \
+-m 512M \
 --network=host \
 -e TZ="Asia/Shanghai" \
 -e LANG="zh_CN.UTF-8" \
