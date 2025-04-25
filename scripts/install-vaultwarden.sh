@@ -30,7 +30,7 @@ fi
 
 database_url=""
 database_env_str=""
-if [ "$VAULTWARDEN_DATABASE_TYPE" == "sqlite3" ]; then
+if [ "$VAULTWARDEN_DATABASE_TYPE" = "sqlite3" ]; then
     # 是否关闭 WAL
     VAULTWARDEN_DATABASE_WAL=$(`dirname $0`/get-args.sh VAULTWARDEN_DATABASE_WAL 是否关闭WAL)
     if [ -z "$VAULTWARDEN_DATABASE_WAL" ]; then
@@ -42,7 +42,7 @@ if [ "$VAULTWARDEN_DATABASE_TYPE" == "sqlite3" ]; then
         `dirname $0`/set-args.sh VAULTWARDEN_DATABASE_WAL "$VAULTWARDEN_DATABASE_WAL"
     fi
     database_env_str=" -e ENABLE_DB_WAL=$VAULTWARDEN_DATABASE_WAL"
-elif [ "$VAULTWARDEN_DATABASE_TYPE" == "mysql" ]; then
+elif [ "$VAULTWARDEN_DATABASE_TYPE" = "mysql" ]; then
     MYSQL_HOST=$(`dirname $0`/get-args.sh MYSQL_HOST "mysql主机" )
     if [ -z "$MYSQL_HOST" ]; then
         read -p "请输入mysql主机:" MYSQL_HOST
@@ -86,7 +86,7 @@ elif [ "$VAULTWARDEN_DATABASE_TYPE" == "mysql" ]; then
     fi
     database_url="mysql://$MYSQL_USER:$MYSQL_PASSWORD@$MYSQL_HOST:$MYSQL_PORT/$MYSQL_DB_NAME"
     database_env_str=" -e DATABASE_URL=$database_url"
-elif [ "$VAULTWARDEN_DATABASE_TYPE" == "postgresql" ]; then
+elif [ "$VAULTWARDEN_DATABASE_TYPE" = "postgresql" ]; then
     echo "本脚本暂不支持postgresql"
     exit 1
 fi
