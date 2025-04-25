@@ -22,7 +22,7 @@ if [ -z "$VAULTWARDEN_DATABASE_TYPE" ]; then
     `dirname $0`/set-args.sh VAULTWARDEN_DATABASE_TYPE "$VAULTWARDEN_DATABASE_TYPE"
 fi
 # 判断输入是否正确
-case $MOVIEPILOT_AUTH_SITE in
+case $VAULTWARDEN_DATABASE_TYPE in
     sqlite3)
         echo "使用输入值: $VAULTWARDEN_DATABASE_TYPE"
         `dirname $0`/set-args.sh VAULTWARDEN_DATABASE_TYPE "$VAULTWARDEN_DATABASE_TYPE"
