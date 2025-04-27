@@ -64,7 +64,7 @@ if [ "$install_mariadb_backup" = "y" ]; then
         docker run --rm -it \
         --hostname=${container_name} \
         --name ${container_name}-once -m 64M \
-        --network=${docker_network_name} --network-alias=${container_name} \
+        --network=${docker_network_name} --network-alias=${container_name}-once \
         --user=`id -u`:`id -g` \
         -e TZ=Asia/Shanghai \
         -e LANG=zh_CN.UTF-8 \
