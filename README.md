@@ -135,4 +135,80 @@ host网络的容器无法直接访问桥接网络内的容器，需要使用域�
 ```bash
     sh update-one.sh 容器名
 ```
+### 4.部分容器设置
+#### 4.1 qbittorrent
+设置名|配置项|说明
+---|---|---
+下载/默认保存路径|/data/downloads|下载目录**其他分类目录务必设置在`/data/`下**
+下载/保存未完成的torrent到|/incomplete-torrents|未完成的种子目录
+下载/保存完成的torrent到|/finished-torrents|完成的种子目录
+连接/监听端口/使用我的路由器的UPnP/NAT-PMP|true|使用路由器的UPnP/NAT-PMP功能，自动映射端口
+BitTorrent/隐私/加密模式|强制加密|强制加密，防止ISP限速
+#### 4.2 jellyfin
+设置名|配置项|说明
+---|---|---
+媒体库路径|/data/${xxx}|媒体库路径，务必设置在**`/data/`**下
+媒体库/元数据存储方式|NFO|使用NFO文件存储元数据，由于元数据均为外部生成，并且存在NFO文件中，所以使用NFO存储元数据
+#### 4.3 transmission
+> ps 一般使用transmission做为iyuu的辅种器，使用qbittorrent做为主种子器
+
+设置名|配置项|说明
+---|---|---
+Torrents/Downloading/Download to|/data/downloads|下载目录，务必设置在**`/data/`**下
+Torrents/Downloading/Use temporary directory|/incomplete-torrents|未完成的种子目录
+Peers/Options/Encryption|Require encryption|强制加密，防止ISP限速
+Network/Use port forwarding from my router|true|使用路由器的UPnP/NAT-PMP功能，自动映射端口
+Network/Options/Enable uTP for peer connections|true|启用uTP协议，减少ISP限速
+#### 4.4 iyuu
+##### 4.4.1 数据库配置
+- 如果使用外部数据库，才需要配置，**在安装界面进行配置**
+
+配置项|配置值|说明
+---|---|---
+数据库用户|root|可以自行在mariaDB中创建用户
+数据库密码|在脚本.args/MYSQL_PASSWORD中获取|可以自行在mariaDB中创建用户和对应的密码
+数据库|iyuu|必须手动创建，脚本不会自动创建
+数据库HOST|mariadb|数据库的容器名
+数据库端口|3306|数据库的端口
+##### 4.4.2 qbittorrent配置
+配置项|配置值|说明
+---|---|---
+协议主机|http://${宿主机ip}:8080|qbittorrent的地址，注意：需要使用宿主机ip，不能使用容器名，也可以使用网络traefik的网关地址，获取方式为`docker network inspect traefik --format '{{range .IPAM.Config}}{{.Gateway}}{{end}}' | awk -F'.' '{print $1"."$2"."$3"."1}'`
+种子文件夹|/qbittorrent/finished-torrents|qbittorrent的完成种子目录
+默认下载器|true|使用qbittorrent做为下载器
+
+##### 4.4.3 transmission配置
+配置项|配置值|说明
+---|---|---
+协议主机|http://${宿主机ip}:9091|transmission的地址，注意：需要使用宿主机ip，不能使用容器名，也可以使用网络traefik的网关地址，获取方式为`docker network inspect traefik --format '{{range .IPAM.Config}}{{.Gateway}}{{end}}' | awk -F'.' '{print $1"."$2"."$3"."1}'`
+接入点|/transmission/rpc|transmission的rpc地址
+种子文件夹|/transmission/config/torrents|transmission的完成种子目录
+校验后做种|true|校验完成后做种
+默认下载器|**false**|不使用transmission做为下载器
+
+##### 4.4.4 自动辅种任务配置
+###### 4.4.4.1 开始创建任务
+- 1.进入目录**计划任务/任务管理**
+- 2.点击**自动辅种**按钮
+- 3.点击**添加任务**按钮
+###### 4.4.4.2 任务配置
+配置项|配置值|说明
+---|---|---
+任务标题|qb-tr-自动辅种|可以自己取，但是建议使用qb-tr-开头，方便后续查找
+执行周期|N小时|可以自行选择，建议使用每N小时
+辅种站点|全选
+辅种下载器|qbittorrent|使用qbittorrent做为下载器
+主辅分离|transmission|使用主辅分离，降低对主种子器的影响
+路径过滤器|留空|默认辅种所有种子，可以自行选择
+通知渠道|爱语飞飞|使用爱语飞飞做为通知渠道，其他的可以自行选择
+标记规则|标记标签|使用标记规则，方便后续查找
+自动校验|On|自动校验，建议开启
+排序|0|默认排序
+启用|true|启用任务
+
+
+
+
+
+
 
