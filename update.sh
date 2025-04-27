@@ -28,6 +28,6 @@ do
 done
 echo "排除的容器: $container_name_list" 
 # 运行watchtower
-docker run --name=watchtower --rm \
+docker run --name=watchtower --pull=always --rm \
     -d ${mount_volumns} -v /var/run/docker.sock:/var/run/docker.sock \
     --network=traefik containrrr/watchtower -c ${container_name_list} --run-once  $@
