@@ -21,6 +21,10 @@ app=database
 read -p "是否重装${app} (y/n)" yN
 case $yN in
     [Yy]* )
+    # 如果文件夹不存在，则创建文件夹
+    if [ ! -d ${base_data_dir}/${pre}/database ]; then
+        mkdir -p ${base_data_dir}/${pre}/database
+    fi
     container_name=${pre}-${app}
     image=tensorchord/pgvecto-rs:pg14-v0.2.0
     docker pull $image
@@ -28,7 +32,10 @@ case $yN in
     docker run --name=${container_name} \
     --hostname=${container_name} \
     -m 256M \
+    --user=`id -u`:`id -g` \
     -d --restart=always \
+    -e TZ=Asia/Shanghai \
+    -e LANG="C.UTF-8" \
     -e POSTGRES_PASSWORD=${IMMICH_DATA_PASSWORD} \
     -e POSTGRES_USER=postgres \
     -e POSTGRES_DB=immich \
