@@ -48,6 +48,10 @@ mariadb_container_name=${container_name}
 
 read -p "是否重装 备份程序 ? [y/n] " install_mariadb_backup
 if [ "$install_mariadb_backup" = "y" ]; then
+    # 创建备份目录，避免权限问题
+    if [ ! -d ${base_data_dir}/${container_name}/backup ]; then
+        mkdir -p ${base_data_dir}/${container_name}/backup
+    fi
     MYSQL_HOST=${mariadb_container_name}
     MYSQL_PASSWORD=$(`dirname $0`/get-args.sh MYSQL_PASSWORD "mysql密码" )
     container_name=mariadb-backup
