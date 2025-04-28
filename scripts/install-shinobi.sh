@@ -37,7 +37,6 @@ docker run \
     -m 512M \
     --user=`id -u`:`id -g` \
     -e TZ=Asia/Shanghai \
-    -e HOST_IP=0.0.0.0 \
     -e LANG=zh_CN.UTF-8 \
     -e HOME=/data \
     -e DB_HOST=${MYSQL_HOST} \
@@ -56,10 +55,10 @@ docker run \
     --network=${docker_network_name} --network-alias=${container_name} \
     --hostname=${container_name} \
     --label "traefik.enable=true" \
-    --label "traefik.http.routers.${pre}.service=${pre}" \
-    --label 'traefik.http.routers.'${pre}'.rule=Host(`'${pre}''.$domain'`)' \
-    --label "traefik.http.routers.${pre}.tls=${tls}" \
-    --label "traefik.http.routers.${pre}.tls.certresolver=traefik" \
-    --label "traefik.http.routers.${pre}.tls.domains[0].main=*.$domain" \
-    --label "traefik.http.services.${pre}.loadbalancer.server.port=${port}" \
+    --label "traefik.http.routers.${container_name}.service=${container_name}" \
+    --label 'traefik.http.routers.'${container_name}'.rule=Host(`'${container_name}''.$domain'`)' \
+    --label "traefik.http.routers.${container_name}.tls=${tls}" \
+    --label "traefik.http.routers.${container_name}.tls.certresolver=traefik" \
+    --label "traefik.http.routers.${container_name}.tls.domains[0].main=*.$domain" \
+    --label "traefik.http.services.${container_name}.loadbalancer.server.port=${port}" \
 ${image}
