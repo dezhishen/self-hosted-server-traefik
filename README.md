@@ -174,7 +174,7 @@ Network/Options/Enable uTP for peer connections|true|启用uTP协议，减少ISP
 配置项|配置值|说明
 ---|---|---
 协议主机|http://${宿主机ip}:8080|qbittorrent的地址，注意：需要使用宿主机ip，不能使用容器名，也可以使用网络traefik的网关地址，获取方式为`docker network inspect traefik --format '{{range .IPAM.Config}}{{.Gateway}}{{end}}' | awk -F'.' '{print $1"."$2"."$3"."1}'`
-种子文件夹|/qbittorrent/finished-torrents|qbittorrent的完成种子目录
+种子文件夹|/qbittorrent/config/qBittorrent/BT_backup|qbittorrent的完成种子目录
 默认下载器|true|使用qbittorrent做为下载器
 
 ##### 4.4.3 transmission配置
