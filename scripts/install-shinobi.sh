@@ -37,6 +37,7 @@ docker run \
     -m 512M \
     --user=`id -u`:`id -g` \
     -e TZ=Asia/Shanghai \
+    -e HOST_IP=0.0.0.0 \
     -e LANG=zh_CN.UTF-8 \
     -e HOME=/data \
     -e DB_HOST=${MYSQL_HOST} \
