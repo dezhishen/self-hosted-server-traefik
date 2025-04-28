@@ -13,11 +13,8 @@ fi
 if [ ! -d ${base_data_dir}/${container_name}/config ]; then
     mkdir -p ${base_data_dir}/${container_name}/config
 fi
-if [ ! -d ${base_data_dir}/${container_name}/customAutoLoad ]; then
-    mkdir -p ${base_data_dir}/${container_name}/customAutoLoad
-fi
-if [ ! -d ${base_data_dir}/${container_name}/plugins ]; then
-    mkdir -p ${base_data_dir}/${container_name}/plugins
+if [ ! -d ${base_data_dir}/${container_name}/data ]; then
+    mkdir -p ${base_data_dir}/${container_name}/data
 fi
 if [ ! -d ${base_data_dir}/public/record/videos ]; then
     mkdir -p ${base_data_dir}/public/record/videos
@@ -50,6 +47,7 @@ docker run \
     -v /dev/shm/shinobi/streams:/dev/shm/streams:rw \
     --device-cgroup-rule='c 189:* rmw' \
     --device /dev/dri:/dev/dri \
+    -v ${base_data_dir}/${container_name}/config:/config \
     -v ${base_data_dir}/${container_name}/data:/data \
     -v ${base_data_dir}/public/record/videos:/data/videos:rw \
     -v ${base_data_dir}/public/record/videos:/videos:rw \
