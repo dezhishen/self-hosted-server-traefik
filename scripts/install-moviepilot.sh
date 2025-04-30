@@ -94,8 +94,11 @@ set_auth_site(){
         iyuu)
             IYUU_SIGN=$(`dirname $0`/get-args.sh IYUU_SIGN "IYUU登录令牌" )
             if [ -z "$IYUU_SIGN" ]; then
-                echo "未输入IYUU登录令牌，退出安装。"
-                exit 1
+                read -p "请输入IYUU登录令牌" IYUU_SIGN
+                if [ -z "$IYUU_SIGN" ]; then
+                    echo "未输入IYUU登录令牌，退出安装。"
+                    exit 1
+                fi
             fi
             `dirname $0`/set-args.sh IYUU_SIGN "$IYUU_SIGN"
             auth_site_str="-e IYUU_SIGN=${IYUU_SIGN}"
