@@ -8,28 +8,42 @@ image=jxxghp/moviepilot-v2:latest
 port=3000
 #  **各认证站点对应参数配置如下：**
 
-# |   站点名 |      AUTH_SITE      |                          环境变量                           |
-# |:-----------------:|:------------:|:-----------------------------------------------------:|
-# |       IYUU        |     iyuu     |                 `IYUU_SIGN`：IYUU登录令牌                  |
-# |      憨憨       |    hhclub    |     `HHCLUB_USERNAME`：用户名<br/>`HHCLUB_PASSKEY`：密钥     |
-# |     观众     |  audiences   |    `AUDIENCES_UID`：用户ID<br/>`AUDIENCES_PASSKEY`：密钥    |
-# |     高清杜比       |   hddolby    |      `HDDOLBY_ID`：用户ID<br/>`HDDOLBY_PASSKEY`：密钥       |
-# |       织梦        |     zmpt     |         `ZMPT_UID`：用户ID<br/>`ZMPT_PASSKEY`：密钥         |
-# |     自由农场      |   freefarm   |     `FREEFARM_UID`：用户ID<br/>`FREEFARM_PASSKEY`：密钥     |
-# |      红豆饭       |    hdfans    |       `HDFANS_UID`：用户ID<br/>`HDFANS_PASSKEY`：密钥       |
-# |   冬樱    | wintersakura | `WINTERSAKURA_UID`：用户ID<br/>`WINTERSAKURA_PASSKEY`：密钥 |
-# |      红叶PT       |    leaves    |       `LEAVES_UID`：用户ID<br/>`LEAVES_PASSKEY`：密钥       |
-# |       1PTBA        |     ptba     |         `PTBA_UID`：用户ID<br/>`PTBA_PASSKEY`：密钥         |
-# |      冰淇淋      |   icc2022    |      `ICC2022_UID`：用户ID<br/>`ICC2022_PASSKEY`：密钥      |
-# |     杏坛       |   xingtan    |      `XINGTAN_UID`：用户ID<br/>`XINGTAN_PASSKEY`：密钥      |
-# |     象站      |   ptvicomo   |     `PTVICOMO_UID`：用户ID<br/>`PTVICOMO_PASSKEY`：密钥     |
-# |      AGSVPT       |    agsvpt    |       `AGSVPT_UID`：用户ID<br/>`AGSVPT_PASSKEY`：密钥       |
-# |       麒麟       |    hdkyl     |        `HDKYL_UID`：用户ID<br/>`HDKYL_PASSKEY`：密钥        |
-# |      青蛙       |    qingwa    |      `QINGWA_UID`：用户ID<br/>`QINGWA_PASSKEY`：密钥        |
-# |     蝶粉       |    discfan   |      `DISCFAN_UID`：用户ID<br/>`DISCFAN_PASSKEY`：密钥      |
-# |      海胆之家       |    haidan    |      `HAIDAN_ID`：用户ID<br/>`HAIDAN_PASSKEY`：密钥        |
-# |      Rousi        |    rousi     |      `ROUSI_UID`：用户ID<br/>`ROUSI_PASSKEY`：密钥         |
-# |      Sunny        |    sunny     |      `SUNNY_UID`：用户ID<br/>`SUNNY_PASSKEY`：密钥         |
+# |  站点名   |  AUTH_SITE   |                                环境变量                                 |
+# |:------:|:------------:|:-------------------------------------------------------------------:|
+# |  IYUU  |     iyuu     |                        `IYUU_SIGN`：IYUU登录令牌                         |
+# |   憨憨   |    hhclub    |            `HHCLUB_USERNAME`：用户名<br/>`HHCLUB_PASSKEY`：密钥            |
+# |   观众   |  audiences   |           `AUDIENCES_UID`：用户ID<br/>`AUDIENCES_PASSKEY`：密钥           |
+# |  高清杜比  |   hddolby    |             `HDDOLBY_ID`：用户ID<br/>`HDDOLBY_PASSKEY`：密钥              |
+# |   织梦   |     zmpt     |                `ZMPT_UID`：用户ID<br/>`ZMPT_PASSKEY`：密钥                |
+# |  自由农场  |   freefarm   |            `FREEFARM_UID`：用户ID<br/>`FREEFARM_PASSKEY`：密钥            |
+# |  红豆饭   |    hdfans    |              `HDFANS_UID`：用户ID<br/>`HDFANS_PASSKEY`：密钥              |
+# |   冬樱   | wintersakura |        `WINTERSAKURA_UID`：用户ID<br/>`WINTERSAKURA_PASSKEY`：密钥        |
+# |  红叶PT  |    leaves    |              `LEAVES_UID`：用户ID<br/>`LEAVES_PASSKEY`：密钥              |
+# | 1PTBA  |     ptba     |                `PTBA_UID`：用户ID<br/>`PTBA_PASSKEY`：密钥                |
+# |  冰淇淋   |   icc2022    |             `ICC2022_UID`：用户ID<br/>`ICC2022_PASSKEY`：密钥             |
+# |   杏坛   |   xingtan    |             `XINGTAN_UID`：用户ID<br/>`XINGTAN_PASSKEY`：密钥             |
+# |   象站   |   ptvicomo   |            `PTVICOMO_UID`：用户ID<br/>`PTVICOMO_PASSKEY`：密钥            |
+# | AGSVPT |    agsvpt    |              `AGSVPT_UID`：用户ID<br/>`AGSVPT_PASSKEY`：密钥              |
+# |   麒麟   |    hdkyl     |               `HDKYL_UID`：用户ID<br/>`HDKYL_PASSKEY`：密钥               |
+# |   青蛙   |    qingwa    |              `QINGWA_UID`：用户ID<br/>`QINGWA_PASSKEY`：密钥              |
+# |   蝶粉   |   discfan    |             `DISCFAN_UID`：用户ID<br/>`DISCFAN_PASSKEY`：密钥             |
+# |  海胆之家  |    haidan    |              `HAIDAN_ID`：用户ID<br/>`HAIDAN_PASSKEY`：密钥               |
+# | Rousi  |    rousi     |               `ROUSI_UID`：用户ID<br/>`ROUSI_PASSKEY`：密钥               |
+# | Sunny  |    sunny     |               `SUNNY_UID`：用户ID<br/>`SUNNY_PASSKEY`：密钥               |
+# |   咖啡   |    ptcafe    |              `PTCAFE_UID`：用户ID<br/>`PTCAFE_PASSKEY`：密钥              |
+# | PTZone |    ptzone    |              `PTZONE_UID`：用户ID<br/>`PTZONE_PASSKEY`：密钥              |
+# |   库非   |    kufei     |               `KUFEI_UID`：用户ID<br/>`KUFEI_PASSKEY`：密钥               |
+# | YemaPT |    yemapt    |     `YEMAPT_UID`：用户ID<br/>`YEMAPT_AUTH`：密钥<br/>注意：需v2.2.0或以上版本      |
+#  |   回声   |     hspt     |       `HSPT_UID`：用户ID<br/>`HSPT_AUTH`：密钥        |
+# |  星陨阁   |  xingyunge   | `XINGYUNGE_UID`：用户ID<br/>`XINGYUNGE_PASSKEY`：密钥 |
+# |   财神   |     cspt     |      `CSPT_UID`：用户ID<br/>`CSPT_PASSKEY`：密钥      |
+# |   唐门   |     tmpt     |      `TMPT_UID`：用户ID<br/>`TMPT_PASSKEY`：密钥      |
+# |   雨    |   raingfh    |   `RAINGFH_UID`：用户ID<br/>`RAINGFH_PASSKEY`：密钥   |
+# |   GTK    |   gtkpw    |   `GTKPW_UID`：用户ID<br/>`GTKPW_PASSKEY`：密钥   |
+# |   PTLGS    |   ptlgs    |   `PTLGS_UID`：用户ID<br/>`PTLGS_PASSKEY`：密钥   |
+# |   HDBAO    |   hdbao    |   `HDBAO_UID`：用户ID<br/>`HDBAO_PASSKEY`：密钥   |
+# |   下水道    |   sewerpt    |   `SEWERPT_UID`：用户ID<br/>`SEWERPT_PASSKEY`：密钥   |
+
 
 set_auth_site(){
     echo "当前支持认证站点："
@@ -53,6 +67,19 @@ set_auth_site(){
     echo "海胆之家: haidan"
     echo "Rousi: rousi"
     echo "Sunny: sunny"
+    echo "咖啡: ptcafe"
+    echo "PTZone: ptzone"
+    echo "库非: kufei"
+    echo "YemaPT: yemapt"
+    echo "回声: hspt"
+    echo "星陨阁: xingyunge"
+    echo "财神: cspt"
+    echo "唐门: tmpt"
+    echo "雨: raingfh"
+    echo "GTK: gtkpw"
+    echo "PTLGS: ptlgs"
+    echo "HDBAO: hdbao"
+    echo "下水道: sewerpt"
     MOVIEPILOT_AUTH_SITE=$(`dirname $0`/get-args.sh MOVIEPILOT_AUTH_SITE 认证站点)
     if [ -z "$MOVIEPILOT_AUTH_SITE" ]; then
         read -p "请输入认证站点：" MOVIEPILOT_AUTH_SITE
@@ -471,6 +498,280 @@ set_auth_site(){
                 `dirname $0`/set-args.sh SUNNY_PASSKEY "$SUNNY_PASSKEY"
             fi
             auth_site_str="-e SUNNY_UID=${SUNNY_UID} -e SUNNY_PASSKEY=${SUNNY_PASSKEY}"
+            ;;
+        ptcafe)
+            PTCAFE_UID=$(`dirname $0`/get-args.sh PTCAFE_UID "咖啡用户ID" )
+            if [ -z "$PTCAFE_UID" ]; then
+                read -p "请输入咖啡用户ID:" PTCAFE_UID
+                if [ -z "$PTCAFE_UID" ]; then
+                    echo "未输入咖啡用户ID，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh PTCAFE_UID "$PTCAFE_UID"
+            fi
+            PTCAFE_PASSKEY=$(`dirname $0`/get-args.sh PTCAFE_PASSKEY "咖啡密钥" )
+            if [ -z "$PTCAFE_PASSKEY" ]; then
+                read -p "请输入咖啡密钥:" PTCAFE_PASSKEY
+                if [ -z "$PTCAFE_PASSKEY" ]; then
+                    echo "未输入咖啡密钥，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh PTCAFE_PASSKEY "$PTCAFE_PASSKEY"
+            fi
+            auth_site_str="-e PTCAFE_UID=${PTCAFE_UID} -e PTCAFE_PASSKEY=${PTCAFE_PASSKEY}"
+            ;;
+        ptzone)
+            PTZONE_UID=$(`dirname $0`/get-args.sh PTZONE_UID "PTZone用户ID" )
+            if [ -z "$PTZONE_UID" ]; then
+                read -p "请输入PTZone用户ID:" PTZONE_UID
+                if [ -z "$PTZONE_UID" ]; then
+                    echo "未输入PTZone用户ID，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh PTZONE_UID "$PTZONE_UID"
+            fi
+            PTZONE_PASSKEY=$(`dirname $0`/get-args.sh PTZONE_PASSKEY "PTZone密钥" )
+            if [ -z "$PTZONE_PASSKEY" ]; then
+                read -p "请输入PTZone密钥:" PTZONE_PASSKEY
+                if [ -z "$PTZONE_PASSKEY" ]; then
+                    echo "未输入PTZone密钥，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh PTZONE_PASSKEY "$PTZONE_PASSKEY"
+            fi
+            auth_site_str="-e PTZONE_UID=${PTZONE_UID} -e PTZONE_PASSKEY=${PTZONE_PASSKEY}"
+            ;;
+        kufei)
+            KUFEI_UID=$(`dirname $0`/get-args.sh KUFEI_UID "库非用户ID" )
+            if [ -z "$KUFEI_UID" ]; then
+                read -p "请输入库非用户ID:" KUFEI_UID
+                if [ -z "$KUFEI_UID" ]; then
+                    echo "未输入库非用户ID，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh KUFEI_UID "$KUFEI_UID"
+            fi
+            KUFEI_PASSKEY=$(`dirname $0`/get-args.sh KUFEI_PASSKEY "库非密钥" )
+            if [ -z "$KUFEI_PASSKEY" ]; then
+                read -p "请输入库非密钥:" KUFEI_PASSKEY
+                if [ -z "$KUFEI_PASSKEY" ]; then
+                    echo "未输入库非密钥，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh KUFEI_PASSKEY "$KUFEI_PASSKEY"
+            fi
+            auth_site_str="-e KUFEI_UID=${KUFEI_UID} -e KUFEI_PASSKEY=${KUFEI_PASSKEY}"
+            ;;
+        yemapt)
+            YEMAPT_UID=$(`dirname $0`/get-args.sh YEMAPT_UID "YemaPT用户ID" )
+            if [ -z "$YEMAPT_UID" ]; then
+                read -p "请输入YemaPT用户ID:" YEMAPT_UID
+                if [ -z "$YEMAPT_UID" ]; then
+                    echo "未输入YemaPT用户ID，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh YEMAPT_UID "$YEMAPT_UID"
+            fi
+            YEMAPT_PASSKEY=$(`dirname $0`/get-args.sh YEMAPT_PASSKEY "YemaPT密钥" )
+            if [ -z "$YEMAPT_PASSKEY" ]; then
+                read -p "请输入YemaPT密钥:" YEMAPT_PASSKEY
+                if [ -z "$YEMAPT_PASSKEY" ]; then
+                    echo "未输入YemaPT密钥，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh YEMAPT_PASSKEY "$YEMAPT_PASSKEY"
+            fi
+            auth_site_str="-e YEMAPT_UID=${YEMAPT_UID} -e YEMAPT_PASSKEY=${YEMAPT_PASSKEY}"
+            ;;
+        hspt)
+            HSPT_UID=$(`dirname $0`/get-args.sh HSPT_UID "HSPT用户ID" )
+            if [ -z "$HSPT_UID" ]; then
+                read -p "请输入HSPT用户ID:" HSPT_UID
+                if [ -z "$HSPT_UID" ]; then
+                    echo "未输入HSPT用户ID，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh HSPT_UID "$HSPT_UID"
+            fi
+            HSPT_PASSKEY=$(`dirname $0`/get-args.sh HSPT_PASSKEY "HSPT密钥" )
+            if [ -z "$HSPT_PASSKEY" ]; then
+                read -p "请输入HSPT密钥:" HSPT_PASSKEY
+                if [ -z "$HSPT_PASSKEY" ]; then
+                    echo "未输入HSPT密钥，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh HSPT_PASSKEY "$HSPT_PASSKEY"
+            fi
+            auth_site_str="-e HSPT_UID=${HSPT_UID} -e HSPT_PASSKEY=${HSPT_PASSKEY}"
+            ;;
+        xingyunge)
+            XINGYUNGE_UID=$(`dirname $0`/get-args.sh XINGYUNGE_UID "星云阁用户ID" )
+            if [ -z "$XINGYUNGE_UID" ]; then
+                read -p "请输入星云阁用户ID:" XINGYUNGE_UID
+                if [ -z "$XINGYUNGE_UID" ]; then
+                    echo "未输入星云阁用户ID，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh XINGYUNGE_UID "$XINGYUNGE_UID"
+            fi
+            XINGYUNGE_PASSKEY=$(`dirname $0`/get-args.sh XINGYUNGE_PASSKEY "星云阁密钥" )
+            if [ -z "$XINGYUNGE_PASSKEY" ]; then
+                read -p "请输入星云阁密钥:" XINGYUNGE_PASSKEY
+                if [ -z "$XINGYUNGE_PASSKEY" ]; then
+                    echo "未输入星云阁密钥，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh XINGYUNGE_PASSKEY "$XINGYUNGE_PASSKEY"
+            fi
+            auth_site_str="-e XINGYUNGE_UID=${XINGYUNGE_UID} -e XINGYUNGE_PASSKEY=${XINGYUNGE_PASSKEY}"
+            ;;
+        cspt)
+            CSPT_UID=$(`dirname $0`/get-args.sh CSPT_UID "财神用户ID" )
+            if [ -z "$CSPT_UID" ]; then
+                read -p "请输入财神用户ID:" CSPT_UID
+                if [ -z "$CSPT_UID" ]; then
+                    echo "未输入财神用户ID，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh CSPT_UID "$CSPT_UID"
+            fi
+            CSPT_PASSKEY=$(`dirname $0`/get-args.sh CSPT_PASSKEY "财神密钥" )
+            if [ -z "$CSPT_PASSKEY" ]; then
+                read -p "请输入财神密钥:" CSPT_PASSKEY
+                if [ -z "$CSPT_PASSKEY" ]; then
+                    echo "未输入财神密钥，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh CSPT_PASSKEY "$CSPT_PASSKEY"
+            fi
+            auth_site_str="-e CSPT_UID=${CSPT_UID} -e CSPT_PASSKEY=${CSPT_PASSKEY}"
+            ;;
+        tmpt)
+            TMPT_UID=$(`dirname $0`/get-args.sh TMPT_UID "唐门用户ID" )
+            if [ -z "$TMPT_UID" ]; then
+                read -p "请输入唐门用户ID:" TMPT_UID
+                if [ -z "$TMPT_UID" ]; then
+                    echo "未输入唐门用户ID，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh TMPT_UID "$TMPT_UID"
+            fi
+            TMPT_PASSKEY=$(`dirname $0`/get-args.sh TMPT_PASSKEY "唐门密钥" )
+            if [ -z "$TMPT_PASSKEY" ]; then
+                read -p "请输入唐门密钥:" TMPT_PASSKEY
+                if [ -z "$TMPT_PASSKEY" ]; then
+                    echo "未输入唐门密钥，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh TMPT_PASSKEY "$TMPT_PASSKEY"
+            fi
+            auth_site_str="-e TMPT_UID=${TMPT_UID} -e TMPT_PASSKEY=${TMPT_PASSKEY}"
+            ;;
+        raingfh)
+            RAINGFH_UID=$(`dirname $0`/get-args.sh RAINGFH_UID "雨用户ID" )
+            if [ -z "$RAINGFH_UID" ]; then
+                read -p "请输入雨用户ID:" RAINGFH_UID
+                if [ -z "$RAINGFH_UID" ]; then
+                    echo "未输入雨用户ID，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh RAINGFH_UID "$RAINGFH_UID"
+            fi
+            RAINGFH_PASSKEY=$(`dirname $0`/get-args.sh RAINGFH_PASSKEY "雨密钥" )
+            if [ -z "$RAINGFH_PASSKEY" ]; then
+                read -p "请输入雨密钥:" RAINGFH_PASSKEY
+                if [ -z "$RAINGFH_PASSKEY" ]; then
+                    echo "未输入雨密钥，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh RAINGFH_PASSKEY "$RAINGFH_PASSKEY"
+            fi
+            auth_site_str="-e RAINGFH_UID=${RAINGFH_UID} -e RAINGFH_PASSKEY=${RAINGFH_PASSKEY}"
+            ;;
+        gtkpw)
+            GTKPW_UID=$(`dirname $0`/get-args.sh GTKPW_UID "GTK用户ID" )
+            if [ -z "$GTKPW_UID" ]; then
+                read -p "请输入GTK用户ID:" GTKPW_UID
+                if [ -z "$GTKPW_UID" ]; then
+                    echo "未输入GTK用户ID，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh GTKPW_UID "$GTKPW_UID"
+            fi
+            GTKPW_PASSKEY=$(`dirname $0`/get-args.sh GTKPW_PASSKEY "GTK密钥" )
+            if [ -z "$GTKPW_PASSKEY" ]; then
+                read -p "请输入GTK密钥:" GTKPW_PASSKEY
+                if [ -z "$GTKPW_PASSKEY" ]; then
+                    echo "未输入GTK密钥，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh GTKPW_PASSKEY "$GTKPW_PASSKEY"
+            fi
+            auth_site_str="-e GTKPW_UID=${GTKPW_UID} -e GTKPW_PASSKEY=${GTKPW_PASSKEY}"
+            ;;
+        ptlgs)
+            PTLGS_UID=$(`dirname $0`/get-args.sh PTLGS_UID "PTLGS用户ID" )
+            if [ -z "$PTLGS_UID" ]; then
+                read -p "请输入PTLGS用户ID:" PTLGS_UID
+                if [ -z "$PTLGS_UID" ]; then
+                    echo "未输入PTLGS用户ID，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh PTLGS_UID "$PTLGS_UID"
+            fi
+            PTLGS_PASSKEY=$(`dirname $0`/get-args.sh PTLGS_PASSKEY "PTLGS密钥" )
+            if [ -z "$PTLGS_PASSKEY" ]; then
+                read -p "请输入PTLGS密钥:" PTLGS_PASSKEY
+                if [ -z "$PTLGS_PASSKEY" ]; then
+                    echo "未输入PTLGS密钥，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh PTLGS_PASSKEY "$PTLGS_PASSKEY"
+            fi
+            auth_site_str="-e PTLGS_UID=${PTLGS_UID} -e PTLGS_PASSKEY=${PTLGS_PASSKEY}"
+            ;;
+        hdbao)
+            HDBAO_UID=$(`dirname $0`/get-args.sh HDBAO_UID "HDbao用户ID" )
+            if [ -z "$HDBAO_UID" ]; then
+                read -p "请输入HDbao用户ID:" HDBAO_UID
+                if [ -z "$HDBAO_UID" ]; then
+                    echo "未输入HDbao用户ID，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh HDBAO_UID "$HDBAO_UID"
+            fi
+            HDBAO_PASSKEY=$(`dirname $0`/get-args.sh HDBAO_PASSKEY "HDbao密钥" )
+            if [ -z "$HDBAO_PASSKEY" ]; then
+                read -p "请输入HDbao密钥:" HDBAO_PASSKEY
+                if [ -z "$HDBAO_PASSKEY" ]; then
+                    echo "未输入HDbao密钥，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh HDBAO_PASSKEY "$HDBAO_PASSKEY"
+            fi
+            auth_site_str="-e HDBAO_UID=${HDBAO_UID} -e HDBAO_PASSKEY=${HDBAO_PASSKEY}"
+            ;;
+        sewerpt)
+            # 下水道
+            SEWERPT_UID=$(`dirname $0`/get-args.sh SEWERPT_UID "下水道用户ID" )
+            if [ -z "$SEWERPT_UID" ]; then
+                read -p "请输入下水道用户ID:" SEWERPT_UID
+                if [ -z "$SEWERPT_UID" ]; then
+                    echo "未输入下水道用户ID，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh SEWERPT_UID "$SEWERPT_UID"
+            fi
+            SEWERPT_PASSKEY=$(`dirname $0`/get-args.sh SEWERPT_PASSKEY "下水道密钥" )
+            if [ -z "$SEWERPT_PASSKEY" ]; then
+                read -p "请输入下水道密钥:" SEWERPT_PASSKEY
+                if [ -z "$SEWERPT_PASSKEY" ]; then
+                    echo "未输入下水道密钥，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh SEWERPT_PASSKEY "$SEWERPT_PASSKEY"
+            fi
+            auth_site_str="-e SEWERPT_UID=${SEWERPT_UID} -e SEWERPT_PASSKEY=${SEWERPT_PASSKEY}"
             ;;
         *)
             echo "未输入认证站点，退出安装。"
