@@ -5,7 +5,7 @@ mount_volumns=""
 if [ ! -f $HOME/.docker/config.json ]; then
     # 是否登录
     read -p "未登录docker hub, 是否登录? (y/n): " is_login
-    if [ "$is_login" == "y" ]; then
+    if [ "$is_login" = "y" ]; then
         read -p "请输入docker hub账号: " docker_user
         docker login --username $docker_user
         if [ $? -ne 0 ]; then
