@@ -802,13 +802,12 @@ MOVIEPILOT_USE_GITHUB_ACCESS_TOKEN=$(`dirname $0`/get-args.sh MOVIEPILOT_USE_GIT
     read -p "是否使用Github Access Token，请输入y/n：" MOVIEPILOT_USE_GITHUB_ACCESS_TOKEN
     if [ -z "$MOVIEPILOT_USE_GITHUB_ACCESS_TOKEN" ]; then
         echo "默认不使用Github Access Token"
-        MOVIEPILOT_USE_GITHUB_ACCESS
         MOVIEPILOT_USE_GITHUB_ACCESS_TOKEN="n"
     fi
     `dirname $0`/set-args.sh MOVIEPILOT_USE_GITHUB_ACCESS_TOKEN "$MOVIEPILOT_USE_GITHUB_ACCESS_TOKEN"
 fi
 
-if [ "$MOVIEPILOT_USE_GITHUB_ACCESS"="y" ]; then
+if [ "$MOVIEPILOT_USE_GITHUB_ACCESS_TOKEN"="y" ]; then
     GITHUB_READ_ACCESS_TOKEN=$(`dirname $0`/get-args.sh GITHUB_READ_ACCESS_TOKEN "具有可读权限的Github Access Token" )
     if [ -z "$GITHUB_READ_ACCESS_TOKEN" ]; then
         read -p "请输入具有可读权限的Github Access Token:" GITHUB_READ_ACCESS_TOKEN
