@@ -796,8 +796,12 @@ case $MOVIE_IS_ENV_AUTH_SITE in
 esac
 MOVIEPILOT_USE_GITHUB_ACCESS_TOKEN=$(`dirname $0`/get-args.sh MOVIEPILOT_USE_GITHUB_ACCESS "是否使用Github Access Token，请输入y/n：" )
  if [ -z "$MOVIEPILOT_USE_GITHUB_ACCESS_TOKEN" ]; then
-    echo "默认不使用Github Access Token"
-    MOVIEPILOT_USE_GITHUB_ACCESS_TOKEN="n"
+    read -p "是否使用Github Access Token，请输入y/n：" MOVIEPILOT_USE_GITHUB_ACCESS_TOKEN
+    if [ -z "$MOVIEPILOT_USE_GITHUB_ACCESS_TOKEN" ]; then
+        echo "默认不使用Github Access Token"
+        MOVIEPILOT_USE_GITHUB_ACCESS
+        MOVIEPILOT_USE_GITHUB_ACCESS_TOKEN="n"
+    fi
     `dirname $0`/set-args.sh MOVIEPILOT_USE_GITHUB_ACCESS_TOKEN "$MOVIEPILOT_USE_GITHUB_ACCESS_TOKEN"
 fi
 
