@@ -794,6 +794,25 @@ case $MOVIE_IS_ENV_AUTH_SITE in
         ;;
     *)
 esac
+MOVIEPILOT_USE_GITHUB_ACCESS_TOKEN=$(`dirname $0`/get-args.sh MOVIEPILOT_USE_GITHUB_ACCESS "是否使用Github Access Token，请输入y/n：" )
+ if [ -z "$MOVIEPILOT_USE_GITHUB_ACCESS_TOKEN" ]; then
+    echo "默认不使用Github Access Token"
+    MOVIEPILOT_USE_GITHUB_ACCESS_TOKEN="n"
+    `dirname $0`/set-args.sh MOVIEPILOT_USE_GITHUB_ACCESS_TOKEN "$MOVIEPILOT_USE_GITHUB_ACCESS_TOKEN"
+fi
+
+if [ "$MOVIEPILOT_USE_GITHUB_ACCESS"="y" ]; then
+    GITHUB_READ_ACCESS_TOKEN=$(`dirname $0`/get-args.sh GITHUB_READ_ACCESS_TOKEN "具有可读权限的Github Access Token" )
+    if [ -z "$GITHUB_READ_ACCESS_TOKEN" ]; then
+        read -p "请输入具有可读权限的Github Access Token:" GITHUB_READ_ACCESS_TOKEN
+        if [ -z "$GITHUB_READ_ACCESS_TOKEN" ]; then
+            echo "未输入Github Access Token，退出安装。"
+            exit 1
+        fi
+        `dirname $0`/set-args.sh GITHUB_READ_ACCESS_TOKEN "$GITHUB_READ_ACCESS_TOKEN"
+    fi
+fi
+
 docker pull ${image}
 `dirname $0`/stop-container.sh ${container_name}
 docker run --name=${container_name} \
@@ -805,8 +824,9 @@ docker run --name=${container_name} \
 -e DOH=False \
 -e TZ="Asia/Shanghai" \
 -e LANG="zh_CN.UTF-8" \
+`if [ $MOVIEPILOT_USE_GITHUB_ACCESS="y" ]; then echo "-e GITHUB_TOKEN=${GITHUB_READ_ACCESS_TOKEN}"; fi` \
 `if [ $MOVIE_IS_ENV_AUTH_SITE = "y" ]; then echo "-e AUTH_SITE=${MOVIEPILOT_AUTH_SITE} ${auth_site_str}"; fi` \
---network=$docker_network_name --network-alias=${container_name} \
+--network=$docker_network_name --network-alias=${container_name} --hostname=${container_name} \
 -v $base_data_dir/${container_name}-v2/config:/config \
 -v $base_data_dir/public/:/data \
 -v $base_data_dir/${container_name}-v2/core:/moviepilot/.cache/ms-playwright \
