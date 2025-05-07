@@ -45,6 +45,7 @@ docker run --name=${container_name} \
 -e TZ="Asia/Shanghai" \
 -e LANG="zh_CN.UTF-8" \
 -e PUID=`id -u` -e PGID=`id -g` \
+-v ${base_data_dir}/public/downloads:/data/downloads \
 -v ${base_data_dir}/${container_name}/data:/data \
 -v ${base_data_dir}/${container_name}/iyuu:/iyuu \
 ${qbittorrent_dir} \
