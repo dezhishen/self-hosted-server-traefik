@@ -67,6 +67,19 @@ case $yN in
             REDIS_PORT=6379
         fi
     fi
+    REDIS_PASSWORD_SET=$(`dirname $0`/get-args.sh REDIS_PASSWORD_SET "是否设置了Redis密码")
+    if [ $REDIS_PASSWORD_SET = "y" ]; then 
+        REDIS_PASSWORD=$(`dirname $0`/get-args.sh REDIS_PASSWORD "Redis密码")
+    fi
+    IMMICH_REDIS_DBINDEX=$(`dirname $0`/get-args.sh IMMICH_REDIS_DBINDEX "请输入immich使用的redis db")
+    if [ -z "$IMMICH_REDIS_DBINDEX" ]; then
+        read -p "请输入immich使用的redis db:" IMMICH_REDIS_DBINDEX
+        if [ -z "$IMMICH_REDIS_DBINDEX" ]; then
+            echo "未输入redis的db，将使用默认值0"
+            IMMICH_REDIS_DBINDEX=6379
+        fi
+        `dirname $0`/set-args.sh IMMICH_REDIS_DBINDEX ${IMMICH_REDIS_DBINDEX}
+    fi
     container_name=${pre}-${app}
     image=ghcr.io/imagegenius/immich:latest
     docker pull ${image}
@@ -85,6 +98,8 @@ case $yN in
     -e DB_PORT=5432 \
     -e REDIS_HOSTNAME=redis \
     -e REDIS_PORT=6379 \
+    -e REDIS_PASSWORD=${REDIS_PASSWORD} \
+    -e REDIS_DBINDEX=${IMMICH_REDIS_DBINDEX} \
     --network=$docker_network_name --network-alias=${container_name} \
     -v ${base_data_dir}/${pre}/config:/config \
     -v ${base_data_dir}/public/photos:/photos/library \
