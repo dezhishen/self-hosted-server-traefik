@@ -19,7 +19,6 @@ case $yN in
         -e CONTAINERS=1 \
         -e NETWORKS=1 \
         -e INFO=1 \
-        -p 2375:2375 \
         -d --restart=always \
         --network=$docker_network_name --network-alias=dockerproxy \
         --name dockerproxy \
