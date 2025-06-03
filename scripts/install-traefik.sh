@@ -70,19 +70,21 @@ case $yN in
         certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesResolvers.traefik.acme.email=$acme_email"
         certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.storage=/acme/acme.json"
         # http Challenge
-        TRAEFIK_USE_HTTP_CHALLENGE=$(`dirname $0`/get-args.sh TRAEFIK_USE_HTTP_CHALLENGE tls证书使用http认证)
-        if [ -z "$TRAEFIK_USE_HTTP_CHALLENGE" ]; then
-            read -p "是否使用http认证? [y/n] " TRAEFIK_USE_HTTP_CHALLENGE
-            if [ -z "$TRAEFIK_USE_HTTP_CHALLENGE" ]; then
+        TRAEFIK_USE_CHALLENGE_TYPE=$(`dirname $0`/get-args.sh TRAEFIK_USE_CHALLENGE_TYPE letsencrypt的验证方式[http/tls/dns])
+        if [ -z "$TRAEFIK_USE_CHALLENGE_TYPE" ]; then
+            read -p "letsencrypt的验证方式[http/tls/dns] " TRAEFIK_USE_CHALLENGE_TYPE
+            if [ -z "$TRAEFIK_USE_CHALLENGE_TYPE" ]; then
                 echo "默认使用http认证"
-                TRAEFIK_USE_HTTP_CHALLENGE="y"
+                TRAEFIK_USE_CHALLENGE_TYPE="http"
             fi
-            `dirname $0`/set-args.sh TRAEFIK_USE_HTTP_CHALLENGE "$TRAEFIK_USE_HTTP_CHALLENGE"
+            `dirname $0`/set-args.sh TRAEFIK_USE_CHALLENGE_TYPE "$TRAEFIK_USE_CHALLENGE_TYPE"
         fi
-        if [ "$TRAEFIK_USE_HTTP_CHALLENGE" = "y" ]; then
+        if [ "$TRAEFIK_USE_CHALLENGE_TYPE" = "http" ]; then
             certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.httpchallenge=true"
             certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.httpchallenge.entrypoint=web"
-        else
+        elif [ "$TRAEFIK_USE_CHALLENGE_TYPE" = "tls" ]; then
+            certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.tlschallenge=true"
+        elif [ "$TRAEFIK_USE_CHALLENGE_TYPE" = "dns" ]; then
         # Cloudflare DNS Challenge
             CF_API_EMAIL=$(`dirname $0`/get-args.sh CF_API_EMAIL Cloudflare的邮箱)
             if [ -z "$CF_API_EMAIL" ]; then
@@ -105,6 +107,9 @@ case $yN in
             CLOUDFLARE_ENVS="-e CF_API_EMAIL=${CF_API_EMAIL} -e CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}"
             certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.dnschallenge=true"
             certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.dnschallenge.provider=cloudflare"
+        else
+            echo "不支持的letsencrypt验证方式: $TRAEFIK_USE_CHALLENGE_TYPE"
+            exit 1
         fi
     fi
     echo "停止之前的traefik容器"
