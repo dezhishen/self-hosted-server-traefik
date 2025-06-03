@@ -8,7 +8,7 @@ http:
       tls:
         certresolver: traefik
         domains:
-          - main: "*.${domain}"
+          - main: "${container_name}.${domain}"
   services:
     ${container_name}:
       loadBalancer:
