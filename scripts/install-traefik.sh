@@ -69,6 +69,8 @@ case $yN in
         entrypoints_cmd="${entrypoints_cmd} --entrypoints.web.http.redirections.entryPoint.scheme=https"
         certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesResolvers.traefik.acme.email=$acme_email"
         certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.storage=/acme/acme.json"
+
+
         # http Challenge
         TRAEFIK_USE_CHALLENGE_TYPE=$(`dirname $0`/get-args.sh TRAEFIK_USE_CHALLENGE_TYPE letsencrypt的验证方式[http/tls/dns])
         if [ -z "$TRAEFIK_USE_CHALLENGE_TYPE" ]; then
@@ -107,6 +109,9 @@ case $yN in
             CLOUDFLARE_ENVS="-e CF_API_EMAIL=${CF_API_EMAIL} -e CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}"
             certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.dnschallenge=true"
             certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.dnschallenge.provider=cloudflare"
+            certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.dnschallenge.delayBeforeCheck=60"
+            certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.dnschallenge.disablePropagationCheck=true"
+            certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesResolvers.traefik.acme.dnsChallenge.resolvers:=1.1.1.1:53,8.8.8.8:53"
         else
             echo "不支持的letsencrypt验证方式: $TRAEFIK_USE_CHALLENGE_TYPE"
             exit 1
