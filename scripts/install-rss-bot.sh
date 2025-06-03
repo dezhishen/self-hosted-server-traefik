@@ -28,8 +28,10 @@ if [ $use_pregress_database = "y" ]; then
     RSS_BOT_DATABASE_URL=$(`dirname $0`/get-args.sh RSS_BOT_DATABASE_URL RSS机器人数据库地址)
     if [ -z "$RSS_BOT_DATABASE_URL" ]; then
         read -p "RSS机器人数据库地址:" RSS_BOT_DATABASE_URL
-    if [ -z "$RSS_BOT_DATABASE_URL" ]; then
-        exit 1
+        if [ -z "$RSS_BOT_DATABASE_URL" ]; then
+            echo "RSS机器人数据库地址不能为空，退出"
+            exit 1
+        fi
     fi
     `dirname $0`/set-args.sh RSS_BOT_DATABASE_URL "$RSS_BOT_DATABASE_URL"
 fi
