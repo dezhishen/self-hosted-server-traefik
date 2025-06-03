@@ -115,7 +115,7 @@ case $yN in
     --label 'traefik.http.routers.'${pre}'.rule=Host(`'${pre}''.$domain'`)' \
     --label "traefik.http.routers.${pre}.tls=${tls}" \
     --label "traefik.http.routers.${pre}.tls.certresolver=traefik" \
-    --label "traefik.http.routers.${pre}.tls.domains[0].main=*.$domain" \
+    --label "traefik.http.routers.${pre}.tls.domains[0].main=${pre}.$domain" \
     --label "traefik.http.services.${pre}.loadbalancer.server.port=${port}" \
     $image
     ;;

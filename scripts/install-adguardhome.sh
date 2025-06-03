@@ -29,7 +29,7 @@ if [ ! -f "$base_data_dir/${container_name}/conf/AdGuardHome.yaml" ]; then
         --label 'traefik.http.routers.'${container_name}'.rule=Host(`*.'$domain'`)' \
         --label "traefik.http.routers.${container_name}.tls=${tls}" \
         --label "traefik.http.routers.${container_name}.tls.certresolver=traefik" \
-        --label "traefik.http.routers.${container_name}.tls.domains[0].main=*.$domain" \
+        --label "traefik.http.routers.${container_name}.tls.domains[0].main=${container_name}.$domain" \
         --label "traefik.http.services.${container_name}.loadbalancer.server.port=${port}" \
         --label "traefik.enable=true" \
     ${image}
@@ -55,7 +55,7 @@ else
         --label 'traefik.http.routers.${container_name}.rule=Host(`adguardhome.'$domain'`)' \
         --label "traefik.http.routers.${container_name}.tls=${tls}" \
         --label "traefik.http.routers.${container_name}.tls.certresolver=traefik" \
-        --label "traefik.http.routers.${container_name}.tls.domains[0].main=*.$domain" \
+        --label "traefik.http.routers.${container_name}.tls.domains[0].main=${container_name}.$domain" \
         --label "traefik.http.services.${container_name}.loadbalancer.server.port=$bind_port" \
         --label "traefik.enable=true" \
     adguard/adguardhome

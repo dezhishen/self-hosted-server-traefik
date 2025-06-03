@@ -3,8 +3,6 @@ domain=$1
 base_data_dir=$2
 docker_network_name=$3
 tls=$4
-
-
 read -p "是否重装dockerproxy (y/n)" yN
 case $yN in
     [Yy]* )
@@ -66,32 +64,48 @@ case $yN in
         fi
         `dirname $0`/set-args.sh acme_email $acme_email
         fi
-        CF_API_EMAIL=$(`dirname $0`/get-args.sh CF_API_EMAIL Cloudflare的邮箱)
-        if [ -z "$CF_API_EMAIL" ]; then
-            read -p "请输入Cloudflare的邮箱:" CF_API_EMAIL
-            if [ -z "$CF_API_EMAIL" ]; then
-                echo "Cloudflare的邮箱不能为空"
-                exit 1
-            fi
-            `dirname $0`/set-args.sh CF_API_EMAIL "$CF_API_EMAIL"
-        fi
-        CF_DNS_API_TOKEN=$(`dirname $0`/get-args.sh CF_DNS_API_TOKEN Cloudflare的api令牌)
-        if [ -z "$CF_DNS_API_TOKEN" ]; then
-            read -p "请输入Cloudflare的api令牌:" CF_DNS_API_TOKEN
-            if [ -z "$CF_DNS_API_TOKEN" ]; then
-                echo "Cloudflare的api令牌不能为空"
-                exit 1
-            fi
-            `dirname $0`/set-args.sh CF_DNS_API_TOKEN "$CF_DNS_API_TOKEN"
-        fi
-        CLOUDFLARE_ENVS="-e CF_API_EMAIL=${CF_API_EMAIL} -e CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}"
         entrypoints_cmd="${entrypoints_cmd} --entrypoints.websecure.address=:443"
         entrypoints_cmd="${entrypoints_cmd} --entrypoints.web.http.redirections.entryPoint.to=websecure"
         entrypoints_cmd="${entrypoints_cmd} --entrypoints.web.http.redirections.entryPoint.scheme=https"
-        certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.dnschallenge=true"
-        certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.dnschallenge.provider=cloudflare"
         certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesResolvers.traefik.acme.email=$acme_email"
         certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.storage=/acme/acme.json"
+        # http Challenge
+        TRAEFIK_USE_HTTP_CHALLENGE=$(`dirname $0`/get-args.sh TRAEFIK_USE_HTTP_CHALLENGE tls证书使用http认证)
+        if [ -z "$TRAEFIK_USE_HTTP_CHALLENGE" ]; then
+            read -p "是否使用http认证? [y/n] " TRAEFIK_USE_HTTP_CHALLENGE
+            if [ -z "$TRAEFIK_USE_HTTP_CHALLENGE" ]; then
+                echo "默认使用http认证"
+                TRAEFIK_USE_HTTP_CHALLENGE="y"
+            fi
+            `dirname $0`/set-args.sh TRAEFIK_USE_HTTP_CHALLENGE "$TRAEFIK_USE_HTTP_CHALLENGE"
+        fi
+        if [ "$TRAEFIK_USE_HTTP_CHALLENGE" = "y" ]; then
+            certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.httpchallenge=true"
+            certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.httpchallenge.entrypoint=web"
+        else
+        # Cloudflare DNS Challenge
+            CF_API_EMAIL=$(`dirname $0`/get-args.sh CF_API_EMAIL Cloudflare的邮箱)
+            if [ -z "$CF_API_EMAIL" ]; then
+                read -p "请输入Cloudflare的邮箱:" CF_API_EMAIL
+                if [ -z "$CF_API_EMAIL" ]; then
+                    echo "Cloudflare的邮箱不能为空"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh CF_API_EMAIL "$CF_API_EMAIL"
+            fi
+            CF_DNS_API_TOKEN=$(`dirname $0`/get-args.sh CF_DNS_API_TOKEN Cloudflare的api令牌)
+            if [ -z "$CF_DNS_API_TOKEN" ]; then
+                read -p "请输入Cloudflare的api令牌:" CF_DNS_API_TOKEN
+                if [ -z "$CF_DNS_API_TOKEN" ]; then
+                    echo "Cloudflare的api令牌不能为空"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh CF_DNS_API_TOKEN "$CF_DNS_API_TOKEN"
+            fi
+            CLOUDFLARE_ENVS="-e CF_API_EMAIL=${CF_API_EMAIL} -e CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}"
+            certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.dnschallenge=true"
+            certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.dnschallenge.provider=cloudflare"
+        fi
     fi
     echo "停止之前的traefik容器"
     container_name=traefik
@@ -114,7 +128,7 @@ case $yN in
     --label "traefik.http.routers.${container_name}.tls=${tls}" \
     --label "traefik.http.routers.${container_name}.service=${container_name}" \
     --label "traefik.http.routers.${container_name}.tls.certresolver=traefik" \
-    --label "traefik.http.routers.${container_name}.tls.domains[0].main=*.$domain" \
+    --label "traefik.http.routers.${container_name}.tls.domains[0].main=${container_name}.$domain" \
     --label "traefik.http.services.${container_name}.loadbalancer.server.port=8080" \
     --label "traefik.http.middlewares.${container_name}-auth.digestauth.users=$userlist" \
     --label "traefik.http.routers.${container_name}.middlewares=${container_name}-auth@docker" \
