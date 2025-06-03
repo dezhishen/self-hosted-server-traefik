@@ -50,6 +50,6 @@ docker run --name=${container_name}-${app} \
 --label 'traefik.http.routers.'${container_name}-${app}'.rule=Host(`'${container_name}.$domain'`)' \
 --label "traefik.http.routers.${container_name}-${app}.tls=${tls}" \
 --label "traefik.http.routers.${container_name}-${app}.tls.certresolver=traefik" \
---label "traefik.http.routers.${container_name}-${app}.tls.domains[0].main=*.$domain" \
+--label "traefik.http.routers.${container_name}-${app}.tls.domains[0].main=${container_name}.$domain" \
 --label "traefik.http.services.${container_name}-${app}.loadbalancer.server.port=${port}" \
 ${image}
