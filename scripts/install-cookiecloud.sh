@@ -20,7 +20,7 @@ docker run -d --restart unless-stopped \
 --label 'traefik.http.routers.'$container'.rule=Host(`'$container.$domain'`)' \
 --label "traefik.http.routers.$container.tls=${tls}" \
 --label "traefik.http.routers.$container.tls.certresolver=traefik" \
---label "traefik.http.routers.$container.tls.domains[0].main=*.$domain" \
+--label "traefik.http.routers.$container.tls.domains[0].main=$container.$domain" \
 --label "traefik.http.services.$container.loadbalancer.server.port=${port}" \
 --label "traefik.enable=true" \
  $image

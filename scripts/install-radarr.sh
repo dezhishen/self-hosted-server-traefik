@@ -3,26 +3,27 @@ domain=$1
 base_data_dir=$2
 docker_network_name=$3
 tls=$4
-
-`dirname $0`/stop-container.sh radarr
-docker run -d --name=radarr \
+container_name=radarr
+`dirname $0`/stop-container.sh ${container_name}
+docker run -d --name=${container_name} \
 --restart=always \
 -m 128M --memory-swap=256M \
 --network=$docker_network_name \
---network-alias=radarr \
+--network-alias=${container_name} \
+--hostname=${container_name} \
 -e TZ="Asia/Shanghai" \
 -e LANG="zh_CN.UTF-8" \
 -e PUID=`id -u` -e PGID=`id -g` \
--v $base_data_dir/radarr/config:/config \
+-v $base_data_dir/${container_name}/config:/config \
 -v $base_data_dir/public/downloads:/downloads \
 -v $base_data_dir/public/:/data \
---label 'traefik.http.routers.radarr.rule=Host(`radarr'.$domain'`)' \
---label "traefik.http.routers.radarr.tls=${tls}" \
---label "traefik.http.routers.radarr.tls.certresolver=traefik" \
---label "traefik.http.routers.radarr.tls.domains[0].main=*.$domain" \
---label "traefik.http.services.radarr.loadbalancer.server.port=7878" \
+--label 'traefik.http.routers.'${container_name}'.rule=Host(`'${container_name}.$domain'`)' \
+--label "traefik.http.routers.${container_name}.tls=${tls}" \
+--label "traefik.http.routers.${container_name}.tls.certresolver=traefik" \
+--label "traefik.http.routers.${container_name}.tls.domains[0].main=${container_name}.$domain" \
+--label "traefik.http.services.${container_name}.loadbalancer.server.port=7878" \
 --label "traefik.enable=true" \
 lscr.io/linuxserver/radarr
 
 echo "启动radarr容器"
-echo "访问 https://radarr.$domain "
+echo "访问 https://${container_name}.$domain "
