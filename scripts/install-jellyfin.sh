@@ -31,7 +31,7 @@ if [ "$reinstall" = "y" ]; then
     --label 'traefik.http.routers.'${container_name}'.rule=Host(`'${container_name}.$domain'`)' \
     --label "traefik.http.routers.${container_name}.tls=${tls}" \
     --label "traefik.http.routers.${container_name}.tls.certresolver=traefik" \
-    --label "traefik.http.routers.${container_name}.tls.domains[0].main=*.$domain" \
+    --label "traefik.http.routers.${container_name}.tls.domains[0].main=${container_name}.$domain" \
     --label "traefik.http.services.${container_name}.loadbalancer.server.port=${port}" \
     --label "traefik.enable=true" \
     ${image}
@@ -67,7 +67,7 @@ if [ "$install_jellysearch" = "y" ]; then
     --label 'traefik.http.routers.'${container_name}'.rule=Host(`'${jellyfin_container_name}.$domain'`) && ( QueryRegexp(`searchTerm`, `(.*?)`) || QueryRegexp(`SearchTerm`, `(.*?)`))' \
     --label "traefik.http.routers.${container_name}.tls=${tls}" \
     --label "traefik.http.routers.${container_name}.tls.certresolver=traefik" \
-    --label "traefik.http.routers.${container_name}.tls.domains[0].main=*.$domain" \
+    --label "traefik.http.routers.${container_name}.tls.domains[0].main=${container_name}.$domain" \
     --label "traefik.http.services.${container_name}.loadbalancer.server.port=${port}" \
     --label "traefik.enable=true" \
     ${image}

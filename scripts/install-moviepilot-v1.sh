@@ -501,6 +501,6 @@ ${auth_site_str} \
 --label 'traefik.http.routers.'${container_name}'.rule=Host(`'${container_name}.$domain'`)' \
 --label "traefik.http.routers.${container_name}.tls=${tls}" \
 --label "traefik.http.routers.${container_name}.tls.certresolver=traefik" \
---label "traefik.http.routers.${container_name}.tls.domains[0].main=*.$domain" \
+--label "traefik.http.routers.${container_name}.tls.domains[0].main=${container_name}.$domain" \
 --label "traefik.http.services.${container_name}.loadbalancer.server.port=${port}" \
 ${image}
