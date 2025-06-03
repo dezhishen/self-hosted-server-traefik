@@ -109,8 +109,8 @@ case $yN in
             CLOUDFLARE_ENVS="-e CF_API_EMAIL=${CF_API_EMAIL} -e CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}"
             certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.dnschallenge=true"
             certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.dnschallenge.provider=cloudflare"
-            certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.dnschallenge.delaybeforecheck=60"
-            certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.dnschallenge.disablepropagationcheck=true"
+            certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.dnschallenge.propagation.delayBeforeChecks=60"
+            certificatesresolvers_cmd="${certificatesresolvers_cmd} --certificatesresolvers.traefik.acme.dnschallenge.propagation.disableChecks=true"
         else
             echo "不支持的letsencrypt验证方式: $TRAEFIK_USE_CHALLENGE_TYPE"
             exit 1
