@@ -4,7 +4,7 @@ base_data_dir=$2
 docker_network_name=$3
 tls=$4
 container_name=alist
-image=xhofe/alist  #xhofe/alist
+image=xhofe/alist:v3.40.0  #xhofe/alist
 port=5244
 
 ALIST_AUTH_USER=$(`dirname $0`/get-args.sh ALIST_AUTH_USER 用户名)
