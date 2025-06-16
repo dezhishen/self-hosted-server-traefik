@@ -6,7 +6,8 @@ tls=$4
 container_name=alist
 image=xhofe/alist:v3.40.0  #xhofe/alist
 port=5244
-
+echo "由于目前的alist存在信任问题，暂时停止此服务的安装"
+exit 0
 ALIST_AUTH_USER=$(`dirname $0`/get-args.sh ALIST_AUTH_USER 用户名)
 if [ -z "$ALIST_AUTH_USER" ]; then
     read -p "请输入用户名:" ALIST_AUTH_USER
