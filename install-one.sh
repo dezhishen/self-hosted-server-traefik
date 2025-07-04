@@ -1,4 +1,5 @@
 # !/bin/bash
+set -e
 # 授予可执行权限
 chmod +x ./scripts/*.sh
 chmod +x ./*.sh
