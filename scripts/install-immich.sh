@@ -5,7 +5,17 @@ docker_network_name=$3
 tls=$4
 set -e
 pre=immich
-port=8080
+port=2283
+
+IMMICH_VERSION=$(`dirname $0`/get-args.sh IMMICH_VERSION immich的版本)
+if [ -z "$IMMICH_VERSION" ]; then
+    read -p "请输入immich的版本:" IMMICH_VERSION
+    if [ -z "$IMMICH_VERSION" ]; then
+        echo "使用最新版本"
+	IMMICH_VERSION="latest"
+    fi
+    `dirname $0`/set-args.sh IMMICH_VERSION ${IMMICH_VERSION}
+fi
 
 IMMICH_DATA_PASSWORD=$(`dirname $0`/get-args.sh IMMICH_DATA_PASSWORD 数据库密码)
 if [ -z "$IMMICH_DATA_PASSWORD" ]; then
@@ -26,8 +36,9 @@ case $yN in
         mkdir -p ${base_data_dir}/${pre}/database
     fi
     container_name=${pre}-${app}
-    image=tensorchord/pgvecto-rs:pg14-v0.2.0
-    docker pull $image
+    image=ghcr.nju.edu.cn/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0 
+    #tensorchord/pgvecto-rs:pg14-v0.2.0
+    #docker pull $image
     `dirname $0`/stop-container.sh ${container_name}
     docker run --name=${container_name} \
     --hostname=${container_name} \
@@ -39,6 +50,7 @@ case $yN in
     -e POSTGRES_PASSWORD=${IMMICH_DATA_PASSWORD} \
     -e POSTGRES_USER=postgres \
     -e POSTGRES_DB=immich \
+    `# -p 5432:5432` \
     --network=$docker_network_name --network-alias=${container_name} \
     -v ${base_data_dir}/${pre}/database:/var/lib/postgresql/data \
     $image
@@ -81,13 +93,53 @@ case $yN in
         `dirname $0`/set-args.sh IMMICH_REDIS_DBINDEX ${IMMICH_REDIS_DBINDEX}
     fi
     container_name=${pre}-${app}
-    image=ghcr.io/imagegenius/immich:latest
+    image=ghcr.nju.edu.cn/immich-app/immich-server:${IMMICH_VERSION}
+    docker pull ${image}
+    `dirname $0`/stop-container.sh ${container_name}
+    docker run --name=${container_name} \
+    --hostname=${container_name} \
+    --user $(id -u):$(id -g) \
+    -d --restart=always \
+    -e TZ="Asia/Shanghai" \
+    -e LANG="C.UTF-8" \
+    -e DB_HOSTNAME=${pre}-database \
+    -e DB_USERNAME=postgres \
+    -e DB_PASSWORD=${IMMICH_DATA_PASSWORD} \
+    -e DB_DATABASE_NAME=immich \
+    -e DB_PORT=5432 \
+    -e REDIS_HOSTNAME=redis \
+    -e REDIS_PORT=6379 \
+    -e REDIS_PASSWORD=${REDIS_PASSWORD} \
+    -e REDIS_DBINDEX=${IMMICH_REDIS_DBINDEX} \
+    --network=$docker_network_name --network-alias=${container_name} \
+    -v ${base_data_dir}/public/photos/library:/data/library \
+    -v ${base_data_dir}/${pre}/data/encoded-video:/data/encoded-video \
+    -v ${base_data_dir}/${pre}/data/thumbs:/data/thumbs \
+    -v ${base_data_dir}/${pre}/data/upload:/data/upload \
+    -v ${base_data_dir}/${pre}/data/profile:/data/profile \
+    -v ${base_data_dir}/${pre}/data/backups:/data/backups \
+    --label "traefik.enable=true" \
+    --label "traefik.http.routers.${pre}.service=${pre}" \
+    --label 'traefik.http.routers.'${pre}'.rule=Host(`'${pre}''.$domain'`)' \
+    --label "traefik.http.routers.${pre}.tls=${tls}" \
+    --label "traefik.http.routers.${pre}.tls.certresolver=traefik" \
+    --label "traefik.http.routers.${pre}.tls.domains[0].main=${pre}.$domain" \
+    --label "traefik.http.services.${pre}.loadbalancer.server.port=${port}" \
+    $image
+    ;;
+esac
+
+app=maching-learning
+read -p "是否重装${app} (y/n)" yN
+case $yN in
+    [Yy]* )
+    container_name=${pre}-${app}
+    image=ghcr.nju.edu.cn/immich-app/immich-machine-learning:${IMMICH_VERSION}-openvino
     docker pull ${image}
     `dirname $0`/stop-container.sh ${container_name}
     docker run --name=${container_name} \
     --hostname=${container_name} \
     --privileged -d --restart=always \
-    -m 1G \
     -e PUID=`id -u` -e GUID=`id -g` \
     -e TZ="Asia/Shanghai" \
     -e LANG="C.UTF-8" \
@@ -101,22 +153,10 @@ case $yN in
     -e REDIS_PASSWORD=${REDIS_PASSWORD} \
     -e REDIS_DBINDEX=${IMMICH_REDIS_DBINDEX} \
     --network=$docker_network_name --network-alias=${container_name} \
-    -v ${base_data_dir}/${pre}/config:/config \
-    -v ${base_data_dir}/public/photos:/photos/library \
-    -v ${base_data_dir}/${pre}/photos/encoded-video:/photos/encoded-video \
-    -v ${base_data_dir}/${pre}/photos/thumbs:/photos/thumbs \
-    -v ${base_data_dir}/${pre}/photos/upload:/photos/upload \
-    -v ${base_data_dir}/${pre}/photos/profile:/photos/profile \
-    -v ${base_data_dir}/${pre}/photos/backups:/photos/backups \
     --device /dev/dri:/dev/dri \
+    -v /dev/bus/usb:/dev/bus/usb \
     --device-cgroup-rule='c 189:* rmw' \
-    --label "traefik.enable=true" \
-    --label "traefik.http.routers.${pre}.service=${pre}" \
-    --label 'traefik.http.routers.'${pre}'.rule=Host(`'${pre}''.$domain'`)' \
-    --label "traefik.http.routers.${pre}.tls=${tls}" \
-    --label "traefik.http.routers.${pre}.tls.certresolver=traefik" \
-    --label "traefik.http.routers.${pre}.tls.domains[0].main=${pre}.$domain" \
-    --label "traefik.http.services.${pre}.loadbalancer.server.port=${port}" \
+    -v ${base_data_dir}/${pre}/machine-learning/cache:/cache \
     $image
     ;;
 esac

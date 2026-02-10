@@ -6,7 +6,6 @@ tls=$4
 image=linuxserver/transmission
 port=9091
 container_name=transmission
-docker pull ${image}
 
 TRANSMISSION_USER=$(`dirname $0`/get-args.sh TRANSMISSION_USER 用户名)
 if [ -z "$TRANSMISSION_USER" ]; then
@@ -27,12 +26,30 @@ if [ -z "$TRANSMISSION_PASSWORD" ]; then
     fi
     `dirname $0`/set-args.sh TRANSMISSION_PASSWORD "$TRANSMISSION_PASSWORD"
 fi
+usemacvlan=$(`dirname $0`/get-args.sh usemacvlan "是否使用macvlan[y/n]")
+if [ -z "$usemacvlan" ]; then
+    read -p "是否使用macvlan[y/n]:" usemacvlan
+    `dirname $0`/set-args.sh usemacvlan "$usemacvlan"
+fi
+case $usemacvlan in
+    y) 
+        docker_macvlan_network_name=$(`dirname $0`/get-args.sh docker_macvlan_network_name "macvlan的网络名")
+        `dirname $0`/set-docker-macvlan-ip.sh ${container_name}
+        the_ip=$(`dirname $0`/get-docker-macvlan-ip.sh ${container_name})
+        echo "使用ip: ${the_ip}"
+        netargs="--network=${docker_macvlan_network_name} --ip=${the_ip} --hostname=${container_name}"
+    ;;
+    *)
+        netargs="--network=${host}"
+    ;;
+esac
 
+docker pull ${image}
 `dirname $0`/stop-container.sh ${container_name}
 docker run -d --name=${container_name} \
 --restart=always \
 -m 512M \
---network=host \
+${netargs} \
 -e TZ="Asia/Shanghai" \
 -e LANG="zh_CN.UTF-8" \
 -e PUID=`id -u` -e PGID=`id -g` \
@@ -43,4 +60,12 @@ docker run -d --name=${container_name} \
 -v $base_data_dir/${container_name}/incomplete-torrents:/incomplete-torrents \
 -v $base_data_dir/${container_name}/finished-torrents:/finished-torrents \
 ${image}
-`dirname $0`/create-traefik-provider.sh $domain $base_data_dir $docker_network_name $tls $container_name $port
+
+case $usemacvlan in
+y)
+    `dirname $0`/create-traefik-provider-macvlan.sh $domain $base_data_dir $docker_macvlan_network_name $tls $container_name $port
+    ;;
+*)
+    `dirname $0`/create-traefik-provider.sh $domain $base_data_dir $docker_network_name $tls $container_name $port
+    ;;
+esac

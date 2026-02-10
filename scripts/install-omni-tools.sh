@@ -3,18 +3,17 @@ domain=$1
 base_data_dir=$2
 docker_network_name=$3
 tls=$4
-container_name=pbh
-port=9898
-image=ghostchu/peerbanhelper
+container_name=omni-tools
+port=80
+image=iib0011/omni-tools:latest
+#byaidu/pdf2zh
 docker pull ${image}
 `dirname $0`/stop-container.sh ${container_name}
 docker run --name=${container_name} \
 -d --restart=always \
--m 512M \
+-m 64M \
 -e TZ="Asia/Shanghai" \
 -e LANG="zh_CN.UTF-8" \
--e PUID=`id -u` -e PGID=`id -g` \
--v ${base_data_dir}/${container_name}/data:/app/data \
 --network=$docker_network_name --network-alias=${container_name} \
 --hostname=${container_name} \
 --label "traefik.enable=true" \

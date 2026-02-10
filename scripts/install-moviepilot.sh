@@ -80,6 +80,7 @@ set_auth_site(){
     echo "PTLGS: ptlgs"
     echo "HDBAO: hdbao"
     echo "下水道: sewerpt"
+    echo "自定义: custom"
     MOVIEPILOT_AUTH_SITE=$(`dirname $0`/get-args.sh MOVIEPILOT_AUTH_SITE 认证站点)
     if [ -z "$MOVIEPILOT_AUTH_SITE" ]; then
         read -p "请输入认证站点：" MOVIEPILOT_AUTH_SITE
@@ -776,6 +777,31 @@ set_auth_site(){
             fi
             auth_site_str="-e SEWERPT_UID=${SEWERPT_UID} -e SEWERPT_PASSKEY=${SEWERPT_PASSKEY}"
             ;;
+        # 自定义
+        custom)
+            # 自定义需要自己输入完整的环境变量参数
+            echo "选择输入认证站点。"
+            MOVIEPILOT_AUTH_SITE=$(`dirname $0`/get-args.sh MOVIEPILOT_AUTH_SITE "认证站点" )
+            if [ -z "$MOVIEPILOT_AUTH_SITE" ]; then
+                read -p "请输入认证站点:" MOVIEPILOT_AUTH_SITE
+                if [ -z "$MOVIEPILOT_AUTH_SITE" ]; then
+                    echo "未输入认证站点，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh MOVIEPILOT_AUTH_SITE "$MOVIEPILOT_AUTH_SITE"
+            fi
+            echo "请输入自定义认证站点的完整环境变量参数，例如：-e CUSTOM_UID=xxx -e CUSTOM_PASSKEY=xxx"
+            CUSTOM_AUTH_ENV_VARS=$(`dirname $0`/get-args.sh CUSTOM_AUTH_ENV_VARS "自定义认证站点的完整环境变量参数" )
+            if [ -z "$CUSTOM_AUTH_ENV_VARS" ]; then
+                read -p "请输入自定义认证站点的完整环境变量参数:" CUSTOM_AUTH
+                if [ -z "$CUSTOM_AUTH_ENV_VARS" ]; then
+                    echo "未输入自定义认证站点的完整环境变量参数，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh CUSTOM_AUTH_ENV_VARS "$CUSTOM_AUTH_ENV_VARS"
+            fi
+            auth_site_str="$CUSTOM_AUTH_ENV_VARS"
+            ;;
         *)
             echo "未输入认证站点，退出安装。"
             exit 1
@@ -783,12 +809,101 @@ set_auth_site(){
     esac
 }
 
+set_database(){
+    # 设置数据库参数
+    echo "请选择数据库类型："
+    echo "1) SQLite (默认)"
+    echo "2) PostgreSQL"
+    read -p "请输入选项 (1-2): " db_choice
+    case $db_choice in
+        1)
+            echo "选择SQLite数据库。"
+            database_str="-e DB_TYPE=sqlite"
+            # DB_WAL_ENABLE
+            MP_DB_WAL_ENABLE=$(`dirname $0`/get-args.sh MP_DB_WAL_ENABLE "是否启用SQLite的WAL模式，请输入y/n：" )
+            if [ -z "$MP_DB_WAL_ENABLE" ]; then
+                read -p "是否启用SQLite的WAL模式，请输入y/n：" MP_DB_WAL_ENABLE
+                if [ -z "$MP_DB_WAL_ENABLE" ]; then
+                    echo "默认不启用WAL模式"
+                    MP_DB_WAL_ENABLE="n"
+                fi
+                `dirname $0`/set-args.sh MP_DB_WAL_ENABLE "$MP_DB_WAL_ENABLE"
+            fi
+            if [ "$MP_DB_WAL_ENABLE" = "y" ]; then
+                database_str="${database_str} -e DB_SQLITE_WAL_ENABLE=true"
+            else
+                database_str="${database_str} -e DB_SQLITE_WAL_ENABLE=false"
+            fi  
+            ;;
+        2)
+            echo "选择PostgreSQL数据库。"
+            POSTGRES_HOST=$(`dirname $0`/get-args.sh POSTGRES_HOST "PostgreSQL主机地址" )
+            if [ -z "$POSTGRES_HOST" ]; then
+                read -p "请输入PostgreSQL主机地址:" POSTGRES_HOST
+                if [ -z "$POSTGRES_HOST" ]; then
+                    echo "未输入PostgreSQL主机地址，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh POSTGRES_HOST "$POSTGRES_HOST"
+            fi
+            POSTGRES_PORT=$(`dirname $0`/get-args.sh POSTGRES_PORT "PostgreSQL端口" )
+            if [ -z "$POSTGRES_PORT" ]; then
+                read -p "请输入PostgreSQL端口:" POSTGRES_PORT
+                if [ -z "$POSTGRES_PORT" ]; then
+                    POSTGRES_PORT="5432"
+                    echo "默认使用PostgreSQL端口5432"
+                fi
+                `dirname $0`/set-args.sh POSTGRES_PORT "$POSTGRES_PORT"
+            fi
+            POSTGRES_DB=$(`dirname $0`/get-args.sh MOVIEPOILOT_POSTGRES_DB "PostgreSQL数据库名称" )
+            if [ -z "$POSTGRES_DB" ]; then
+                read -p "请输入PostgreSQL数据库名称:" POSTGRES_DB
+                if [ -z "$POSTGRES_DB" ]; then
+                    POSTGRES_DB="moviepilot"
+                    echo "默认使用PostgreSQL数据库名称moviepilot"
+                fi
+                `dirname $0`/set-args.sh MOVIEPOILOT_POSTGRES_DB "$POSTGRES_DB"
+            fi
+            POSTGRES_USER=$(`dirname $0`/get-args.sh POSTGRES_USER "PostgreSQL用户名" )
+            if [ -z "$POSTGRES_USER" ]; then
+                read -p "请输入PostgreSQL用户名:" POSTGRES_USER
+                if [ -z "$POSTGRES_USER" ]; then
+                    POSTGRES_USER="moviepilot"
+                    echo "默认使用PostgreSQL用户名moviepilot"
+                fi
+                `dirname $0`/set-args.sh POSTGRES_USER "$POSTGRES_USER"
+            fi
+            POSTGRES_PASSWORD=$(`dirname $0`/get-args.sh POSTGRES_PASSWORD "PostgreSQL密码" )
+            if [ -z "$POSTGRES_PASSWORD" ]; then
+                read -p "请输入PostgreSQL密码:" POSTGRES_PASSWORD
+                if [ -z "$POSTGRES_PASSWORD" ]; then
+                    echo "未输入PostgreSQL密码，退出安装。"
+                    exit 1
+                fi
+                `dirname $0`/set-args.sh POSTGRES_PASSWORD "$POSTGRES_PASSWORD"
+            fi
+            database_str="-e DB_TYPE=postgresql \
+            -e DB_POSTGRESQL_HOST=${POSTGRES_HOST} \
+            -e DB_POSTGRESQL_PORT=${POSTGRES_PORT} \
+            -e DB_POSTGRESQL_DATABASE=${POSTGRES_DB} \
+            -e DB_POSTGRESQL_USERNAME=${POSTGRES_USER} \
+            -e DB_POSTGRESQL_PASSWORD=${POSTGRES_PASSWORD}"
+            ;;
+        *)
+            echo "无效选项，退出安装。"
+            exit 1
+            ;;
+    esac
+}
+# 主程序开始
+## 认证站点配置
 MOVIE_IS_ENV_AUTH_SITE=$(`dirname $0`/get-args.sh MOVIE_IS_ENV_AUTH_SITE "是否在环境变量中配置认证站点，请输入y/n：" )
- if [ -z "$MOVIE_IS_ENV_AUTH_SITE" ]; then
+if [ -z "$MOVIE_IS_ENV_AUTH_SITE" ]; then
     echo "默认使用环境变量"
     MOVIE_IS_ENV_AUTH_SITE="y"
     `dirname $0`/set-args.sh MOVIE_IS_ENV_AUTH_SITE "$MOVIE_IS_ENV_AUTH_SITE"
 fi
+
 case $MOVIE_IS_ENV_AUTH_SITE in
     y)
         set_auth_site
@@ -797,6 +912,7 @@ case $MOVIE_IS_ENV_AUTH_SITE in
         ;;
     *)
 esac
+set_database
 MOVIEPILOT_USE_GITHUB_ACCESS_TOKEN=$(`dirname $0`/get-args.sh MOVIEPILOT_USE_GITHUB_ACCESS "是否使用Github Access Token，请输入y/n：" )
  if [ -z "$MOVIEPILOT_USE_GITHUB_ACCESS_TOKEN" ]; then
     read -p "是否使用Github Access Token，请输入y/n：" MOVIEPILOT_USE_GITHUB_ACCESS_TOKEN
@@ -824,6 +940,7 @@ docker pull ${image}
 docker run --name=${container_name} \
 -m 512M \
 -d --restart=always \
+-e LOG_LEVEL=WARNING \
 -e PUID=`id -u` \
 -e PGID=`id -g` \
 -e UMASK=022 \
@@ -832,12 +949,14 @@ docker run --name=${container_name} \
 -e LANG="zh_CN.UTF-8" \
 `if [ $MOVIEPILOT_USE_GITHUB_ACCESS="y" ]; then echo "-e GITHUB_TOKEN=${GITHUB_READ_ACCESS_TOKEN}"; fi` \
 `if [ $MOVIE_IS_ENV_AUTH_SITE = "y" ]; then echo "-e AUTH_SITE=${MOVIEPILOT_AUTH_SITE} ${auth_site_str}"; fi` \
+${database_str} \
 --network=$docker_network_name --network-alias=${container_name} --hostname=${container_name} \
 -v $base_data_dir/${container_name}-v2/config:/config \
 -v $base_data_dir/public/:/data \
 -v $base_data_dir/${container_name}-v2/core:/moviepilot/.cache/ms-playwright \
 -v /var/run/docker.sock:/var/run/docker.sock:ro \
 --label "traefik.enable=true" \
+--label "traefik.http.middlewares.${container_name}.compress=true" \
 --label 'traefik.http.routers.'${container_name}'.rule=Host(`'${container_name}.$domain'`)' \
 --label "traefik.http.routers.${container_name}.tls=${tls}" \
 --label "traefik.http.routers.${container_name}.tls.certresolver=traefik" \

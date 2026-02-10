@@ -133,6 +133,7 @@ case $yN in
     -e GID=`id -g` \
     ${CLOUDFLARE_ENVS} \
     --network=$docker_network_name --hostname=${container_name} --network-alias=${container_name} \
+    --label "traefik.http.middlewares.${container_name}.compress=true" \
     --label 'traefik.http.routers.'${container_name}'.rule=Host(`'${container_name}.$domain'`)' \
     --label "traefik.http.routers.${container_name}.tls=${tls}" \
     --label "traefik.http.routers.${container_name}.service=${container_name}" \
@@ -157,8 +158,11 @@ case $yN in
     ${certificatesresolvers_cmd} \
     --providers.file.directory=/config/providers \
     --global.sendAnonymousUsage \
+    --global.checkNewVersion=false \
     --serverstransport.insecureskipverify=true \
-    --experimental.plugins.cloudflarewarp.modulename=github.com/BetterCorp/cloudflarewarp \
-    --experimental.plugins.cloudflarewarp.version=v1.3.3
+    --experimental.plugins.htransformation.moduleName=github.com/tomMoulard/htransformation \
+    --experimental.plugins.htransformation.version=v0.4.1 \
+    `# --experimental.plugins.cloudflarewarp.modulename=github.com/BetterCorp/cloudflarewarp` \
+    `#--experimental.plugins.cloudflarewarp.version=v1.3.3`
     ;;
 esac

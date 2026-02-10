@@ -44,6 +44,7 @@ docker run --name=${container_name} \
 -e LANG="zh_CN.UTF-8" \
 --network=$docker_network_name --network-alias=${container_name} \
 -v ${base_data_dir}/${container_name}/data:/usr/share/nginx/html \
+-v ${base_data_dir}/${container_name}/conf.d:/etc/nginx/conf.d \
 --label "traefik.enable=true" \
 --label 'traefik.http.routers.'${container_name}'.rule=Host(`'${container_name}.$domain'`)' \
 --label "traefik.http.routers.${container_name}.tls=${tls}" \
