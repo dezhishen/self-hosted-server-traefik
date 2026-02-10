@@ -3,27 +3,26 @@ domain=$1
 base_data_dir=$2
 docker_network_name=$3
 tls=$4
-container_name=flaresolverr
-image="ghcr.io/flaresolverr/flaresolverr:latest"
+container_name=memos
+port=5230
+image=neosmemo/memos:stable
+
+
 docker pull ${image}
-port=8191
 `dirname $0`/stop-container.sh ${container_name}
-docker run -d \
+mkdir -p $base_data_dir/${container_name}/data
+
+docker run -d --name=${container_name} \
 --restart=always \
---name=flaresolverr \
---network=$docker_network_name \
---network-alias=${container_name} \
---network-alias=proxy_${container_name} \
--e LANG="zh_CN.UTF-8" \
+-m 512M --memory-swap=1G \
+--network=$docker_network_name --network-alias=${container_name} --hostname=${container_name} \
 -e TZ="Asia/Shanghai" \
--e LOG_LEVEL=info \
--e TEST_URL="https://www.baidu.com" \
--e BROWSER_TIMEOUT=80000 \
--m 512M --memory-swap=1024M \
---label "traefik.enable=true" \
+-e LANG="zh_CN.UTF-8" \
+--user $(id -u):$(id -g) \
+-v $base_data_dir/${container_name}/data:/var/opt/memos \
 --label 'traefik.http.routers.'${container_name}'.rule=Host(`'${container_name}.$domain'`)' \
 --label "traefik.http.routers.${container_name}.tls=${tls}" \
 --label "traefik.http.routers.${container_name}.tls.certresolver=traefik" \
 --label "traefik.http.routers.${container_name}.tls.domains[0].main=${container_name}.$domain" \
 --label "traefik.http.services.${container_name}.loadbalancer.server.port=${port}" \
-${image}
+--label "traefik.enable=true" ${image}

@@ -5,7 +5,7 @@ docker_network_name=$3
 tls=$4
 container_name=open-webui
 port=8080
-image=ghcr.docker.sdniu.top/open-webui/open-webui:main
+image=ghcr.io/open-webui/open-webui:main
 
 open_webui_web_auth=$(`dirname $0`/get-args.sh open_webui_web_auth "是否开启web认证[Y/N]")
 if [ -z "$open_webui_web_auth" ]; then

@@ -61,7 +61,7 @@ docker run --name=${container_name} \
 -e DEBUG=${RSS_BOT_DEBUG} \
 -e TOKEN=${RSS_BOT_TOKEN} \
 -e MANAGER=${RSS_BOT_MANAGER} \
-`if [ $use_pregress_database = "y" ]; then echo "-e DATABASE_URL=${RSS_BOT_DATABASE_URL}"; fi` \
+`if [ "$use_pregress_database" = "y" ]; then echo "-e DATABASE_URL=${RSS_BOT_DATABASE_URL}"; fi` \
 -e TELEGRAPH_TOKEN=${RSS_BOT_TELEGRAPH_TOKEN} \
 -v ${base_data_dir}/${container_name}/config:/app/config \
 -v ${base_data_dir}/${container_name}/data:/data \

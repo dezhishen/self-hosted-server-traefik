@@ -14,7 +14,9 @@ docker run -d --restart unless-stopped \
 -e TZ="Asia/Shanghai" \
 -e HOST=0.0.0.0 \
 -e LANG="zh_CN.UTF-8" \
+--user `id -u`:`id -g` \
 -m 64M \
+-v ${base_data_dir}/${container}/data:/data/api/data \
 --network=$docker_network_name --network-alias=$container \
 --name $container \
 --label 'traefik.http.routers.'$container'.rule=Host(`'$container.$domain'`)' \

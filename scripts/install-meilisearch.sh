@@ -4,7 +4,7 @@ base_data_dir=$2
 docker_network_name=$3
 tls=$4
 container_name=meilisearch
-image=getmeili/meilisearch
+image=getmeili/meilisearch:v1.16
 port=7700
 
 MEILI_MASTER_KEY=$(`dirname $0`/get-args.sh MEILI_MASTER_KEY MasterKey)
@@ -21,19 +21,19 @@ fi
 docker pull ${image}
 `dirname $0`/stop-container.sh ${container_name}
 docker run --name=${container_name} \
--m 256M \
+--user `id -u`:`id -g` \
+-m 1200M \
 --network=$docker_network_name --network-alias=${container_name} --hostname=${container_name} \
 -d --restart=always \
 -e MEILI_ENV=development \
--e MEILI_MASTER_KEY=${MEILI_MASTER_KEY} \
 -e TZ="Asia/Shanghai" \
 -e LANG="zh_CN.UTF-8" \
 -p 7700:7700 \
--v /docker_data/meili/data:/meili_data \
---label "traefik.enable=true" \
+-v /docker_data/meilisearch/data:/meili_data \
+--label "traefik.enable=false" \
 --label 'traefik.http.routers.'${container_name}'.rule=Host(`'${container_name}.$domain'`)' \
 --label "traefik.http.routers.${container_name}.tls=${tls}" \
 --label "traefik.http.routers.${container_name}.tls.certresolver=traefik" \
 --label "traefik.http.routers.${container_name}.tls.domains[0].main=${container_name}.$domain" \
 --label "traefik.http.services.${container_name}.loadbalancer.server.port=${port}" \
-${image}
+${image} /bin/meilisearch --log-level info --max-indexing-memory=512M --master-key=${MEILI_MASTER_KEY} --max-indexing-threads=2
