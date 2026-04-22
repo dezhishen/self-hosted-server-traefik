@@ -6,7 +6,9 @@ tls=$4
 set -e
 pre=immich
 port=2283
-
+old_version=$(`dirname $0`/get-args-nochange.sh IMMICH_VERSION immich的版本)
+video_gid=$(cat /etc/group | grep -e video | cut -d ":" -f 3)
+render_gid=$(cat /etc/group | grep -e render | cut -d ":" -f 3)
 IMMICH_VERSION=$(`dirname $0`/get-args.sh IMMICH_VERSION immich的版本)
 if [ -z "$IMMICH_VERSION" ]; then
     read -p "请输入immich的版本:" IMMICH_VERSION
@@ -50,9 +52,8 @@ case $yN in
     -e POSTGRES_PASSWORD=${IMMICH_DATA_PASSWORD} \
     -e POSTGRES_USER=postgres \
     -e POSTGRES_DB=immich \
-    `# -p 5432:5432` \
     --network=$docker_network_name --network-alias=${container_name} \
-    -v ${base_data_dir}/${pre}/database:/var/lib/postgresql/data \
+    -v ${base_data_dir}/${pre}/${version}/database:/var/lib/postgresql/data \
     $image
     ;;
 esac
@@ -94,11 +95,44 @@ case $yN in
     fi
     container_name=${pre}-${app}
     image=ghcr.nju.edu.cn/immich-app/immich-server:${IMMICH_VERSION}
-    docker pull ${image}
+    echo "开始创建数据目录（如果目录不存在）...."
+    mkdir -p ${base_data_dir}/public/photos/library
+    mkdir -p ${base_data_dir}/${pre}/data/encoded-video
+    mkdir -p ${base_data_dir}/${pre}/data/thumbs
+    mkdir -p ${base_data_dir}/${pre}/data/upload
+    mkdir -p ${base_data_dir}/${pre}/data/profile
+    mkdir -p ${base_data_dir}/${pre}/data/backups
     `dirname $0`/stop-container.sh ${container_name}
+    # 如果新版本和老版本不一样，则备份老版本数据
+    if [ "$IMMICH_VERSION" != "$old_version" ]; then
+        read -p "检测到immich版本发生变化，是否备份老版本数据？(y/n)" backupYN
+        case $backupYN in
+            [Yy]* )
+                bakcup_dir=${base_data_dir}/${pre}/old-version-backup/
+                filename=${old_version}-$(date +%Y%m%d%H%M%S)
+                mkdir -p ${bakcup_dir}
+                # 检验 tar 命令是否可用，如果可用则使用tar命令进行备份，否则使用cp命令进行备份
+                if command -v tar &> /dev/null; then
+                    echo "开始备份老版本数据 到${bakcup_dir}/${filename}.tar.gz,请耐心等待..."
+                    tar -zcf ${bakcup_dir}/${filename}.tar.gz -C ${base_data_dir}/${pre}/data .
+                    echo "备份完成，开始创建新版本容器...."
+                else
+                    echo "tar命令不可用，使用cp命令进行备份..."
+                    echo "开始备份老版本数据 到${bakcup_dir}/${filename},请耐心等待..."
+                    cp -r ${base_data_dir}/${pre}/data ${bakcup_dir}/${filename}
+                    echo "备份完成，开始创建新版本容器...."
+                fi
+            ;;
+            * )
+                echo "不备份老版本数据，直接创建新版本容器..."
+            ;;
+        esac
+    fi
+    docker pull ${image}
     docker run --name=${container_name} \
     --hostname=${container_name} \
     --user $(id -u):$(id -g) \
+    --group-add "${video_gid}" --group-add "${render_gid}" \
     -d --restart=always \
     -e TZ="Asia/Shanghai" \
     -e LANG="C.UTF-8" \
@@ -112,6 +146,7 @@ case $yN in
     -e REDIS_PASSWORD=${REDIS_PASSWORD} \
     -e REDIS_DBINDEX=${IMMICH_REDIS_DBINDEX} \
     --network=$docker_network_name --network-alias=${container_name} \
+    --device /dev/dri:/dev/dri \
     -v ${base_data_dir}/public/photos/library:/data/library \
     -v ${base_data_dir}/${pre}/data/encoded-video:/data/encoded-video \
     -v ${base_data_dir}/${pre}/data/thumbs:/data/thumbs \
@@ -135,12 +170,15 @@ case $yN in
     [Yy]* )
     container_name=${pre}-${app}
     image=ghcr.nju.edu.cn/immich-app/immich-machine-learning:${IMMICH_VERSION}-openvino
+    mkdir -p ${base_data_dir}/${pre}/machine-learning/cache
+    mkdir -p ${base_data_dir}/${pre}/machine-learning/.config
+    mkdir -p ${base_data_dir}/${pre}/machine-learning/.cache
+    mkdir -p ${base_data_dir}/${pre}/machine-learning/.local
     docker pull ${image}
     `dirname $0`/stop-container.sh ${container_name}
     docker run --name=${container_name} \
     --hostname=${container_name} \
-    --privileged -d --restart=always \
-    -e PUID=`id -u` -e GUID=`id -g` \
+    -d --restart=always \
     -e TZ="Asia/Shanghai" \
     -e LANG="C.UTF-8" \
     -e DB_HOSTNAME=${pre}-database \
@@ -154,9 +192,14 @@ case $yN in
     -e REDIS_DBINDEX=${IMMICH_REDIS_DBINDEX} \
     --network=$docker_network_name --network-alias=${container_name} \
     --device /dev/dri:/dev/dri \
-    -v /dev/bus/usb:/dev/bus/usb \
+    --group-add "${video_gid}" --group-add "${render_gid}" \
+    --user $(id -u):$(id -g) \
     --device-cgroup-rule='c 189:* rmw' \
+    -v /dev/bus/usb:/dev/bus/usb \
     -v ${base_data_dir}/${pre}/machine-learning/cache:/cache \
+    -v ${base_data_dir}/${pre}/machine-learning/.config:/.config \
+    -v ${base_data_dir}/${pre}/machine-learning/.cache:/.cache \
+    -v ${base_data_dir}/${pre}/machine-learning/.local:/.local \
     $image
     ;;
 esac

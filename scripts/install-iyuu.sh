@@ -9,7 +9,7 @@ read -p "是否使用无数据库版本(y/n):" use_nodb
 data_mapping=""
 case $use_nodb in
 y|Y|yes|Yes|YES)
-    image=dezhishen/iyuuplus-dev-nodb
+    image=iyuucn/iyuuplus-dev-nodb
     echo "ps: 使用无数据库版本，请确保已经安装了mysql或者mariadb"
     echo "安装后，请在界面中配置数据库"
     ;;

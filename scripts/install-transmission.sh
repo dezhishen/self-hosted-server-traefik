@@ -43,6 +43,40 @@ case $usemacvlan in
         netargs="--network=${host}"
     ;;
 esac
+# 未完成的任务是否使用单独的文件夹存放
+useincompletetorrents=$(`dirname $0`/get-args.sh USE_INCOMPLETE_TORRENTS "是否使用单独的文件夹存放未完成的任务[y/n]")
+
+if [ -z "$useincompletetorrents" ]; then
+    read -p "是否使用单独的文件夹存放未完成的任务[y/n]:" useincompletetorrents
+    `dirname $0`/set-args.sh USE_INCOMPLETE_TORRENTS "$useincompletetorrents"
+fi
+case $useincompletetorrents in
+    y) 
+        # 使用单独的文件夹存放未完成的任务
+        echo "使用单独的文件夹存放未完成的任务"
+        `dirname $0`/set-args.sh USE_INCOMPLETE_TORRENTS "y"
+        incomplete_torrents_dir=$(`dirname $0`/get-args.sh INCOMPLETE_TORRENTS_DIR "未完成的任务存放的文件夹的根目录（如: /docker_data/downloading/）")
+        if [ -z "$incomplete_torrents_dir" ]; then
+            read -p "请输入未完成的任务存放的文件夹的根目录（如: /docker_data/downloading）:" incomplete_torrents_dir
+            if [ -z "$incomplete_torrents_dir" ]; then
+                echo "未输入未完成的任务存放的文件夹的根目录，将使用默认值${base_data_dir}/${container_name}/"
+            fi
+            incomplete_torrents_dir=$base_data_dir/${container_name}/
+            `dirname $0`/set-args.sh INCOMPLETE_TORRENTS_DIR "$incomplete_torrents_dir"
+        fi
+        echo "完整的未完成的任务存放的文件夹路径为: ${incomplete_torrents_dir}/${container_name}/incomplete-torrents"
+        mkdir -p ${incomplete_torrents_dir}/${container_name}/incomplete-torrents
+        `dirname $0`/set-args.sh INCOMPLETE_TORRENTS_DIR "$incomplete_torrents_dir"
+        netargs="$netargs -v ${incomplete_torrents_dir}/${container_name}/incomplete-torrents:/incomplete-torrents "
+    ;;
+    *)
+        # 不使用单独的文件夹存放未完成的任务，直接将未完成的任务放在finished-torrents文件夹中
+        mkdir -p $base_data_dir/${container_name}/incomplete-torrents
+        netargs="$netargs -v $base_data_dir/${container_name}/incomplete-torrents:/incomplete-torrents "
+    ;;
+esac
+
+`dirname $0`/set-args.sh USE_INCOMPLETE_TORRENTS "$useincompletetorrents"
 
 docker pull ${image}
 `dirname $0`/stop-container.sh ${container_name}
@@ -57,7 +91,6 @@ ${netargs} \
 -e PASS=${TRANSMISSION_PASSWORD} \
 -v $base_data_dir/${container_name}/config:/config \
 -v $base_data_dir/public/downloads:/data/downloads \
--v $base_data_dir/${container_name}/incomplete-torrents:/incomplete-torrents \
 -v $base_data_dir/${container_name}/finished-torrents:/finished-torrents \
 ${image}
 
