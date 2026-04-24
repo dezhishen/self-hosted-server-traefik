@@ -37,6 +37,17 @@ if [ -z "$docker_network_name" ]; then
     fi
     ./scripts/set-args.sh docker_network_name $docker_network_name
 fi
+
+docker_internal_network_name=`./scripts/get-args.sh docker_internal_network_name "Docker内部网络名称(如 internal)"`
+if [ -z "$docker_internal_network_name" ]; then
+    read -p "请输入Docker内部网络名称(如 internal):" docker_internal_network_name
+    if [ -z "$docker_internal_network_name" ]; then
+        echo "Docker内部网络名称为空,使用默认值 internal"
+        docker_internal_network_name=internal
+    fi
+    ./scripts/set-args.sh docker_internal_network_name $docker_internal_network_name
+fi
+
 tls=`./scripts/get-args.sh tls "是否开启ssl[true/false]"`
 if [ -z "$tls" ]; then
     read -p "是否开启ssl[true/false]:" tls

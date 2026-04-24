@@ -123,6 +123,7 @@ case $yN in
     docker ps -a -q --filter "name=$container_name" | grep -q . && docker rm -fv $container_name
     echo "启动traefik容器"
 
+    docker_internal_network_name=$(`dirname $0`/get-args.sh docker_internal_network_name "internal的网络名")
     docker run --name=traefik \
     --restart=always -d -m 128M \
     -e TZ="Asia/Shanghai" \
@@ -152,7 +153,7 @@ case $yN in
     --api.insecure=true \
     --providers.docker=true \
     --providers.docker.endpoint=tcp://dockerproxy:2375 \
-    --providers.docker.network=$docker_network_name \
+    `#--providers.docker.network=$docker_network_name ` \
     --providers.docker.exposedbydefault=false \
     ${entrypoints_cmd} \
     ${certificatesresolvers_cmd} \
@@ -164,5 +165,16 @@ case $yN in
     --experimental.plugins.htransformation.version=v0.4.1 \
     `# --experimental.plugins.cloudflarewarp.modulename=github.com/BetterCorp/cloudflarewarp` \
     `#--experimental.plugins.cloudflarewarp.version=v1.3.3`
-    ;;
+
+    read -p "是否连接到内部网络 (y/n)" yN
+    case $yN in
+        [Yy]* )
+        echo "发现或创建内部网络 "
+        `dirname $0`/create-docker-internal-network.sh
+        docker_internal_network_name=$(`dirname $0`/get-args.sh docker_internal_network_name "internal的网络名")
+        echo "连接traefik到内部网络 $docker_internal_network_name
+        docker network connect $docker_internal_network_name traefik --alias traefik
+        ;;
+    esac
+
 esac
