@@ -11,6 +11,14 @@ port=80
 `dirname $0`/create-dir.sh $base_data_dir/${container_name}
 `dirname $0`/create-dir.sh $base_data_dir/${container_name}/data
 
+read -p "是否使用内部网络安装vaultwarden (y/n)" yN
+case $yN in
+    [Yy]* )
+        echo "创建内部网络，如果已存在则使用现有的网络"
+        `dirname $0`/create-docker-internal-network.sh
+        docker_network_name=$(`dirname $0`/get-args.sh docker_internal_network_name "internal的网络名")
+        ;;
+esac
 
 database_url=""
 database_env_str=""
@@ -111,6 +119,7 @@ ${database_env_str} \
 -u $(id -u):$(id -g) \
 --network=$docker_network_name --network-alias=${container_name} \
 -v $base_data_dir/vaultwarden/data:/data/  \
+--label "traefik.docker.network=${docker_network_name}" \
 --label 'traefik.http.routers.'${container_name}'.rule=Host(`'${container_name}.$domain'`)' \
 --label "traefik.http.routers.${container_name}.tls=${tls}" \
 --label "traefik.http.routers.${container_name}.tls.certresolver=traefik" \

@@ -43,6 +43,15 @@ if [ "$install_mariadb" = "y" ]; then
     `dirname $0`/set-args.sh MYSQL_HOST "${container_name}"
     echo "设置mysql_port为${port}"
     `dirname $0`/set-args.sh MYSQL_PORT "${port}"
+
+    read -p "是否加入内部网络 (y/n)" yN
+    case $yN in
+        [Yy]* )
+            echo "创建内部网络，如果已存在则使用现有的网络"
+            `dirname $0`/create-docker-internal-network.sh
+            docker network connect $docker_internal_network_name $container_name --alias $container_name
+            ;;
+    esac
 fi
 mariadb_container_name=${container_name}
 
