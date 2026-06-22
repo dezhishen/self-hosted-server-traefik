@@ -953,7 +953,8 @@ ${database_str} \
 --network=$docker_network_name --network-alias=${container_name} --hostname=${container_name} \
 -v $base_data_dir/${container_name}-v2/config:/config \
 -v $base_data_dir/public/:/data \
--v $base_data_dir/${container_name}-v2/core:/moviepilot/.cache/ms-playwright \
+`# -v $base_data_dir/${container_name}-v2/core:/moviepilot/.cache/ms-playwright` \
+-v $base_data_dir/${container_name}-v2/.cloakbrowser:/moviepilot/.cloakbrowser \
 -v /var/run/docker.sock:/var/run/docker.sock:ro \
 --label "traefik.enable=true" \
 --label "traefik.http.middlewares.${container_name}.compress=true" \
