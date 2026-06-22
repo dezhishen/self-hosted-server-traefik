@@ -34,8 +34,9 @@ digest="$(printf "%s:%s:%s" "$ROOT_AUTH_USER" "traefik" "$ROOT_AUTH_PASSWORD" | 
 userlist=$(printf "%s:%s:%s\n" "$ROOT_AUTH_USER" "traefik" "$digest")
 
 
-
+docker pull ${image}
 `dirname $0`/stop-container.sh ${container_name}
+
 docker run --name=${container_name} \
 -d --restart=always \
 -e USER_UID=`id -u` -e USER_GID=`id -g` \
