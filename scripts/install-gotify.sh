@@ -6,11 +6,11 @@ tls=$4
 container_name=gotify
 image=gotify/server
 port=80
-docker pull ${image}
-docker stop $container_name > /dev/null
-docker rm $container_name
+podman pull ${image}
+podman stop $container_name > /dev/null
+podman rm $container_name
 
-docker run --name=${container_name} \
+podman run --name=${container_name} \
 -d --restart=always \
 -e TZ="Asia/Shanghai" \
 -e LANG="zh_CN.UTF-8" \

@@ -7,11 +7,11 @@ container_name=jackett
 image=linuxserver/jackett
 port=9117
 
-docker pull $image
+podman pull $image
 
 `dirname $0`/stop-container.sh ${container_name}
 
-docker run -d --name=${container_name} \
+podman run -d --name=${container_name} \
 --restart=always \
 --network=$docker_network_name \
 --network-alias=${container_name} \

@@ -8,11 +8,11 @@ port=5230
 image=neosmemo/memos:stable
 
 
-docker pull ${image}
+podman pull ${image}
 `dirname $0`/stop-container.sh ${container_name}
 mkdir -p $base_data_dir/${container_name}/data
 
-docker run -d --name=${container_name} \
+podman run -d --name=${container_name} \
 --restart=always \
 -m 512M --memory-swap=1G \
 --network=$docker_network_name --network-alias=${container_name} --hostname=${container_name} \

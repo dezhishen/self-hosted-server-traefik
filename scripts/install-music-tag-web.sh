@@ -6,7 +6,7 @@ tls=$4
 container_name=music-tag-web
 port=8002
 image=xhongc/music_tag_web
-docker pull ${image}
+podman pull ${image}
 `dirname $0`/stop-container.sh ${container_name}
 
 read -p "是否使用mysql，请输入y/n：" is_mysql
@@ -23,7 +23,7 @@ case $is_mysql in
         ;;
 esac
 
-docker run -d --name=${container_name} \
+podman run -d --name=${container_name} \
 --restart=always \
 -m 1G \
 --network=$docker_network_name \

@@ -7,7 +7,7 @@ container_name=lidarr
 port=8686
 image=linuxserver/lidarr:latest
 
-docker pull ${image}
+podman pull ${image}
 `dirname $0`/stop-container.sh ${container_name}
 mkdir -p $base_data_dir/${container_name}/init.d
 echo """
@@ -18,7 +18,7 @@ if [ ! -f "/app/lidarr/bin/Localization/Core/zh.json" ];then
 fi
 """ > $base_data_dir/${container_name}/init.d/create-ln-zh-json
 chmod +x $base_data_dir/${container_name}/init.d/create-ln-zh-json
-docker run -d --name=${container_name} \
+podman run -d --name=${container_name} \
 --restart=always \
 -m 512M --memory-swap=1G \
 --network=$docker_network_name \

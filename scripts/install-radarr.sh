@@ -5,7 +5,7 @@ docker_network_name=$3
 tls=$4
 container_name=radarr
 `dirname $0`/stop-container.sh ${container_name}
-docker run -d --name=${container_name} \
+podman run -d --name=${container_name} \
 --restart=always \
 -m 128M --memory-swap=256M \
 --network=$docker_network_name \

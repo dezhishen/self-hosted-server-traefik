@@ -11,11 +11,11 @@ if [ -z "$docker_macvlan_network_name" ]; then
     `dirname $0`/set-args.sh docker_macvlan_network_name "$docker_macvlan_network_name"
 fi
 
-docker_network_exists=$(docker network ls | grep $docker_macvlan_network_name | awk '{print $2}')
+docker_network_exists=$(podman network ls | grep $docker_macvlan_network_name | awk '{print $2}')
 if [ -n "$docker_network_exists" ]; then
     echo "容器网络 $docker_macvlan_network_name 已存在"
     #if $docker_macvlan_network_name's driver != macvlan exit
-    docker_network_driver=$(docker network inspect $docker_macvlan_network_name | grep Driver | awk '{print $2}' | grep macvlan)
+    docker_network_driver=$(podman network inspect $docker_macvlan_network_name | grep Driver | awk '{print $2}' | grep macvlan)
     if [ -z "$docker_network_driver" ]; then
         echo "容器网络 $docker_macvlan_network_name 的驱动不是macvlan,请检查"
         exit 0
@@ -32,11 +32,11 @@ else
     the_ipv6_subnet=$(ip addr show dev enp6s18 | grep inet6 | grep $the_ipv6_gateway_prefix | awk '{print $2}' | head -n 1)
     echo "即将创建macvlan网络，使用的物理网卡为: $parent_interface, 子网: $the_subnet, 网关: $the_gateway"
     echo "创建语句 为: "
-    echo "docker network create -d macvlan"
+    echo "podman network create -d macvlan"
     echo "--subnet=$the_subnet --gateway=$the_gateway"
     echo "--subnet=${the_ipv6_subnet} --gateway=${the_ipv6_gateway}"
     echo "-o parent=${parent_interface} $docker_macvlan_network_name "
-    docker network create -d macvlan \
+    podman network create -d macvlan \
         --subnet="$the_subnet" --gateway="$the_gateway" \
         --subnet="${the_ipv6_subnet}" --gateway="${the_ipv6_gateway}" \
         -o parent="${parent_interface}" "$docker_macvlan_network_name"

@@ -8,9 +8,9 @@ image=openlistteam/openlist:latest-lite
 #latest #ghcr.io/openlistteam/openlist-git
 port=5244
 s3_port=5246
-docker pull ${image}
+podman pull ${image}
 `dirname $0`/stop-container.sh ${container_name}
-docker run --name=${container_name} \
+podman run --name=${container_name} \
 -m 128M \
 -d --restart=always \
 --user $(id -u):$(id -g) \

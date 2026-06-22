@@ -10,11 +10,11 @@ if [ -z "$docker_internal_network_name" ]; then
     `dirname $0`/set-args.sh docker_internal_network_name "$docker_internal_network_name"
 fi
 
-docker_network_exists=$(docker network ls | grep $docker_internal_network_name | awk '{print $2}')
+docker_network_exists=$(podman network ls | grep $docker_internal_network_name | awk '{print $2}')
 if [ -n "$docker_network_exists" ]; then
     echo "容器网络 $docker_internal_network_name 已存在"
     #if $docker_internal_network_name's driver != bridge exit
-    docker_network_driver=$(docker network inspect $docker_internal_network_name | grep Driver | awk '{print $2}' | grep bridge)
+    docker_network_driver=$(podman network inspect $docker_internal_network_name | grep Driver | awk '{print $2}' | grep bridge)
     if [ -z "$docker_network_driver" ]; then
         echo "容器网络 $docker_internal_network_name 的驱动不是bridge,请检查"
         exit 0
@@ -22,6 +22,6 @@ if [ -n "$docker_network_exists" ]; then
 else
     the_gateway=$(ip route get 1.1.1.1 | awk 'N=3 {print $N}')
     the_subnet=$(echo $the_gateway | cut -d"." -f1-3).0/24
-    docker network create $docker_internal_network_name -d bridge --internal
+    podman network create $docker_internal_network_name -d bridge --internal
     echo "容器网络 $docker_internal_network_name 创建成功"
 fi

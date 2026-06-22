@@ -9,9 +9,9 @@ case $yN in
     echo "停止dockerproxy"
     container_name=dockerproxy
     image=tecnativa/docker-socket-proxy
-    docker pull ${image}
-    docker ps -a -q --filter "name=$container_name" | grep -q . && docker rm -fv $container_name
-    docker run \
+    podman pull ${image}
+    podman ps -a -q --filter "name=$container_name" | grep -q . && podman rm -fv $container_name
+    podman run \
         --privileged \
         -m 16M --memory-swap 32M \
         -e CONTAINERS=1 \
@@ -20,7 +20,7 @@ case $yN in
         -d --restart=always \
         --network=$docker_network_name --network-alias=dockerproxy \
         --name dockerproxy \
-        -v /var/run/docker.sock:/var/run/docker.sock \
+        -v /run/podman/podman.sock:/var/run/docker.sock \
         tecnativa/docker-socket-proxy
     ;;
 esac
@@ -119,12 +119,12 @@ case $yN in
     echo "停止之前的traefik容器"
     container_name=traefik
     image=traefik
-    docker pull ${image}
-    docker ps -a -q --filter "name=$container_name" | grep -q . && docker rm -fv $container_name
+    podman pull ${image}
+    podman ps -a -q --filter "name=$container_name" | grep -q . && podman rm -fv $container_name
     echo "启动traefik容器"
 
     docker_internal_network_name=$(`dirname $0`/get-args.sh docker_internal_network_name "internal的网络名")
-    docker run --name=traefik \
+    podman run --name=traefik \
     --restart=always -d -m 128M \
     -e TZ="Asia/Shanghai" \
     -e LANG="zh_CN.UTF-8" \
@@ -173,7 +173,7 @@ case $yN in
         `dirname $0`/create-docker-internal-network.sh
         docker_internal_network_name=$(`dirname $0`/get-args.sh docker_internal_network_name "internal的网络名")
         echo "连接traefik到内部网络 $docker_internal_network_name
-        docker network connect $docker_internal_network_name traefik --alias traefik
+        podman network connect $docker_internal_network_name traefik --alias traefik
         ;;
     esac
 

@@ -24,8 +24,8 @@ if [ -z "$NATFRPC_TUNNELS" ]; then
     `dirname $0`/set-args.sh NATFRPC_TUNNELS ${NATFRPC_TUNNELS}
 fi
 
-docker rm -f ${container_name} 
-docker run -d --restart=always --name=${container_name} \
+podman rm -f ${container_name} 
+podman run -d --restart=always --name=${container_name} \
 --network=${docker_network_name} --network-alias=${container_name} \
 --memory=64M --memory-swap 128M \
 -e TZ=Asia/Shanghai \

@@ -8,10 +8,10 @@ container_name=adminer
 image=library/adminer
 port=8080
 
-docker pull $image
-docker stop $container_name > /dev/null
-docker rm $container_name
-docker run --restart=always -d --name ${container_name} -m 128M \
+podman pull $image
+podman stop $container_name > /dev/null
+podman rm $container_name
+podman run --restart=always -d --name ${container_name} -m 128M \
     --user=`id -u`:`id -g` \
     -v ${base_data_dir}/${container_name}/data:/data \
     --network=${docker_network_name} --network-alias=${container_name} --hostname=${container_name} \

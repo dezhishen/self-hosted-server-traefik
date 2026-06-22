@@ -6,11 +6,11 @@ tls=$4
 container_name=cloudbak
 image=likeflyme/cloudbak
 
-docker pull ${image}
+podman pull ${image}
 port=9527
 `dirname $0`/stop-container.sh ${container_name}
 
-docker run  \
+podman run  \
 --hostname ${container_name} \
 --name=${container_name} \
 --restart=always -d \

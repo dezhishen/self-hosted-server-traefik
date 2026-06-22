@@ -5,7 +5,7 @@ docker_network_name=$3
 tls=$4
 
 `dirname $0`/stop-container.sh readarr
-docker run -d --name=readarr \
+podman run -d --name=readarr \
 --restart=always \
 -m 64M --memory-swap=128M \
 --network=$docker_network_name \

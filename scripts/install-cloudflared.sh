@@ -10,18 +10,18 @@ container_name="cloudflared"
 cloudflared_login(){
     echo "即将登录 cloudflare，请按照文字，打开浏览器并且授权"
     `dirname $0`/create-dir.sh $base_data_dir/${container_name}/etc
-    docker run -it --name=${container_name}-login \
+    podman run -it --name=${container_name}-login \
     -e TUNNEL_CRED_FILE=/etc/cloudflared/cerd-traefik.json \
     -v ${base_data_dir}/${container_name}/etc:/etc/cloudflared/ ${image} login
-    sudo docker cp ${container_name}-login:/home/nonroot/.cloudflared/cert.pem ${base_data_dir}/${container_name}/etc/
+    sudo podman cp ${container_name}-login:/home/nonroot/.cloudflared/cert.pem ${base_data_dir}/${container_name}/etc/
     sudo chown -R `id -u`:`id -g` ${base_data_dir}/${container_name}/etc
     sudo chmod -R 777 ${base_data_dir}/${container_name}/etc
-    docker rm -f ${container_name}-login
+    podman rm -f ${container_name}-login
 }
 
 cloudflared_tunnel_create(){
     tunnel_name=$1
-    docker run --rm -it --name=${container_name}-create \
+    podman run --rm -it --name=${container_name}-create \
     -v ${base_data_dir}/${container_name}/etc:/etc/cloudflared/ ${image} tunnel create ${tunnel_name}
     CLOUDFLARED_TUNNEL_ID=${tunnel_name}
 }
@@ -29,7 +29,7 @@ cloudflared_tunnel_create(){
 
 cloudflared_check(){
     tunnel_name=$1
-    result=`docker run --rm -it --name=${container_name}-check \
+    result=`podman run --rm -it --name=${container_name}-check \
     -v ${base_data_dir}/${container_name}/etc:/etc/cloudflared/ ${image} tunnel info ${tunnel_name} `
     # 如果结果中包含"error"，则表示tunnel id不存在
     echo "执行结果: $result"
@@ -66,8 +66,8 @@ else
     `dirname $0`/set-args.sh CLOUDFLARED_TUNNEL_ID "$CLOUDFLARED_TUNNEL_ID"
 fi
 
-docker rm -f ${container_name} && \
-docker run -d --restart=always --name=${container_name} \
+podman rm -f ${container_name} && \
+podman run -d --restart=always --name=${container_name} \
 --memory=64M \
 -e TZ=Asia/Shanghai \
 -v ${base_data_dir}/${container_name}/etc:/etc/${container_name} \

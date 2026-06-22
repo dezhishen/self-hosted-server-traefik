@@ -78,9 +78,9 @@ esac
 
 `dirname $0`/set-args.sh USE_INCOMPLETE_TORRENTS "$useincompletetorrents"
 
-docker pull ${image}
+podman pull ${image}
 `dirname $0`/stop-container.sh ${container_name}
-docker run -d --name=${container_name} \
+podman run -d --name=${container_name} \
 --restart=always \
 -m 512M \
 ${netargs} \

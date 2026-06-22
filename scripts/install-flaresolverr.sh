@@ -5,10 +5,10 @@ docker_network_name=$3
 tls=$4
 container_name=flaresolverr
 image="ghcr.io/flaresolverr/flaresolverr:latest"
-docker pull ${image}
+podman pull ${image}
 port=8191
 `dirname $0`/stop-container.sh ${container_name}
-docker run -d \
+podman run -d \
 --restart=always \
 --name=flaresolverr \
 --network=$docker_network_name \

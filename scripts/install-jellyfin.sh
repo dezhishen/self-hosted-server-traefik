@@ -7,11 +7,11 @@ container_name=jellyfin
 image=linuxserver/jellyfin:latest
 port=8096
 # 是否重装jellyfin
-docker pull ${image}
+podman pull ${image}
 `dirname $0`/stop-container.sh ${container_name}
 video_gid=$(cat /etc/group | grep -e video | cut -d ":" -f 3)
 render_gid=$(cat /etc/group | grep -e render | cut -d ":" -f 3)
-docker run  \
+podman run  \
 --hostname ${container_name} \
 --restart=always -d \
 --device /dev/dri \

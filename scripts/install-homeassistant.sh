@@ -7,9 +7,9 @@ tls=$4
 container_name=homeassistant
 
 `dirname $0`/stop-container.sh ${container_name}
-docker pull homeassistant/home-assistant:latest
+podman pull homeassistant/home-assistant:latest
 
-docker run --name=${container_name} \
+podman run --name=${container_name} \
 -m 1G -d --privileged \
 --network=host  \
 -v /dev/net/tun:/dev/net/tun \

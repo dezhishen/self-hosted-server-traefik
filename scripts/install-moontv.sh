@@ -40,7 +40,7 @@ fi
 
 
 `dirname $0`/stop-container.sh ${container_name}
-docker run --name=${container_name} \
+podman run --name=${container_name} \
 -d --restart=always \
 -m 128M --memory-swap 256M \
 -e TZ="Asia/Shanghai" \

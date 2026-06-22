@@ -8,7 +8,7 @@ if [ -z "$docker_macvlan_network_name" ]; then
     exit 1
 fi
 
-docker_network_exists=$(docker network ls | grep $docker_macvlan_network_name | awk '{print $2}')
+docker_network_exists=$(podman network ls | grep $docker_macvlan_network_name | awk '{print $2}')
 if [ -z "$docker_network_exists" ]; then
     echo "容器网络 $docker_macvlan_network_name 不存在,请先运行 create-docker-macvlan-network.sh 脚本创建 macvlan 网络"
     exit 1

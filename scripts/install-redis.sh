@@ -57,9 +57,9 @@ if [ "$REDIS_PORT_MAPPING"="y" ]; then
 	port_mapping="-p ${port}:${port}"
     fi
 fi
-docker pull $image
+podman pull $image
 `dirname $0`/stop-container.sh ${container_name}
-docker run --restart=always -d --name ${container_name} -m 512M \
+podman run --restart=always -d --name ${container_name} -m 512M \
 ${port_mapping} \
 -v ${base_data_dir}/${container_name}/data:/data \
 --network=${docker_network_name} --network-alias=${container_name} \

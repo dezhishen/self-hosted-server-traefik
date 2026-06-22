@@ -20,10 +20,10 @@ y|Y|yes|Yes|YES)
 esac
 
 # 检查是否安装了qbittorrent
-docker inspect qbittorrent > /dev/null 2>&1
+podman inspect qbittorrent > /dev/null 2>&1
 qbittorrent_installed=$?
 # 检查是否安装了transmission
-docker inspect transmission > /dev/null 2>&1
+podman inspect transmission > /dev/null 2>&1
 transmission_installed=$?
 
 # 如果安装了qbittorrent，将qbittorrent的目录挂载到iyuu容器内
@@ -39,9 +39,9 @@ else
     transmission_dir=""
 fi
 
-docker pull ${image}
+podman pull ${image}
 `dirname $0`/stop-container.sh ${container_name}
-docker run --name=${container_name} \
+podman run --name=${container_name} \
 -d --restart=always \
 -m 512M \
 -e TZ="Asia/Shanghai" \

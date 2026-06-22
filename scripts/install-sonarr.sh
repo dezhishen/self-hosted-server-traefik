@@ -8,7 +8,7 @@ container_name=sonarr
 port=8989
 
 `dirname $0`/stop-container.sh ${container_name}
-docker run -d --name=${container_name} \
+podman run -d --name=${container_name} \
 --restart=always \
 -m 128M --memory-swap=256M \
 --network=$docker_network_name \

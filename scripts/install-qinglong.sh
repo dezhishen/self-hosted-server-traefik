@@ -9,7 +9,7 @@ image="whyour/qinglong"
 port="5700"
 `dirname $0`/stop-container.sh ${container_name}
 
-docker run --name=${container_name} \
+podman run --name=${container_name} \
 -d --restart=always \
 -e PUID=`id -u` -e PGID=`id -g` \
 -m 256M \

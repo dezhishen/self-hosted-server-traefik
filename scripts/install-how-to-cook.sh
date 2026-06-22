@@ -6,9 +6,9 @@ tls=$4
 container_name=how-to-cook
 port=80 
 image=ghcr.io/anduin2017/how-to-cook
-docker pull ${image}
+podman pull ${image}
 `dirname $0`/stop-container.sh ${container_name}
-docker run --name=${container_name} \
+podman run --name=${container_name} \
 -d --restart=always \
 -m 128M \
 -e TZ="Asia/Shanghai" \

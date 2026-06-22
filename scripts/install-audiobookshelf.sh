@@ -11,10 +11,10 @@ mkdir -p ${base_data_dir}/${container_name}/config
 mkdir -p ${base_data_dir}/${container_name}/metadata
 mkdir -p ${base_data_dir}/public/audiobooks
 mkdir -p ${base_data_dir}/public/podcasts
-docker pull $image
-docker stop $container_name > /dev/null
-docker rm $container_name
-docker run --restart=always -d --name ${container_name} -m 128M \
+podman pull $image
+podman stop $container_name > /dev/null
+podman rm $container_name
+podman run --restart=always -d --name ${container_name} -m 128M \
     --user=`id -u`:`id -g` \
     -v ${base_data_dir}/public/audiobooks:/audiobooks \
     -v ${base_data_dir}/public/podcasts:/podcasts \

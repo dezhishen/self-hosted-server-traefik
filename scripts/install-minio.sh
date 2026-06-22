@@ -44,12 +44,12 @@ if [ -z "$MINIO_PORT_MAPPING" ]; then
     `dirname $0`/set-args.sh MINIO_PORT_MAPPING "${MINIO_PORT_MAPPING}"
 fi
 
-docker pull ${image} > /dev/null 2>&1 || true
-docker stop ${container_name} > /dev/null 2>&1 || true
-docker rm ${container_name} > /dev/null 2>&1 || true
+podman pull ${image} > /dev/null 2>&1 || true
+podman stop ${container_name} > /dev/null 2>&1 || true
+podman rm ${container_name} > /dev/null 2>&1 || true
 mkdir -p ${base_data_dir}/${container_name}/${version}/data
 
-docker run --restart=always -d --name ${container_name} -m 512M \
+podman run --restart=always -d --name ${container_name} -m 512M \
 --user $(id -u):$(id -g) \
 -e TZ=Asia/Shanghai \
 -e LANG=C.UTF-8 -e LC_ALL=C.UTF-8 \

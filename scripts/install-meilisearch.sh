@@ -18,9 +18,9 @@ if [ -z "$MEILI_MASTER_KEY" ]; then
     `dirname $0`/set-args.sh MEILI_MASTER_KEY "$MEILI_MASTER_KEY"
 fi
 
-docker pull ${image}
+podman pull ${image}
 `dirname $0`/stop-container.sh ${container_name}
-docker run --name=${container_name} \
+podman run --name=${container_name} \
 --user `id -u`:`id -g` \
 -m 1200M \
 --network=$docker_network_name --network-alias=${container_name} --hostname=${container_name} \

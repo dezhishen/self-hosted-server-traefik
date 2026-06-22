@@ -32,7 +32,7 @@ read -p "请输入macvlan接口子网掩码 (默认24): " HOST_IP_MASK
 HOST_IP_MASK=${HOST_IP_MASK:-24}
 HOST_IP="${HOST_IP_BASE}/${HOST_IP_MASK}"
 
-# docker macvlan网络名
+# podman macvlan网络名
 DOCKER_NET_NAME="${docker_macvlan_network_name}"
 
 # ===== 主监听脚本处理（支持覆盖询问） =====
@@ -84,8 +84,8 @@ fi
 ip link set "\$MACVLAN_IF" up
 
 sync_routes() {
-  # 用awk从docker network inspect获取所有容器的IPv4地址，并去除掩码部分
-  CONTAINER_IPS_WITH_MASK=\$(docker network inspect "\$DOCKER_NET_NAME" -f '{{range .Containers}}{{.IPv4Address}} {{end}}') 
+  # 用awk从podman network inspect获取所有容器的IPv4地址，并去除掩码部分
+  CONTAINER_IPS_WITH_MASK=\$(podman network inspect "\$DOCKER_NET_NAME" -f '{{range .Containers}}{{.IPv4Address}} {{end}}') 
   CONTAINER_IPS=""
   for ip in \$CONTAINER_IPS_WITH_MASK; do
     CONTAINER_IPS="\$CONTAINER_IPS \${ip%%/*}"
@@ -111,7 +111,7 @@ sync_routes() {
 echo "启动时同步所有容器的路由..."
 sync_routes
 
-docker events --filter event=start --filter event=connect --filter event=disconnect --filter event=die --filter event=destroy --filter network="\$DOCKER_NET_NAME" | \\
+podman events --filter event=start --filter event=connect --filter event=disconnect --filter event=die --filter event=destroy --filter network="\$DOCKER_NET_NAME" | \\
 while read -r event; do
   echo "检测到docker网络事件，重新同步所有路由..."
   sync_routes
@@ -140,9 +140,9 @@ if [ $need_write_unit -eq 1 ]; then
   echo "创建/覆盖systemd unit $SYSTEMD_UNIT"
   cat > "$SYSTEMD_UNIT" <<EOF
 [Unit]
-Description=macvlan forward: docker events route patcher
-After=network-online.target docker.service
-Wants=network-online.target docker.service
+Description=macvlan forward: podman events route patcher
+After=network-online.target podman.service
+Wants=network-online.target podman.service
 
 [Service]
 Environment="MACVLAN_IF=${MACVLAN_IF}"

@@ -17,9 +17,9 @@ case $yN in
 	scheme="http"
         gf_root_url="http://$container.$domain"
     fi
-    docker pull $image
+    podman pull $image
     `dirname $0`/stop-container.sh $container
-    docker run -d --restart unless-stopped \
+    podman run -d --restart unless-stopped \
     --user $(id -u):$(id -g) \
     -e TZ="Asia/Shanghai" \
     -e GF_SERVER_ROOT_URL="${gf_root_url}" \
@@ -47,10 +47,10 @@ case $yN in
     container=prometheus
     image="prom/prometheus"
     port=9090
-    docker pull $image
+    podman pull $image
     
     `dirname $0`/stop-container.sh $container
-    docker run -d --restart unless-stopped \
+    podman run -d --restart unless-stopped \
     -e TZ="Asia/Shanghai" \
     -e LANG="zh_CN.UTF-8" \
     --user $(id -u):$(id -g) -m 64M \

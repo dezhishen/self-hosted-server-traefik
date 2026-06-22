@@ -7,10 +7,10 @@ container_name=prowlarr
 image=linuxserver/prowlarr:latest
 port=9696
 
-docker pull $image
+podman pull $image
 
 `dirname $0`/stop-container.sh ${container_name} #prowlarr
-docker run -d --name=${container_name} \
+podman run -d --name=${container_name} \
 --restart=always \
 -m 256M --memory-swap=512M \
 --network=$docker_network_name \

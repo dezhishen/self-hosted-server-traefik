@@ -7,7 +7,7 @@ container_name=fava
 image=yegle/fava
 port=5000
 
-docker pull $image
+podman pull $image
 `dirname $0`/stop-container.sh ${container_name}
 # 如果不存在main.bean，则创建
 if [ ! -f ${base_data_dir}/${container_name}/bean/main.bean ]; then
@@ -42,7 +42,7 @@ echo "用户名: $FAVA_AUTH_USER"
 echo "密码: $FAVA_AUTH_PASSWORD"
 digest="$(printf "%s:%s:%s" "$FAVA_AUTH_USER" "traefik" "$FAVA_AUTH_PASSWORD" | md5sum | awk '{print $1}' )"
 userlist=$(printf "%s:%s:%s\n" "$FAVA_AUTH_USER" "traefik" "$digest")
-docker run --restart=always -d --name ${container_name} -m 512M \
+podman run --restart=always -d --name ${container_name} -m 512M \
 --user=`id -u`:`id -g` \
 -e TZ=Asia/Shanghai \
 -e LANG=zh_CN.UTF-8 \

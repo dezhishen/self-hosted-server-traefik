@@ -29,7 +29,7 @@ complete -F _install_one_completions ./install-one.sh
 _stop_container_completions() {
     local cur="\${COMP_WORDS[COMP_CWORD]}"
     local containers
-    containers=\$(docker ps --format '{{.Names}}' 2>/dev/null | tr '\n' ' ')
+    containers=\$(podman ps --format '{{.Names}}' 2>/dev/null | tr '\n' ' ')
     COMPREPLY=( \$(compgen -W "\${containers}" -- "\${cur}") )
 }
 complete -F _stop_container_completions stop-container.sh

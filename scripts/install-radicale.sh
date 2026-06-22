@@ -37,7 +37,7 @@ case $create_user_and_password in
             `dirname $0`/set-args.sh RADICALE_PASSWORD "$radicale_password"
         fi
         # 使用自建 apache-utils 镜像生成 htpasswd（-cb：创建文件 + 非交互写入密码）
-        docker run --rm --user=`id -u`:`id -g` \
+        podman run --rm --user=`id -u`:`id -g` \
             -e RAD_USER="$radicale_user" \
             -e RAD_PASS="$radicale_password" \
             -v ${base_data_dir}/${container_name}/users:/etc/users \
@@ -75,10 +75,10 @@ if [ $has_auth_config = false ]; then
     echo "htpasswd_encryption = plain" >> ${base_data_dir}/${container_name}/config/config
 fi
 
-docker pull $image
+podman pull $image
 `dirname $0`/stop-container.sh ${container_name}
 
-docker run --restart=always -d --name ${container_name} \
+podman run --restart=always -d --name ${container_name} \
     -m 128M \
     --user=`id -u`:`id -g` \
     -v ${base_data_dir}/${container_name}/data:/var/lib/radicale \

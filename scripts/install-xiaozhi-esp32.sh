@@ -13,12 +13,12 @@ case $deploy_core in
         app=server
         container_name=${pre}-${app}
         image=ghcr.nju.edu.cn/xinnan-tech/xiaozhi-esp32-server:${app}_latest
-        docker pull $image
+        podman pull $image
         port1=8000
         port2=8003
         echo "部署核心服务"
         `dirname $0`/stop-container.sh ${container_name} 
-        docker run -d --name=${container_name} \
+        podman run -d --name=${container_name} \
         --restart=always \
         --network=$docker_network_name \
         --network-alias=${container_name} \
@@ -127,9 +127,9 @@ case $deploy_web in
         fi
         image=ghcr.nju.edu.cn/xinnan-tech/xiaozhi-esp32-server:${app}_latest
         port=8002
-        docker pull $image
+        podman pull $image
         `dirname $0`/stop-container.sh ${container_name} 
-        docker run -d --name=${container_name} \
+        podman run -d --name=${container_name} \
         --restart=always \
         --network=$docker_network_name \
         --network-alias=${container_name} \
@@ -160,10 +160,10 @@ case $deploy_svr in
     y|Y )
         container_name="voiceprint-api"
         image="ghcr.nju.edu.cn/xinnan-tech/voiceprint-api:latest"
-        docker pull $image
+        podman pull $image
         port=8005
         `dirname $0`/stop-container.sh ${container_name}
-        docker run -d --name=${container_name} \
+        podman run -d --name=${container_name} \
           --restart=always \
           --network=$docker_network_name \
           --network-alias=${container_name} \
@@ -192,10 +192,10 @@ case $deploy_mcp in
         app=mcp
         container_name=${pre}-${app}
         image=ghcr.nju.edu.cn/xinnan-tech/mcp-endpoint-server:latest
-        docker pull $image
+        podman pull $image
         port=8004
         `dirname $0`/stop-container.sh ${container_name} 
-        docker run -d --name=${container_name} \
+        podman run -d --name=${container_name} \
             --restart=always \
             --network=$docker_network_name \
             --network-alias=${container_name} \

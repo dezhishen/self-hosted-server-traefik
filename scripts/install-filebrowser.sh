@@ -8,7 +8,7 @@ image=filebrowser/filebrowser
 
 `dirname $0`/create-dir.sh $base_data_dir/filebrowser
 
-docker pull $image
+podman pull $image
 
 if [ ! -f $base_data_dir/${container_name}/database.db ];then
     echo "filebrowser.db 不存在，创建 $base_data_dir/${container_name}/database.db"
@@ -25,7 +25,7 @@ else
 fi
 
 `dirname $0`/stop-container.sh ${container_name}
-docker run \
+podman run \
     -d --restart=always --hostname=${container_name} --name=${container_name} \
     --health-cmd "curl -f http://localhost:8080/health || exit 1" \
     -m 256M --memory-swap=1024M \

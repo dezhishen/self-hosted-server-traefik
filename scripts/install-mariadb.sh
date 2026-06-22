@@ -26,10 +26,10 @@ if [ "$install_mariadb" = "y" ]; then
         fi                                                                                         
         `dirname $0`/set-args.sh MYSQL_PORT_MAPPING "$MYSQL_PORT_MAPPING"                          
     fi    
-    docker pull $image
-    docker stop $container_name > /dev/null
-    docker rm $container_name
-    docker run --restart=always -d --name ${container_name} -m 512M \
+    podman pull $image
+    podman stop $container_name > /dev/null
+    podman rm $container_name
+    podman run --restart=always -d --name ${container_name} -m 512M \
     --user=`id -u`:`id -g` \
     -e TZ=Asia/Shanghai \
     -e LANG=zh_CN.UTF-8 \
@@ -49,7 +49,7 @@ if [ "$install_mariadb" = "y" ]; then
         [Yy]* )
             echo "创建内部网络，如果已存在则使用现有的网络"
             `dirname $0`/create-docker-internal-network.sh
-            docker network connect $docker_internal_network_name $container_name --alias $container_name
+            podman network connect $docker_internal_network_name $container_name --alias $container_name
             ;;
     esac
 fi
@@ -67,10 +67,10 @@ if [ "$install_mariadb_backup" = "y" ]; then
     MYSQL_PASSWORD=$(`dirname $0`/get-args.sh MYSQL_PASSWORD "mysql密码" )
     read -p "是否单次备份[y/n]:" backup_once
     if [ "$backup_once" = "y" ]; then
-        docker pull $image
-        docker stop $container_name-once > /dev/null
-        docker rm $container_name-once
-        docker run --rm -it \
+        podman pull $image
+        podman stop $container_name-once > /dev/null
+        podman rm $container_name-once
+        podman run --rm -it \
         --hostname=${container_name} \
         --name ${container_name}-once -m 64M \
         --network=${docker_network_name} --network-alias=${container_name}-once \
@@ -84,10 +84,10 @@ if [ "$install_mariadb_backup" = "y" ]; then
         -v ${base_data_dir}/${container_name}/backup/:/db \
         ${image} dump --once
     else
-        docker pull $image
-        docker stop $container_name > /dev/null
-        docker rm $container_name
-        docker run --restart=always -d \
+        podman pull $image
+        podman stop $container_name > /dev/null
+        podman rm $container_name
+        podman run --restart=always -d \
         --hostname=${container_name} \
         --name ${container_name} -m 64M \
         --user=`id -u`:`id -g` \

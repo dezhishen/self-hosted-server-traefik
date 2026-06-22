@@ -7,11 +7,11 @@ container_name=new-api
 port=3000
 
 image=calciumion/new-api:latest
-docker pull ${image}
+podman pull ${image}
 
 `dirname $0`/stop-container.sh ${container_name}
 
-docker run --name=${container_name} \
+podman run --name=${container_name} \
 -d --restart=always \
 -m 512M \
 -e TZ="Asia/Shanghai" \

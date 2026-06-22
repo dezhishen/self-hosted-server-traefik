@@ -7,8 +7,8 @@ tls=$4
 container_name=ttyd
 image=wettyoss/wetty
 # 从容器网络中获取网络网关地址，使用.分割，获取前三个端，拼接1
-remote_ip=`docker network inspect traefik --format '{{range .IPAM.Config}}{{.Gateway}}{{end}}' | awk -F'.' '{print $1"."$2"."$3"."1}'`
-docker pull ${image}
+remote_ip=`podman network inspect traefik --format '{{range .IPAM.Config}}{{.Gateway}}{{end}}' | awk -F'.' '{print $1"."$2"."$3"."1}'`
+podman pull ${image}
 TTYD_AUTH_USER=$(`dirname $0`/get-args.sh TTYD_AUTH_USER 用户名)
 if [ -z "$TTYD_AUTH_USER" ]; then
     read -p "请输入用户名:" TTYD_AUTH_USER
@@ -33,8 +33,8 @@ echo "用户名: $TTYD_AUTH_USER"
 echo "密码: $TTYD_AUTH_PASSWORD"
 digest="$(printf "%s:%s:%s" "$TTYD_AUTH_USER" "traefik" "$TTYD_AUTH_PASSWORD" | md5sum | awk '{print $1}' )"
 userlist=$(printf "%s:%s:%s\n" "$TTYD_AUTH_USER" "traefik" "$digest")
-docker rm -f $container_name
-docker run --name=${container_name} \
+podman rm -f $container_name
+podman run --name=${container_name} \
 --restart=always -d \
 -m 64M \
 -e TZ="Asia/Shanghai" \

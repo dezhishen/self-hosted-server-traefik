@@ -29,10 +29,10 @@ if [ "$install_postgres" = "y" ]; then
         fi
         `dirname $0`/set-args.sh POSTGRES_PORT_MAPPING "$POSTGRES_PORT_MAPPING"
     fi
-    docker pull $image
-    docker stop $container_name > /dev/null
-    docker rm $container_name
-    docker run --restart=always -d --name ${container_name} -m 512M \
+    podman pull $image
+    podman stop $container_name > /dev/null
+    podman rm $container_name
+    podman run --restart=always -d --name ${container_name} -m 512M \
     -e TZ=Asia/Shanghai \
     -e LANG=C.UTF-8 -e LC_ALL=C.UTF-8 \
     -e POSTGRES_USER=root \

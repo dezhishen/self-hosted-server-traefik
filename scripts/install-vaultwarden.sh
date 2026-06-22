@@ -104,12 +104,12 @@ case $VAULTWARDEN_DATABASE_TYPE in
 esac
 
 
-docker pull ${image}
+podman pull ${image}
 
 
 `dirname $0`/stop-container.sh ${container_name}
 
-docker run -d --name ${container_name} \
+podman run -d --name ${container_name} \
 --restart=always \
 -e TZ="Asia/Shanghai" \
 -e SIGNUPS_ALLOWED="true" \

@@ -935,9 +935,9 @@ if [ "$MOVIEPILOT_USE_GITHUB_ACCESS_TOKEN"="y" ]; then
     fi
 fi
 
-docker pull ${image}
+podman pull ${image}
 `dirname $0`/stop-container.sh ${container_name}
-docker run --name=${container_name} \
+podman run --name=${container_name} \
 -m 512M \
 -d --restart=always \
 -e LOG_LEVEL=WARNING \
@@ -955,7 +955,7 @@ ${database_str} \
 -v $base_data_dir/public/:/data \
 `# -v $base_data_dir/${container_name}-v2/core:/moviepilot/.cache/ms-playwright` \
 -v $base_data_dir/${container_name}-v2/.cloakbrowser:/moviepilot/.cloakbrowser \
--v /var/run/docker.sock:/var/run/docker.sock:ro \
+-v /run/podman/podman.sock:/var/run/docker.sock:ro \
 --label "traefik.enable=true" \
 --label "traefik.http.middlewares.${container_name}.compress=true" \
 --label 'traefik.http.routers.'${container_name}'.rule=Host(`'${container_name}.$domain'`)' \

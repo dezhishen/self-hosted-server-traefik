@@ -6,9 +6,9 @@ tls=$4
 container_name=basic-memory
 port=8000
 image=ghcr.nju.edu.cn/basicmachines-co/basic-memory:latest
-docker pull ${image}
+podman pull ${image}
 `dirname $0`/stop-container.sh ${container_name}
-docker run --name=${container_name} \
+podman run --name=${container_name} \
 -d --restart=always \
 -e TZ="Asia/Shanghai" \
 -e LANG="zh_CN.UTF-8" \

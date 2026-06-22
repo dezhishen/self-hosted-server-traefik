@@ -7,10 +7,10 @@ container=cookiecloud
 image="easychen/cookiecloud:latest"
 port=8088
 
-docker pull $image
+podman pull $image
 `dirname $0`/stop-container.sh $container
 
-docker run -d --restart unless-stopped \
+podman run -d --restart unless-stopped \
 -e TZ="Asia/Shanghai" \
 -e HOST=0.0.0.0 \
 -e LANG="zh_CN.UTF-8" \

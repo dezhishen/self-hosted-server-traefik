@@ -40,9 +40,9 @@ case $yN in
     container_name=${pre}-${app}
     image=ghcr.nju.edu.cn/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0 
     #tensorchord/pgvecto-rs:pg14-v0.2.0
-    #docker pull $image
+    #podman pull $image
     `dirname $0`/stop-container.sh ${container_name}
-    docker run --name=${container_name} \
+    podman run --name=${container_name} \
     --hostname=${container_name} \
     -m 256M \
     --user=`id -u`:`id -g` \
@@ -128,8 +128,8 @@ case $yN in
             ;;
         esac
     fi
-    docker pull ${image}
-    docker run --name=${container_name} \
+    podman pull ${image}
+    podman run --name=${container_name} \
     --hostname=${container_name} \
     --user $(id -u):$(id -g) \
     --group-add "${video_gid}" --group-add "${render_gid}" \
@@ -174,9 +174,9 @@ case $yN in
     mkdir -p ${base_data_dir}/${pre}/machine-learning/.config
     mkdir -p ${base_data_dir}/${pre}/machine-learning/.cache
     mkdir -p ${base_data_dir}/${pre}/machine-learning/.local
-    docker pull ${image}
+    podman pull ${image}
     `dirname $0`/stop-container.sh ${container_name}
-    docker run --name=${container_name} \
+    podman run --name=${container_name} \
     --hostname=${container_name} \
     -d --restart=always \
     -e TZ="Asia/Shanghai" \

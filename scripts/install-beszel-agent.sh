@@ -61,11 +61,11 @@ case $use_websocket in
 esac
 DOCKER_HOST=$(`dirname $0`/get-args.sh BESZEL_DOCKER_HOST "Docker Host地址")
 echo "envs: ${envs}"
-docker pull ${image}
-docker run -d --name=${container_name} \
+podman pull ${image}
+podman run -d --name=${container_name} \
 --restart=always --network=$docker_network_name --network-alias=${container_name} --hostname=${container_name} \
 -e TZ="Asia/Shanghai" -e LANG="zh_CN.UTF-8" -e PORT=45876 \
 -e KEY="${public_key}" ${envs} \
 -m 64M \
--v /var/run/docker.sock:/var/run/docker.sock:ro \
+-v /run/podman/podman.sock:/var/run/docker.sock:ro \
 $image

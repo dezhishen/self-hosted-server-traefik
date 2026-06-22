@@ -10,7 +10,7 @@ container_name=baikal
 image=ckulka/baikal:nginx
 port=80
 
-docker pull ${image}
+podman pull ${image}
 `dirname $0`/stop-container.sh ${container_name}
 # 创建文件夹
 mkdir -p ${base_data_dir}/${container_name}/config
@@ -36,7 +36,7 @@ if [ ! -f "${base_data_dir}/${container_name}/Plugin.php" ]; then
   # 下载文件
   wget -O ${base_data_dir}/${container_name}/Plugin.php https://raw.githubusercontent.com/dezhishen/self-hosted-server-traefik/master/patch/Plugin.php
 fi
-docker run --name=${container_name} \
+podman run --name=${container_name} \
 -m 128M \
 -d --restart=always \
 -e BAIKAL_SERVERNAME=${container_name}.$domain \

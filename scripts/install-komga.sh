@@ -10,10 +10,10 @@ image=gotson/komga
 mkdir -p ${base_data_dir}/${container_name}/config
 mkdir -p ${base_data_dir}/${container_name}/data
 
-docker pull ${image}
+podman pull ${image}
 
 `dirname $0`/stop-container.sh ${container_name}
-docker run --name=${container_name} \
+podman run --name=${container_name} \
   -d --restart=always \
   -m 512M \
   --user $(id -u):$(id -g) \

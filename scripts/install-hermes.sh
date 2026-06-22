@@ -15,9 +15,9 @@ render_gid=$(getent group render | cut -d ":" -f 3)
 read -p "是否需要重装gateway？(y/n) " reinstall_gateway
 case "$reinstall_gateway" in
     y|Y )
-    docker pull ${image}
+    podman pull ${image}
     `dirname $0`/stop-container.sh ${container_name}
-    docker run --name=${container_name} \
+    podman run --name=${container_name} \
         -d --restart=always \
         -m 2G \
         -e TZ="Asia/Shanghai" \
@@ -36,10 +36,10 @@ esac
 read -p "是否需要运行dashboard？(y/n) " run_dashboard
 case "$run_dashboard" in
     y|Y )
-    docker pull ${image}
+    podman pull ${image}
     `dirname $0`/stop-container.sh ${container_name}-dashboard
     gateway_url=http://${container_name}:8642
-    docker run --name=${container_name}-dashboard \
+    podman run --name=${container_name}-dashboard \
         -d --restart=always \
         -e TZ="Asia/Shanghai" \
         -e LANG="zh_CN.UTF-8" \

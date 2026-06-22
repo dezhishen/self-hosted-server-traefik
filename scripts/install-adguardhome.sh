@@ -16,7 +16,7 @@ image=adguard/adguardhome
 # 是否为第一次安装
 if [ ! -f "$base_data_dir/${container_name}/conf/AdGuardHome.yaml" ]; then
     port=3000
-    docker run -d --restart=always \
+    podman run -d --restart=always \
         --name=${container_name} \
         -m 64M  --hostname=${container_name} \
         --network=$docker_network_name \
@@ -42,7 +42,7 @@ else
         echo "AdGuardHome.yaml文件中bind_port配置错误,请检查"
         exit 1
     fi
-    docker run -d --restart=always \
+    podman run -d --restart=always \
         --name=${container_name} \
         -m 128M --memory-swap=256M \
         --network=$docker_network_name \

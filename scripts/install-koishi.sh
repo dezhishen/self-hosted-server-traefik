@@ -7,9 +7,9 @@ tls=$4
 container_name=koishi
 port=5140
 image=koishijs/koishi:latest
-docker pull $image
+podman pull $image
 `dirname $0`/stop-container.sh ${container_name}
-docker run --hostname=${container_name} --name=${container_name} \
+podman run --hostname=${container_name} --name=${container_name} \
   -d \
   -it --restart=always \
   -m 512M \
