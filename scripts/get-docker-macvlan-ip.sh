@@ -1,8 +1,9 @@
 #! /bin/bash
 set -e
+homedir=${HOME}
 function get_used_macvlan_ip(){
     container_name=$1
-    file=$(dirname $0)/../.args/DOCKER_MACVLAN_IPS
+    file=${homedir}/.args/DOCKER_MACVLAN_IPS
     # 判断文件是否存在
     if [ ! -f "$file" ]; then
         touch $file
