@@ -31,6 +31,5 @@ for d in "$APK_ROOT/usr/bin" "$APK_ROOT/usr/sbin" "$APK_ROOT/bin" "$APK_ROOT/sbi
         [ -f "$f" ] && ln -sf "$f" /home/opencode/.local/bin/ 2>/dev/null
     done
 done
-
 echo "[opencode] 环境就绪"
 exec opencode "$@"
