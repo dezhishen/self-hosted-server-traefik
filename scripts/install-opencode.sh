@@ -29,9 +29,11 @@ BASE_IMAGE="ghcr.io/anomalyco/opencode"
 DOCKERFILE_DIR="$(dirname $0)/../docker/opencode"
 CUSTOM_IMAGE="opencode-custom:latest"
 docker pull ${BASE_IMAGE}
-echo "构建 opencode 自定义镜像（base: ${BASE_IMAGE}）..."
+echo "构建 opencode 自定义镜像（base: ${BASE_IMAGE}, uid=$(id -u), gid=$(id -g)）..."
 docker build \
     --build-arg BASE_IMAGE="${BASE_IMAGE}" \
+    --build-arg UID=$(id -u) \
+    --build-arg GID=$(id -g) \
     -t ${CUSTOM_IMAGE} \
     ${DOCKERFILE_DIR}
 # ---------- GPU 透传 ----------
