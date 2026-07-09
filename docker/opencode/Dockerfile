@@ -29,7 +29,13 @@ RUN mkdir -p /usr/local/bin /usr/local/lib /usr/local/include /usr/local/lib/pkg
     && cp -a /etc/apk/keys /usr/local/share/opencode-apk/keys \
     && cp /etc/apk/repositories /usr/local/share/opencode-apk/repositories
 
-# ── shell profile（登录时自动扩展 PATH）──
+# ── 环境变量（固化到镜像，docker exec 也有效）──
+ENV APK_ROOT=/apk-root \
+    PATH="/home/opencode/.local/bin:/apk-root/usr/bin:/apk-root/usr/sbin:/apk-root/bin:/apk-root/sbin:${PATH}" \
+    LD_LIBRARY_PATH="/apk-root/usr/lib:/apk-root/lib:/usr/local/lib" \
+    PKG_CONFIG_PATH="/apk-root/usr/lib/pkgconfig:/apk-root/usr/share/pkgconfig:/usr/local/lib/pkgconfig"
+
+# ── shell profile（登录 shell 补充加载）──
 RUN echo 'export PATH="/home/opencode/.local/bin:/apk-root/usr/bin:/apk-root/usr/sbin:/apk-root/bin:/apk-root/sbin:${PATH}"' > /etc/profile.d/opencode.sh \
     && echo 'export LD_LIBRARY_PATH="/apk-root/usr/lib:/apk-root/lib:${LD_LIBRARY_PATH}"' >> /etc/profile.d/opencode.sh \
     && echo 'export PKG_CONFIG_PATH="/apk-root/usr/lib/pkgconfig:/apk-root/usr/share/pkgconfig:${PKG_CONFIG_PATH}"' >> /etc/profile.d/opencode.sh \
