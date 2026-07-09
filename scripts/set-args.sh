@@ -1,8 +1,9 @@
 #! /bin/bash
 arg_name=$1
 value=$2
+homedir=${HOME}
 # 如果目录.args不存在,则创建
-if [ ! -d "`dirname $0`/../.args" ]; then
-    mkdir `dirname $0`/../.args
+if [ ! -d "${homedir}/.args" ]; then
+    mkdir ${homedir}/.args
 fi
-echo "$value" > `dirname $0`/../.args/$arg_name
+echo "$value" > ${homedir}/.args/$arg_name

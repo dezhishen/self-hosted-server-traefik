@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-
+homedir=${HOME}
 docker_macvlan_network_name=$(`dirname $0`/get-args.sh docker_macvlan_network_name "macvlan的网络名")
 # 如果为空,需要设置
 if [ -z "$docker_macvlan_network_name" ]; then
@@ -54,7 +54,7 @@ fi
 
 # 获取已经使用的IP列表
 used_ip_list=""
-file="$(dirname $0)/../.args/DOCKER_MACVLAN_IPS"
+file="${homedir}/.args/DOCKER_MACVLAN_IPS"
 i=$MACVLAN_MIN_IP_SUFFIX
 while [ $i -le $MACVLAN_MAX_IP_SUFFIX ]; do
     candidate_ip="${forward_ip_prefix}.$i"
