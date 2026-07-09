@@ -23,18 +23,16 @@ if [ ! -f "$APK_ROOT/lib/apk/db/installed" ]; then
     echo "[opencode] 初始化 apk 数据库..."
     mkdir -p "$APK_ROOT/etc/apk"
     cp /usr/local/share/opencode-apk/repositories "$APK_ROOT/etc/apk/"
+    # 切镜像源（在首次 update 之前，避免先走默认源再切）
+    if [ "$OPENCODE_APK_MIRROR" = "aliyun" ]; then
+        echo "[opencode] 使用阿里云 APK 镜像源..."
+        sed -i 's|dl-cdn.alpinelinux.org|mirrors.aliyun.com|g' "$APK_ROOT/etc/apk/repositories"
+    fi
     /sbin/apk.real --root "$APK_ROOT" --usermode add --initdb --no-cache
-    /sbin/apk.real --root "$APK_ROOT" --usermode update --no-cache
+    /sbin/apk.real --root "$APK_ROOT" update --no-cache
     if [ -f /tmp/apk-world.bak ]; then
         cp /tmp/apk-world.bak "$APK_ROOT/etc/apk/world"
     fi
-fi
-
-# ── 中国大陆镜像源切换 ──
-if [ "$OPENCODE_APK_MIRROR" = "aliyun" ]; then
-    echo "[opencode] 切换到阿里云 APK 镜像源..."
-    sed -i 's|dl-cdn.alpinelinux.org|mirrors.aliyun.com|g' "$APK_ROOT/etc/apk/repositories"
-    /sbin/apk.real --root "$APK_ROOT" --usermode update --no-cache
 fi
 
 # ── 恢复已安装的包 ──
