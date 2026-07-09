@@ -1,26 +1,46 @@
 #!/bin/sh
 # ── opencode 运行时初始化 ──
-APK_ROOT="/apk-root"
 
-# ── 扩展 PATH / LD_LIBRARY_PATH ──
-export PATH="/home/opencode/.local/bin:${APK_ROOT}/usr/bin:${APK_ROOT}/usr/sbin:${APK_ROOT}/bin:${APK_ROOT}/sbin:${PATH}"
-export LD_LIBRARY_PATH="${APK_ROOT}/usr/lib:${APK_ROOT}/lib:${LD_LIBRARY_PATH}"
-export PKG_CONFIG_PATH="${APK_ROOT}/usr/lib/pkgconfig:${APK_ROOT}/usr/share/pkgconfig:${PKG_CONFIG_PATH}"
+# ── APK_ROOT 默认值（兼容旧镜像无 ENV 的情况）──
+APK_ROOT="${APK_ROOT:-/apk-root}"
 
-# ── 首次初始化 apk root（从镜像备份复制密钥 + 建库）──
+# ── 确保 APK 基础目录结构存在 ──
+mkdir -p "$APK_ROOT/etc/apk/keys" "$APK_ROOT/lib/apk" "$APK_ROOT/var/cache/apk" "$APK_ROOT/etc/apk/protected_paths.d"
+
+# ── 同步最新 APK 签名密钥（从运行时基础镜像获取，避免构建时密钥过期）──
+cp -a /etc/apk/keys/* "$APK_ROOT/etc/apk/keys/" 2>/dev/null
+
+# ── 强制重建 apk 数据库（设置环境变量 OPENCODE_APK_FORCE_INIT=true）──
+if [ "$OPENCODE_APK_FORCE_INIT" = "true" ]; then
+    echo "[opencode] 强制重建 apk 数据库..."
+    cp "$APK_ROOT/etc/apk/world" /tmp/apk-world.bak 2>/dev/null
+    rm -rf "$APK_ROOT/lib/apk" "$APK_ROOT/etc/apk"/scripts.d "$APK_ROOT/var/cache/apk" 2>/dev/null
+    mkdir -p "$APK_ROOT/lib/apk" "$APK_ROOT/var/cache/apk"
+fi
+
+# ── 首次/强制初始化 apk root ──
 if [ ! -f "$APK_ROOT/lib/apk/db/installed" ]; then
-    echo "[opencode] 首次启动，初始化 apk 数据库..."
+    echo "[opencode] 初始化 apk 数据库..."
     mkdir -p "$APK_ROOT/etc/apk"
-    cp -a /usr/local/share/opencode-apk/keys "$APK_ROOT/etc/apk/"
     cp /usr/local/share/opencode-apk/repositories "$APK_ROOT/etc/apk/"
-    /sbin/apk.real --root "$APK_ROOT" add --initdb --no-cache 2>/dev/null || true
-    /sbin/apk.real --root "$APK_ROOT" update --no-cache 2>/dev/null || true
+    /sbin/apk.real --root "$APK_ROOT" --usermode add --initdb --no-cache
+    /sbin/apk.real --root "$APK_ROOT" --usermode update --no-cache
+    if [ -f /tmp/apk-world.bak ]; then
+        cp /tmp/apk-world.bak "$APK_ROOT/etc/apk/world"
+    fi
+fi
+
+# ── 中国大陆镜像源切换 ──
+if [ "$OPENCODE_APK_MIRROR" = "aliyun" ]; then
+    echo "[opencode] 切换到阿里云 APK 镜像源..."
+    sed -i 's|dl-cdn.alpinelinux.org|mirrors.aliyun.com|g' "$APK_ROOT/etc/apk/repositories"
+    /sbin/apk.real --root "$APK_ROOT" --usermode update --no-cache
 fi
 
 # ── 恢复已安装的包 ──
 if [ -f "$APK_ROOT/etc/apk/world" ] && [ -s "$APK_ROOT/etc/apk/world" ]; then
     echo "[opencode] 恢复已安装的 apk 包..."
-    /sbin/apk.real --root "$APK_ROOT" add --no-cache $(cat "$APK_ROOT/etc/apk/world") 2>/dev/null || true
+    /sbin/apk.real --root "$APK_ROOT" --usermode add --no-cache $(cat "$APK_ROOT/etc/apk/world")
 fi
 
 # ── 软链接 apk-root 可执行文件 → ~/.local/bin ──
