@@ -77,7 +77,7 @@ macvlan 的限制是宿主机默认无法直接访问 macvlan 容器，需要额
 **traefik 代理 macvlan 容器：**
 
 macvlan 容器不在 `traefik` bridge 网络内，traefik 通过容器的 macvlan IP 直接代理。安装脚本会自动：
-1. 为容器分配一个固定的 macvlan IP（记录在 `.args/DOCKER_MACVLAN_IPS`）
+1. 为容器分配一个固定的 macvlan IP（记录在 `~/.args/DOCKER_MACVLAN_IPS`）
 2. 在 traefik 的 providers 目录生成对应的静态配置文件
 3. 在宿主机添加到该 IP 的路由（via `${网络名}_forward` 接口）
 
@@ -140,7 +140,32 @@ macvlan 容器不在 `traefik` bridge 网络内，traefik 通过容器的 macvla
 ```bash
     sh install-one.sh cloudflared
 ```
-### 2.3 使用说明
+### 2.3 配置说明
+
+项目的配置参数统一存储在用户目录下的 `~/.args/` 目录中，以文件名作为键、文件内容作为值。每个参数独立一个文件，方便脚本读取和手动修改。
+
+**主要配置文件：**
+
+| 文件名 | 说明 |
+|---|---|
+| `domain` | 主域名（如 `baidu.com` 或 `app.baidu.com`） |
+| `base_data_dir` | 数据根目录（如 `/docker_data`） |
+| `docker_network_name` | Docker 网络名称（默认 `traefik`） |
+| `docker_internal_network_name` | Docker 内部网络名称（默认 `internal`） |
+| `tls` | 是否开启 SSL（`true`/`false`） |
+| `DOCKER_MACVLAN_IPS` | macvlan 容器的 IP 分配记录 |
+| `MYSQL_PASSWORD` | MariaDB 数据库密码 |
+
+**相关脚本：**
+- `scripts/get-args.sh` — 读取指定配置项，若不存在则交互式询问并保存
+- `scripts/set-args.sh` — 直接设置指定配置项的值
+- `scripts/get-args-nochange.sh` — 读取配置项（不存在时不询问，仅返回空）
+- `scripts/get-docker-macvlan-ip.sh` — 读取/分配 macvlan IP
+- `scripts/set-docker-macvlan-ip.sh` — 设置 macvlan IP
+
+> **注意：** `~/.args/` 目录存储在用户家目录下，不属于项目仓库，因此升级或重新克隆项目不会覆盖已有配置。
+
+### 2.4 使用说明
 使用 sh install-one.sh 服务名 安装服务，如：
 - 安装qbittorrent
 ```bash
@@ -151,8 +176,8 @@ macvlan 容器不在 `traefik` bridge 网络内，traefik 通过容器的 macvla
     sh install-one.sh alist
 ```
 
-### 2.4 推荐服务
-#### 2.4.1 备份工具[duplicati](https://www.duplicati.com/)
+### 2.5 推荐服务
+#### 2.5.1 备份工具[duplicati](https://www.duplicati.com/)
 配合alist使用，借助alist的webdav功能，可以实现备份到网盘
 ```bash
     # 安装duplicati
@@ -160,16 +185,16 @@ macvlan 容器不在 `traefik` bridge 网络内，traefik 通过容器的 macvla
     # 安装alist
     sh install-one.sh alist
 ```     
-#### 2.4.2 密码管理器[vaultwarden](https://github.com/dani-garcia/vaultwarden)
+#### 2.5.2 密码管理器[vaultwarden](https://github.com/dani-garcia/vaultwarden)
 ```bash
     sh install-one.sh vaultwarden
 ```
-### 2.5 安装[xiaoya](https://github.com/DDS-Derek/xiaoya-alist)
-#### 2.5.1 执行xiaoya脚本
+### 2.6 安装[xiaoya](https://github.com/DDS-Derek/xiaoya-alist)
+#### 2.6.1 执行xiaoya脚本
 ```bash
     sh xiaoya.sh
 ```
-#### 2.5.2 创建traefik配置文件
+#### 2.6.2 创建traefik配置文件
 ```bash
     sh xiaoya-traefik.sh
 ```
@@ -224,7 +249,7 @@ Network/Options/Enable uTP for peer connections|true|启用uTP协议，减少ISP
 配置项|配置值|说明
 ---|---|---
 数据库用户|root|可以自行在mariaDB中创建用户
-数据库密码|在脚本.args/MYSQL_PASSWORD中获取|可以自行在mariaDB中创建用户和对应的密码
+数据库密码|在 `~/.args/MYSQL_PASSWORD` 中获取|可以自行在mariaDB中创建用户和对应的密码
 数据库|iyuu|必须手动创建，脚本不会自动创建
 数据库HOST|mariadb|数据库的容器名
 数据库端口|3306|数据库的端口
