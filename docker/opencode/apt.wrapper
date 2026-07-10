@@ -1,0 +1,32 @@
+#!/bin/bash
+# ── apt wrapper: 透明记录 install 到持久化列表 ──
+PKG_LIST="/home/opencode/.config/apt-packages.list"
+REAL=/usr/bin/apt.real
+
+IS_INSTALL=false
+for arg in "$@"; do
+    case "$arg" in
+        install|dist-upgrade|full-upgrade) IS_INSTALL=true ;;
+    esac
+done
+
+sudo DEBIAN_FRONTEND=noninteractive $REAL "$@"
+RC=$?
+
+if $IS_INSTALL && [ $RC -eq 0 ]; then
+    touch "$PKG_LIST" 2>/dev/null || true
+    for arg in "$@"; do
+        case "$arg" in
+            install|dist-upgrade|full-upgrade|-*|--*) continue ;;
+            *)
+                if dpkg-query -W -f='${Status}' "$arg" 2>/dev/null | grep -q "install ok installed"; then
+                    if ! grep -qxF "$arg" "$PKG_LIST" 2>/dev/null; then
+                        echo "$arg" >> "$PKG_LIST"
+                        echo "[apt-wrapper] 已记录: $arg"
+                    fi
+                fi
+                ;;
+        esac
+    done
+fi
+exit $RC

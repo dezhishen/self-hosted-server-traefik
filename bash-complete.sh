@@ -9,22 +9,21 @@ COMPLETION_FILE="/etc/bash_completion.d/self-hosted-server-traefik"
 MARKER="# self-hosted-server-traefik-completion"
 
 _gen_completion_content() {
-    # 动态从 scripts/install-*.sh 提取应用名称列表
-    local apps
-    apps=$(ls "${SCRIPT_DIR}/scripts/install-"*.sh 2>/dev/null \
-        | sed 's|.*/install-||;s|\.sh$||' \
-        | sort \
-        | tr '\n' ' ')
-
+    # 用 <<EOF（不加引号）让 ${SCRIPT_DIR} 在安装时展开为绝对路径
     cat <<EOF
 ${MARKER}
 _install_one_completions() {
     local cur="\${COMP_WORDS[COMP_CWORD]}"
-    local apps="${apps}"
+    local apps
+    apps=\$(ls "${SCRIPT_DIR}/scripts/install-"*.sh 2>/dev/null \\
+        | sed 's|.*/install-||;s|\.sh\$||' \\
+        | sort \\
+        | tr '\n' ' ')
     COMPREPLY=( \$(compgen -W "\${apps}" -- "\${cur}") )
 }
 complete -F _install_one_completions install-one.sh
 complete -F _install_one_completions ./install-one.sh
+complete -F _install_one_completions bash install-one.sh
 
 _stop_container_completions() {
     local cur="\${COMP_WORDS[COMP_CWORD]}"

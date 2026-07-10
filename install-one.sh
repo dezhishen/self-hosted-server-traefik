@@ -57,4 +57,4 @@ if [ -z "$tls" ]; then
     fi
     ./scripts/set-args.sh tls $tls
 fi
-sh `dirname $0`/scripts/install-$app.sh $domain $base_data_dir $docker_network_name $tls
+bash `dirname $0`/scripts/install-$app.sh $domain $base_data_dir $docker_network_name $tls

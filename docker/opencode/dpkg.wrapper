@@ -1,0 +1,35 @@
+#!/bin/bash
+# ── dpkg wrapper: 透明记录 -i 安装到持久化列表 ──
+PKG_LIST="/home/opencode/.config/apt-packages.list"
+REAL=/usr/bin/dpkg.real
+
+sudo DEBIAN_FRONTEND=noninteractive $REAL "$@"
+RC=$?
+
+# 拦截 -i / --install 操作，记录包名
+IS_INSTALL=false
+for arg in "$@"; do
+    case "$arg" in
+        -i|--install) IS_INSTALL=true; break ;;
+    esac
+done
+
+if $IS_INSTALL && [ $RC -eq 0 ]; then
+    touch "$PKG_LIST" 2>/dev/null || true
+    for arg in "$@"; do
+        case "$arg" in
+            -i|--install|-*|--*) continue ;;
+            *.deb)
+                # 从 deb 文件名提取包名 (pkg_version_arch.deb → pkg)
+                pkg_name=$(basename "$arg" .deb | sed 's/_.*//')
+                if [ -n "$pkg_name" ]; then
+                    if ! grep -qxF "$pkg_name" "$PKG_LIST" 2>/dev/null; then
+                        echo "$pkg_name" >> "$PKG_LIST"
+                        echo "[dpkg-wrapper] 已记录: $pkg_name"
+                    fi
+                fi
+                ;;
+        esac
+    done
+fi
+exit $RC
