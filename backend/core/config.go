@@ -64,6 +64,14 @@ func (m *ConfigManager) defaultConfig() *contracts.AppConfig {
 	}
 }
 
+func (m *ConfigManager) Path() string {
+	return m.path
+}
+
+func (m *ConfigManager) Save(cfg *contracts.AppConfig) error {
+	return m.loader.Save(cfg, m.path)
+}
+
 func (m *ConfigManager) defaultBaseDir() string {
 	home, err := os.UserHomeDir()
 	if err != nil {

@@ -23,6 +23,7 @@ func New(app *core.App) *Server {
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/health", s.handleHealth)
+	mux.HandleFunc("/api/config", s.handleConfig)
 
 	// Endpoint-scoped endpoints
 	mux.HandleFunc("/api/services", s.withEndpoint(s.handleServices))
@@ -86,6 +87,28 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 		"endpoints": epCount,
 		"engine":    engine,
 	})
+}
+
+// GET/PUT /api/config
+func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		jsonResp(w, s.app.Config)
+	case http.MethodPut:
+		var cfg contracts.AppConfig
+		if err := json.NewDecoder(r.Body).Decode(&cfg); err != nil {
+			jsonErr(w, 400, "invalid request body: "+err.Error())
+			return
+		}
+		if err := s.app.ConfigMgr.Save(&cfg); err != nil {
+			jsonErr(w, 500, err.Error())
+			return
+		}
+		s.app.Config = &cfg
+		jsonResp(w, map[string]string{"status": "ok"})
+	default:
+		jsonErr(w, 405, "method not allowed")
+	}
 }
 
 // GET /api/endpoints

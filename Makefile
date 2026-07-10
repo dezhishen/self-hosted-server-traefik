@@ -92,8 +92,8 @@ dev: killdev
 	@echo "→ Using config: $(DEV_CONFIG)"
 	@GOROOT=$(GOROOT) GOPATH=$(GOPATH) CGO_ENABLED=0 nohup $(GO) run -C $(PWD)/backend ./cmd/... -c $(DEV_CONFIG) --addr :18080 > $(DEV_DIR)/backend.log 2>&1 & echo $$! > $(BK_PID_FILE)
 	@sleep 3
-	@echo "→ Starting frontend (pnpm dev) on :5173..."
-	@nohup $(PNPM) --prefix frontend run dev > $(PWD)/$(DEV_DIR)/frontend.log 2>&1 & echo $$! > $(FE_PID_FILE)
+	@echo "→ Starting frontend (vite) on :5173..."
+	@nohup npx --prefix frontend vite --host 0.0.0.0 --port 5173 > $(PWD)/$(DEV_DIR)/frontend.log 2>&1 & echo $$! > $(FE_PID_FILE)
 	@sleep 2
 	@echo ""
 	@echo "→ Backend:  http://localhost:18080/api/health"
