@@ -147,6 +147,11 @@ func (a *App) SubscriptionManager() contracts.SubscriptionManager {
 }
 
 func (a *App) Close() {
+	for _, ctx := range a.Endpoints {
+		if closer, ok := ctx.Runtime.(interface{ Close() }); ok {
+			closer.Close()
+		}
+	}
 	if a.Logger != nil {
 		a.Logger.Sync()
 	}

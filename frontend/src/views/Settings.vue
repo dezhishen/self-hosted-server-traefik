@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { getConfig, updateConfig } from '@/api/config'
-import type { AppConfig } from '@/api/config'
+import type { AppConfig, TLSConfig } from '@/api/config'
 import SdCard from '@/components/SdCard.vue'
 import { ElMessage } from 'element-plus'
 
@@ -13,6 +13,11 @@ async function fetchConfig() {
   loading.value = true
   try {
     const res = await getConfig()
+    for (const ep of Object.values(res.data.endpoints)) {
+      if (showTLS(ep.connection.type) && !ep.connection.tls) {
+        ep.connection.tls = { enabled: false }
+      }
+    }
     config.value = res.data
   } finally {
     loading.value = false
@@ -46,6 +51,16 @@ function addEndpoint() {
 function removeEndpoint(name: string) {
   if (!config.value) return
   delete config.value.endpoints[name]
+}
+
+function initTLS(ep: { connection: { tls?: TLSConfig } }) {
+  if (!ep.connection.tls) {
+    ep.connection.tls = { enabled: true }
+  }
+}
+
+function showTLS(type: string) {
+  return type === 'tcp' || type === 'https'
 }
 
 onMounted(fetchConfig)
@@ -86,15 +101,16 @@ onMounted(fetchConfig)
                   </el-button>
                 </div>
               </div>
-              <el-form :model="ep" label-width="100px" size="small">
+              <el-form :model="ep" label-width="110px" size="small">
                 <el-form-item label="Type">
-                  <el-select v-model="ep.connection.type">
+                  <el-select v-model="ep.connection.type" @change="initTLS(ep as any)">
                     <el-option label="unix" value="unix" />
                     <el-option label="tcp" value="tcp" />
+                    <el-option label="https" value="https" />
                   </el-select>
                 </el-form-item>
                 <el-form-item label="Endpoint">
-                  <el-input v-model="ep.connection.endpoint" />
+                  <el-input v-model="ep.connection.endpoint" placeholder="/var/run/docker.sock or host:port" />
                 </el-form-item>
                 <el-form-item label="Engine">
                   <el-select v-model="ep.connection.engine" placeholder="auto">
@@ -103,6 +119,28 @@ onMounted(fetchConfig)
                     <el-option label="podman" value="podman" />
                   </el-select>
                 </el-form-item>
+
+                <template v-if="showTLS(ep.connection.type)">
+                  <el-divider />
+                  <el-form-item label="TLS">
+                    <el-switch v-model="ep.connection.tls!.enabled" />
+                  </el-form-item>
+
+                  <template v-if="ep.connection.tls?.enabled">
+                    <el-form-item label="CA Cert">
+                      <el-input v-model="ep.connection.tls.ca_cert" type="textarea" :rows="2" placeholder="PEM content" />
+                    </el-form-item>
+                    <el-form-item label="Client Cert">
+                      <el-input v-model="ep.connection.tls.cert" type="textarea" :rows="2" placeholder="PEM content" />
+                    </el-form-item>
+                    <el-form-item label="Client Key">
+                      <el-input v-model="ep.connection.tls.key" type="textarea" :rows="2" placeholder="PEM content" />
+                    </el-form-item>
+                    <el-form-item label="Skip Verify">
+                      <el-switch v-model="ep.connection.tls.skip_verify!" />
+                    </el-form-item>
+                  </template>
+                </template>
               </el-form>
             </div>
 

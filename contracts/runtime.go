@@ -3,9 +3,10 @@ package contracts
 type ConnectionType string
 
 const (
-	ConnectionTypeUnix ConnectionType = "unix"
-	ConnectionTypeTCP  ConnectionType = "tcp"
-	ConnectionTypeSSH  ConnectionType = "ssh"
+	ConnectionTypeUnix  ConnectionType = "unix"
+	ConnectionTypeTCP   ConnectionType = "tcp"
+	ConnectionTypeHTTPS ConnectionType = "https"
+	ConnectionTypeSSH   ConnectionType = "ssh"
 )
 
 type EngineType string

@@ -4,10 +4,19 @@ export interface AuthConfig {
   username: string
 }
 
+export interface TLSConfig {
+  enabled: boolean
+  ca_cert?: string
+  cert?: string
+  key?: string
+  skip_verify?: boolean
+}
+
 export interface ConnectionConfig {
   type: string
   endpoint: string
   engine?: string
+  tls?: TLSConfig
 }
 
 export interface EndpointConfig {

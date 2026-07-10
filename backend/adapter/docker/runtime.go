@@ -3,15 +3,18 @@ package docker
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/dezhishen/self-hosted-server-traefik/contracts"
 )
 
 type Runtime struct {
-	binary string
-	cfg    contracts.ConnectionConfig
+	binary   string
+	cfg      contracts.ConnectionConfig
+	tempDir  string
 }
 
 func NewRuntime(cfg contracts.ConnectionConfig) (*Runtime, error) {
@@ -22,19 +25,70 @@ func NewRuntime(cfg contracts.ConnectionConfig) (*Runtime, error) {
 	return &Runtime{binary: binary, cfg: cfg}, nil
 }
 
+func (r *Runtime) Close() {
+	if r.tempDir != "" {
+		os.RemoveAll(r.tempDir)
+	}
+}
+
 func (r *Runtime) docker(args ...string) (string, error) {
 	cmd := exec.Command(r.binary, args...)
-	if r.cfg.Endpoint != "" && r.cfg.Type == contracts.ConnectionTypeUnix {
-		cmd.Env = append(cmd.Env, "DOCKER_HOST=unix://"+r.cfg.Endpoint)
+
+	if r.cfg.Endpoint != "" {
+		switch r.cfg.Type {
+		case contracts.ConnectionTypeUnix:
+			cmd.Env = append(cmd.Env, "DOCKER_HOST=unix://"+r.cfg.Endpoint)
+		case contracts.ConnectionTypeTCP, contracts.ConnectionTypeHTTPS:
+			cmd.Env = append(cmd.Env, "DOCKER_HOST=tcp://"+r.cfg.Endpoint)
+		}
 	}
-	if r.cfg.Endpoint != "" && r.cfg.Type == contracts.ConnectionTypeTCP {
-		cmd.Env = append(cmd.Env, "DOCKER_HOST=tcp://"+r.cfg.Endpoint)
+
+	// TLS configuration
+	if r.cfg.TLS != nil && r.cfg.TLS.Enabled {
+		cmd.Env = append(cmd.Env, "DOCKER_TLS_VERIFY=1")
+		if r.cfg.TLS.CACert != "" || r.cfg.TLS.Cert != "" || r.cfg.TLS.Key != "" {
+			certDir, err := r.writeCertFiles()
+			if err != nil {
+				return "", fmt.Errorf("write cert files: %w", err)
+			}
+			cmd.Env = append(cmd.Env, "DOCKER_CERT_PATH="+certDir)
+		}
+		if r.cfg.TLS.SkipVerify {
+			args = append(args, "--tlsskipverify")
+		}
 	}
+
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("docker %s: %s: %w", strings.Join(args, " "), strings.TrimSpace(string(out)), err)
 	}
 	return strings.TrimSpace(string(out)), nil
+}
+
+func (r *Runtime) writeCertFiles() (string, error) {
+	if r.tempDir == "" {
+		dir, err := os.MkdirTemp("", "selfhosted-docker-certs-*")
+		if err != nil {
+			return "", err
+		}
+		r.tempDir = dir
+	}
+	if r.cfg.TLS.CACert != "" {
+		if err := os.WriteFile(filepath.Join(r.tempDir, "ca.pem"), []byte(r.cfg.TLS.CACert), 0600); err != nil {
+			return "", err
+		}
+	}
+	if r.cfg.TLS.Cert != "" {
+		if err := os.WriteFile(filepath.Join(r.tempDir, "cert.pem"), []byte(r.cfg.TLS.Cert), 0600); err != nil {
+			return "", err
+		}
+	}
+	if r.cfg.TLS.Key != "" {
+		if err := os.WriteFile(filepath.Join(r.tempDir, "key.pem"), []byte(r.cfg.TLS.Key), 0600); err != nil {
+			return "", err
+		}
+	}
+	return r.tempDir, nil
 }
 
 func (r *Runtime) ContainerRun(params contracts.ContainerRunParams) (string, error) {
