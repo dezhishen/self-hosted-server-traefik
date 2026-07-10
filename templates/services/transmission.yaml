@@ -1,0 +1,47 @@
+api_version: "1.0"
+name: transmission
+description: "Transmission torrent client"
+category: media
+tags:
+  - torrent
+  - download
+dependencies:
+  - traefik
+
+container:
+  name: transmission
+  image: linuxserver/transmission
+  volumes:
+    - "{{ .DataDir }}/transmission/config:/config"
+    - "{{ .DataDir }}/public/downloads:/data/downloads"
+    - "{{ .DataDir }}/transmission/finished-torrents:/finished-torrents"
+  environment:
+    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
+    LANG: "{{ .Custom.LANG | default \"zh_CN.UTF-8\" }}"
+    PUID: "{{ .Custom.PUID | default \"1000\" }}"
+    PGID: "{{ .Custom.PGID | default \"1000\" }}"
+    USER: "{{ .Custom.TRANSMISSION_USER | default \"admin\" }}"
+    PASS: "{{ .Custom.TRANSMISSION_PASSWORD }}"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: unless-stopped
+  privileged: false
+  network_mode: ""
+
+  resources:
+    memory: "512M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "transmission.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+  network_mode: bridge
+
+post_install:
+  message: |
+    Transmission installed successfully!
+    URL: https://transmission.{{ .Domain }}
+    Note: This service supports macvlan mode for VPN/isolation (configure separately).
+    Incomplete torrents directory can be customized via INCOMPLETE_TORRENTS_DIR custom variable.

@@ -1,0 +1,30 @@
+api_version: "1.0"
+name: beszel
+description: "Beszel lightweight server monitoring hub"
+category: monitoring
+tags: [monitoring, metrics, dashboard]
+dependencies: []
+
+container:
+  name: beszel
+  image: henrygd/beszel
+  volumes:
+    - "{{ .DataDir }}/beszel/data:/beszel_data"
+  environment:
+    TZ: "{{ .Custom.TZ | default "Asia/Shanghai" }}"
+    LANG: "zh_CN.UTF-8"
+    PUID: "{{ .Custom.PUID | default "1000" }}"
+    PGID: "{{ .Custom.PGID | default "1000" }}"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  resources:
+    memory: "64M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "beszel.{{ .Domain }}"
+  tls: "{{ .TLSEnabled }}"
+  cert_resolver: traefik
+  network_mode: bridge

@@ -1,0 +1,44 @@
+api_version: "1.0"
+name: cookiecloud
+description: "CookieCloud - sync browser cookies to the cloud"
+category: utility
+tags:
+  - cookies
+  - browser
+  - sync
+dependencies:
+  - traefik
+
+container:
+  name: cookiecloud
+  ports: []
+  volumes:
+    - "{{ .DataDir }}/cookiecloud/data:/data/api/data"
+  environment:
+    TZ: "Asia/Shanghai"
+    HOST: "0.0.0.0"
+    LANG: "zh_CN.UTF-8"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.cookiecloud.entrypoints: "websecure"
+    traefik.http.routers.cookiecloud.rule: "Host(`cookiecloud.{{ .Domain }}`)"
+    traefik.http.routers.cookiecloud.tls.certresolver: "traefik"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: unless-stopped
+  user: "{{ .Custom.PUID | default \"1000\" }}:{{ .Custom.PGID | default \"1000\" }}"
+  privileged: false
+  resources:
+    memory: "64M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "cookiecloud.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+
+post_install:
+  message: |
+    CookieCloud installed successfully!
+    URL: https://cookiecloud.{{ .Domain }}

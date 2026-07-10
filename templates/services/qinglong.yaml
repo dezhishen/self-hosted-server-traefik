@@ -1,0 +1,52 @@
+api_version: "1.0"
+name: qinglong
+description: "QingLong - cron job management and scripting platform"
+category: utility
+tags:
+  - cron
+  - script
+  - automation
+dependencies:
+  - traefik
+
+container:
+  name: qinglong
+  ports: []
+  volumes:
+    - "{{ .DataDir }}/qinglong/config:/ql/config"
+    - "{{ .DataDir }}/qinglong/data:/ql/data"
+    - "{{ .DataDir }}/qinglong/db:/ql/db"
+    - "{{ .DataDir }}/qinglong/jbot:/ql/jbot"
+    - "{{ .DataDir }}/qinglong/log:/ql/log"
+    - "{{ .DataDir }}/qinglong/repo:/ql/repo"
+    - "{{ .DataDir }}/qinglong/scripts:/ql/scripts"
+    - "{{ .DataDir }}:{{ .DataDir }}"
+  environment:
+    PUID: "{{ .Custom.PUID | default \"1000\" }}"
+    PGID: "{{ .Custom.PGID | default \"1000\" }}"
+    UMASK: "022"
+    TZ: "Asia/Shanghai"
+    LANG: "zh_CN.UTF-8"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.qinglong.entrypoints: "websecure"
+    traefik.http.routers.qinglong.rule: "Host(`qinglong.{{ .Domain }}`)"
+    traefik.http.routers.qinglong.tls.certresolver: "traefik"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  privileged: false
+  resources:
+    memory: "256M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "qinglong.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+
+post_install:
+  message: |
+    QingLong installed successfully!
+    URL: https://qinglong.{{ .Domain }}

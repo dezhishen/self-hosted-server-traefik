@@ -1,0 +1,45 @@
+api_version: "1.0"
+name: komga
+description: "Komga - comics/manga media server"
+category: media
+tags:
+  - comics
+  - manga
+  - media
+  - reader
+dependencies:
+  - traefik
+
+container:
+  name: komga
+  ports: []
+  volumes:
+    - "{{ .DataDir }}/public/9kg/comics:/data/9kg:ro"
+    - "{{ .DataDir }}/komga/config:/config"
+  environment:
+    TZ: "Asia/Shanghai"
+    LANG: "zh_CN.UTF-8"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.komga.entrypoints: "websecure"
+    traefik.http.routers.komga.rule: "Host(`komga.{{ .Domain }}`)"
+    traefik.http.routers.komga.tls.certresolver: "traefik"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  user: "{{ .Custom.PUID | default \"1000\" }}:{{ .Custom.PGID | default \"1000\" }}"
+  privileged: false
+  resources:
+    memory: "512M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "komga.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+
+post_install:
+  message: |
+    Komga installed successfully!
+    URL: https://komga.{{ .Domain }}

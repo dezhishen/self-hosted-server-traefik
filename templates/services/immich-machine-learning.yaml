@@ -1,0 +1,37 @@
+api_version: "1.0"
+name: immich-machine-learning
+description: "Immich machine learning service for facial recognition and object detection"
+category: media
+tags: [immich, machine-learning, ai]
+dependencies: [immich-database]
+
+container:
+  name: immich-machine-learning
+  image: "ghcr.nju.edu.cn/immich-app/immich-machine-learning:{{ .Custom.IMMICH_VERSION | default "latest" }}-openvino"
+  user: "{{ .Custom.PUID | default "1000" }}:{{ .Custom.PGID | default "1000" }}"
+  group_add:
+    - "{{ .Custom.VIDEO_GID | default "44" }}"
+    - "{{ .Custom.RENDER_GID | default "104" }}"
+  devices:
+    - "/dev/dri:/dev/dri"
+    - "/dev/bus/usb:/dev/bus/usb"
+  volumes:
+    - "{{ .DataDir }}/immich/machine-learning/cache:/cache"
+    - "{{ .DataDir }}/immich/machine-learning/.config:/.config"
+    - "{{ .DataDir }}/immich/machine-learning/.cache:/.cache"
+    - "{{ .DataDir }}/immich/machine-learning/.local:/.local"
+  environment:
+    TZ: "{{ .Custom.TZ | default "Asia/Shanghai" }}"
+    LANG: "C.UTF-8"
+    DB_HOSTNAME: immich-database
+    DB_USERNAME: postgres
+    DB_PASSWORD: "{{ .Custom.IMMICH_DATA_PASSWORD }}"
+    DB_DATABASE_NAME: immich
+    DB_PORT: "5432"
+    REDIS_HOSTNAME: "{{ .Custom.REDIS_HOST | default "redis" }}"
+    REDIS_PORT: "{{ .Custom.REDIS_PORT | default "6379" }}"
+    REDIS_PASSWORD: "{{ .Custom.REDIS_PASSWORD }}"
+    REDIS_DBINDEX: "{{ .Custom.IMMICH_REDIS_DBINDEX | default "0" }}"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always

@@ -1,0 +1,52 @@
+api_version: "1.0"
+name: lidarr
+description: "Lidarr music collection management"
+category: media
+tags:
+  - music
+  - automation
+dependencies:
+  - traefik
+
+container:
+  name: lidarr
+  image: linuxserver/lidarr:latest
+  volumes:
+    - "{{ .DataDir }}/lidarr/config:/config"
+    - "{{ .DataDir }}/lidarr/init.d/:/custom-cont-init.d"
+    - "{{ .DataDir }}/public/downloads:/downloads"
+    - "{{ .DataDir }}/public/:/data"
+  environment:
+    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
+    LANG: "{{ .Custom.LANG | default \"zh_CN.UTF-8\" }}"
+    PUID: "{{ .Custom.PUID | default \"1000\" }}"
+    PGID: "{{ .Custom.PGID | default \"1000\" }}"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.lidarr.rule: "Host(`lidarr.{{ .Domain }}`)"
+    traefik.http.routers.lidarr.tls: "{{ .TLSEnabled }}"
+    traefik.http.routers.lidarr.tls.certresolver: "traefik"
+    traefik.http.routers.lidarr.tls.domains[0].main: "lidarr.{{ .Domain }}"
+    traefik.http.services.lidarr.loadbalancer.server.port: "8686"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: unless-stopped
+  privileged: false
+
+  resources:
+    memory: "512M"
+    cpu_max: ""
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "lidarr.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+  network_mode: bridge
+
+post_install:
+  message: |
+    Lidarr installed successfully!
+    URL: https://lidarr.{{ .Domain }}
+    Custom init script for Chinese localization is placed at {{ .DataDir }}/lidarr/init.d/

@@ -1,0 +1,46 @@
+api_version: "1.0"
+name: qbittorrent
+description: "qBittorrent torrent client"
+category: media
+tags:
+  - torrent
+  - download
+dependencies:
+  - traefik
+
+container:
+  name: qbittorrent
+  image: linuxserver/qbittorrent
+  volumes:
+    - "{{ .DataDir }}/qbittorrent/config:/config"
+    - "{{ .DataDir }}/public/downloads:/data/downloads"
+    - "{{ .DataDir }}/public/9kg:/data/9kg"
+    - "{{ .DataDir }}/qbittorrent/finished-torrents:/finished-torrents"
+  environment:
+    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
+    LANG: "{{ .Custom.LANG | default \"zh_CN.UTF-8\" }}"
+    PUID: "{{ .Custom.PUID | default \"1000\" }}"
+    PGID: "{{ .Custom.PGID | default \"1000\" }}"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: unless-stopped
+  privileged: false
+  network_mode: ""
+
+  resources:
+    memory: "1G"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "qbittorrent.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+  network_mode: bridge
+
+post_install:
+  message: |
+    qBittorrent installed successfully!
+    URL: https://qbittorrent.{{ .Domain }}
+    Note: This service supports macvlan mode for VPN/isolation (configure separately).
+    Incomplete torrents directory can be customized via INCOMPLETE_TORRENTS_DIR custom variable.

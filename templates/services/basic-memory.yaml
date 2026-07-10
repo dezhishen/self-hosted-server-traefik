@@ -1,0 +1,65 @@
+api_version: "1.0"
+name: basic-memory
+description: "Basic Memory - MCP server for persistent memory management"
+category: ai
+tags:
+  - mcp
+  - memory
+  - ai
+dependencies:
+  - traefik
+
+container:
+  name: basic-memory
+  ports: []
+  volumes:
+    - "{{ .DataDir }}/basic-memory/config:/home/appuser/.basic-memory:rw"
+    - "{{ .DataDir }}/basic-memory/data:/app/data:rw"
+  environment:
+    TZ: "Asia/Shanghai"
+    LANG: "zh_CN.UTF-8"
+    BASIC_MEMORY_DEFAULT_PROJECT: "main"
+    BASIC_MEMORY_SYNC_CHANGES: "true"
+    BASIC_MEMORY_LOG_LEVEL: "INFO"
+    BASIC_MEMORY_SYNC_DELAY: "1000"
+    BASIC_MEMORY_CONTEXT_SIZE: "10"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.basic-memory.entrypoints: "websecure"
+    traefik.http.routers.basic-memory.rule: "Host(`basic-memory.{{ .Domain }}`)"
+    traefik.http.routers.basic-memory.tls.certresolver: "traefik"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  user: "{{ .Custom.PUID | default \"1000\" }}:{{ .Custom.PGID | default \"1000\" }}"
+  privileged: false
+  command:
+    - basic-memory
+    - mcp
+    - --transport
+    - sse
+    - --host
+    - 0.0.0.0
+    - --port
+    - "8000"
+  healthcheck:
+    test:
+      - CMD
+      - basic-memory
+      - --version
+    interval: 30s
+    timeout: 10s
+    retries: 3
+    start_period: 30s
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "basic-memory.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+
+post_install:
+  message: |
+    Basic Memory installed successfully!
+    URL: https://basic-memory.{{ .Domain }}

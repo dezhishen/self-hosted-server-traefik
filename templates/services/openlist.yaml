@@ -1,0 +1,60 @@
+api_version: "1.0"
+name: openlist
+description: "OpenList - file listing and sharing platform"
+category: utility
+tags:
+  - file
+  - sharing
+  - listing
+dependencies:
+  - traefik
+
+container:
+  name: openlist
+  ports:
+    - "5246:5246"
+  volumes:
+    - "{{ .DataDir }}/openlist/data:/opt/openlist/data"
+    - "{{ .DataDir }}/openlist/strm:/strm"
+  environment:
+    UMASK: "022"
+    TZ: "Asia/Shanghai"
+    LANG: "zh_CN.UTF-8"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.openlist.entrypoints: "websecure"
+    traefik.http.routers.openlist.rule: "Host(`openlist.{{ .Domain }}`)"
+    traefik.http.routers.openlist.tls.certresolver: "traefik"
+    traefik.http.routers.openlist.service: "openlist"
+    traefik.http.routers.openlist-s3.entrypoints: "websecure"
+    traefik.http.routers.openlist-s3.rule: "Host(`openlist-s3.{{ .Domain }}`)"
+    traefik.http.routers.openlist-s3.tls.certresolver: "traefik"
+    traefik.http.routers.openlist-s3.service: "openlist-s3"
+    traefik.http.services.openlist.loadbalancer.server.port: "5244"
+    traefik.http.services.openlist-s3.loadbalancer.server.port: "5246"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  user: "{{ .Custom.PUID | default \"1000\" }}:{{ .Custom.PGID | default \"1000\" }}"
+  privileged: false
+  resources:
+    memory: "128M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "openlist.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+  extra_labels:
+    traefik.http.routers.openlist-s3.rule: "Host(`openlist-s3.{{ .Domain }}`)"
+    traefik.http.routers.openlist-s3.tls.certresolver: "traefik"
+    traefik.http.routers.openlist-s3.service: "openlist-s3"
+    traefik.http.services.openlist.loadbalancer.server.port: "5244"
+    traefik.http.services.openlist-s3.loadbalancer.server.port: "5246"
+
+post_install:
+  message: |
+    OpenList installed successfully!
+    URL: https://openlist.{{ .Domain }}
+    S3 endpoint: https://openlist-s3.{{ .Domain }}

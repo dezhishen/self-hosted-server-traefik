@@ -1,0 +1,48 @@
+api_version: "1.0"
+name: memos
+description: "Memos - lightweight note-taking service"
+category: utility
+tags:
+  - notes
+  - memo
+  - journal
+dependencies:
+  - traefik
+
+container:
+  name: memos
+  image: neosmemo/memos:stable
+  volumes:
+    - "{{ .DataDir }}/memos/data:/var/opt/memos"
+  environment:
+    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
+    LANG: "{{ .Custom.LANG | default \"zh_CN.UTF-8\" }}"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.memos.rule: "Host(`memos.{{ .Domain }}`)"
+    traefik.http.routers.memos.tls: "{{ .TLSEnabled }}"
+    traefik.http.routers.memos.tls.certresolver: "traefik"
+    traefik.http.routers.memos.tls.domains[0].main: "memos.{{ .Domain }}"
+    traefik.http.services.memos.loadbalancer.server.port: "5230"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: unless-stopped
+  privileged: false
+  user: "{{ .Custom.PUID | default \"1000\" }}:{{ .Custom.PGID | default \"1000\" }}"
+
+  resources:
+    memory: "512M"
+    cpu_max: ""
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "memos.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+  network_mode: bridge
+
+post_install:
+  message: |
+    Memos installed successfully!
+    URL: https://memos.{{ .Domain }}

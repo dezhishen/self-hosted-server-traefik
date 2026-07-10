@@ -1,0 +1,49 @@
+api_version: "1.0"
+name: now-and-again
+description: "Now & Again - repeat reminder service"
+category: utility
+tags:
+  - reminder
+  - utility
+dependencies:
+  - traefik
+
+container:
+  name: now-and-again
+  image: ghcr.io/dezhishen/now-and-again:1.0.7
+  volumes:
+    - "{{ .DataDir }}/now-and-again/data:/data"
+  environment:
+    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
+    LANG: "{{ .Custom.LANG | default \"zh_CN.UTF-8\" }}"
+    NA_DATA_DIR: "/data"
+    GIN_MODE: "release"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.now-and-again.rule: "Host(`now-and-again.{{ .Domain }}`)"
+    traefik.http.routers.now-and-again.tls: "{{ .TLSEnabled }}"
+    traefik.http.routers.now-and-again.tls.certresolver: "traefik"
+    traefik.http.routers.now-and-again.tls.domains[0].main: "now-and-again.{{ .Domain }}"
+    traefik.http.services.now-and-again.loadbalancer.server.port: "8080"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: unless-stopped
+  privileged: false
+  user: "{{ .Custom.PUID | default \"1000\" }}:{{ .Custom.PGID | default \"1000\" }}"
+
+  resources:
+    memory: "256M"
+    cpu_max: ""
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "now-and-again.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+  network_mode: bridge
+
+post_install:
+  message: |
+    Now & Again installed successfully!
+    URL: https://now-and-again.{{ .Domain }}

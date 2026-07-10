@@ -1,0 +1,26 @@
+api_version: "1.0"
+name: adminer
+description: "Adminer web-based database management tool"
+category: database
+tags: [adminer, database, management, web]
+dependencies: []
+
+container:
+  name: adminer
+  image: library/adminer
+  user: "{{ .Custom.PUID | default "1000" }}:{{ .Custom.PGID | default "1000" }}"
+  volumes:
+    - "{{ .DataDir }}/adminer/data:/data"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  resources:
+    memory: "128M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "adminer.{{ .Domain }}"
+  tls: "{{ .TLSEnabled }}"
+  cert_resolver: traefik
+  network_mode: bridge

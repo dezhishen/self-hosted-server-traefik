@@ -1,0 +1,30 @@
+api_version: "1.0"
+name: cloudflared
+description: "Cloudflare Tunnel client for secure tunneling"
+category: network
+tags: [cloudflare, tunnel, proxy, network]
+dependencies: []
+
+container:
+  name: cloudflared
+  image: cloudflare/cloudflared:latest
+  command:
+    - "--loglevel"
+    - "warn"
+    - "--no-tls-verify"
+    - "--edge-ip-version"
+    - "auto"
+    - "tunnel"
+    - "run"
+    - "--url"
+    - "https://traefik:443"
+    - "{{ .Custom.CLOUDFLARED_TUNNEL_ID }}"
+  volumes:
+    - "{{ .DataDir }}/cloudflared/etc:/etc/cloudflared"
+  environment:
+    TZ: "{{ .Custom.TZ | default "Asia/Shanghai" }}"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  resources:
+    memory: "64M"

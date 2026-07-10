@@ -1,0 +1,25 @@
+api_version: "1.0"
+name: prometheus
+description: "Prometheus metrics collection and alerting system"
+category: monitoring
+tags: [monitoring, metrics, alerting, time-series]
+dependencies: []
+
+container:
+  name: prometheus
+  image: prom/prometheus
+  user: "{{ .Custom.PUID | default "1000" }}:{{ .Custom.PGID | default "1000" }}"
+  volumes:
+    - "{{ .DataDir }}/prometheus/tsdb:/prometheus"
+    - "{{ .DataDir }}/prometheus/config:/etc/prometheus"
+  environment:
+    TZ: "{{ .Custom.TZ | default "Asia/Shanghai" }}"
+    LANG: "zh_CN.UTF-8"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: unless-stopped
+  resources:
+    memory: "64M"
+
+traefik:
+  enabled: false

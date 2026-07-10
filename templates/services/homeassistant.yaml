@@ -1,0 +1,38 @@
+api_version: "1.0"
+name: homeassistant
+description: "Home Assistant home automation platform"
+category: automation
+tags:
+  - iot
+  - home-automation
+  - smart-home
+dependencies: []
+
+container:
+  name: homeassistant
+  image: homeassistant/home-assistant:latest
+  volumes:
+    - "{{ .DataDir }}/homeassistant/config:/config"
+    - "/dev/net/tun:/dev/net/tun"
+  devices:
+    - "/dev/net/tun:/dev/net/tun:rwm"
+  environment:
+    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
+    LANG: "{{ .Custom.LANG | default \"zh_CN.UTF-8\" }}"
+    PUID: "{{ .Custom.PUID | default \"1000\" }}"
+    PGID: "{{ .Custom.PGID | default \"1000\" }}"
+    PIP_INDEX_URL: "{{ .Custom.PIP_INDEX_URL | default \"https://mirrors.aliyun.com/pypi/simple\" }}"
+  restart: unless-stopped
+  privileged: true
+  network_mode: host
+
+  resources:
+    memory: "1G"
+
+traefik:
+  enabled: false
+
+post_install:
+  message: |
+    Home Assistant installed successfully!
+    Uses host networking mode. Access via http://<host-ip>:8123

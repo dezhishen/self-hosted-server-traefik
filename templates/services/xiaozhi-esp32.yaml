@@ -1,0 +1,59 @@
+api_version: "1.0"
+name: xiaozhi-esp32
+description: "XiaoZhi ESP32 Server - voice assistant server for ESP32 devices"
+category: iot
+tags:
+  - esp32
+  - voice
+  - assistant
+  - iot
+dependencies:
+  - traefik
+
+container:
+  name: xiaozhi-esp32-server
+  ports:
+    - "8006:8006"
+    - "8003:8003"
+    - "8000:8000"
+  volumes:
+    - "{{ .DataDir }}/xiaozhi-esp32/data:/opt/xiaozhi-esp32-server/data"
+    - "{{ .DataDir }}/xiaozhi-esp32/models/SenseVoiceSmall/model.pt:/opt/xiaozhi-esp32-server/models/SenseVoiceSmall/model.pt"
+    - "{{ .DataDir }}/xiaozhi-esp32/tmp:/opt/xiaozhi-esp32-server/tmp"
+  environment:
+    TZ: "Asia/Shanghai"
+    LANG: "zh_CN.UTF-8"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.xiaozhi-esp32-ws.entrypoints: "websecure"
+    traefik.http.routers.xiaozhi-esp32-ws.rule: "Host(`xiaozhi-esp32-ws.{{ .Domain }}`)"
+    traefik.http.routers.xiaozhi-esp32-ws.tls.certresolver: "traefik"
+    traefik.http.routers.xiaozhi-esp32-ws.service: "xiaozhi-esp32-ws"
+    traefik.http.services.xiaozhi-esp32-ws.loadbalancer.server.port: "8000"
+    traefik.http.routers.xiaozhi-esp32.entrypoints: "websecure"
+    traefik.http.routers.xiaozhi-esp32.rule: "Host(`xiaozhi-esp32.{{ .Domain }}`)"
+    traefik.http.routers.xiaozhi-esp32.tls.certresolver: "traefik"
+    traefik.http.routers.xiaozhi-esp32.service: "xiaozhi-esp32"
+    traefik.http.services.xiaozhi-esp32.loadbalancer.server.port: "8003"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  privileged: false
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "xiaozhi-esp32.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+  extra_labels:
+    traefik.http.routers.xiaozhi-esp32-ws.rule: "Host(`xiaozhi-esp32-ws.{{ .Domain }}`)"
+    traefik.http.routers.xiaozhi-esp32-ws.tls.certresolver: "traefik"
+    traefik.http.routers.xiaozhi-esp32-ws.service: "xiaozhi-esp32-ws"
+    traefik.http.services.xiaozhi-esp32-ws.loadbalancer.server.port: "8000"
+
+post_install:
+  message: |
+    XiaoZhi ESP32 Server installed successfully!
+    Main URL: https://xiaozhi-esp32.{{ .Domain }}
+    WebSocket URL: https://xiaozhi-esp32-ws.{{ .Domain }}

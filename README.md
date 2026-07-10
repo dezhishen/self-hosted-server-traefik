@@ -1,74 +1,158 @@
 # self-hosted-server-traefik
 
 [![License](https://img.shields.io/github/license/dezhishen/self-hosted-server-traefik)](./LICENSE)
-[![Stars](https://img.shields.io/github/stars/dezhishen/self-hosted-server-traefik)](https://github.com/dezhishen/self-hosted-server-traefik/stargazers)
-[![Last Commit](https://img.shields.io/github/last-commit/dezhishen/self-hosted-server-traefik)](https://github.com/dezhishen/self-hosted-server-traefik/commits)
+[![CI](https://github.com/dezhishen/self-hosted-server-traefik/actions/workflows/ci.yml/badge.svg)](https://github.com/dezhishen/self-hosted-server-traefik/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/dezhishen/self-hosted-server-traefik)](https://github.com/dezhishen/self-hosted-server-traefik/releases)
+[![Go Report Card](https://goreportcard.com/badge/github.com/dezhishen/self-hosted-server-traefik)](https://goreportcard.com/report/github.com/dezhishen/self-hosted-server-traefik)
 
-Docker + Traefik 私有化部署，交互式一键安装 40+ 服务。
+Docker + Traefik 私有化部署 —— 交互式一键安装 40+ 自托管服务，带 Web 管理面板。
 
-## 快速开始
+## Quick Start
 
 ```bash
 git clone git@github.com:dezhishen/self-hosted-server-traefik.git
 cd self-hosted-server-traefik
-./install-one.sh traefik      # 必选：反向代理
-./install-one.sh jellyfin     # 安装任意服务
+
+# CLI 模式
+./bin/selfhosted -c selfhosted.yaml install traefik
+
+# Web 面板
+./bin/selfhosted -c selfhosted.yaml serve
 ```
 
-## 特性
+> 旧版 bash 脚本已迁移至 [`shell`](https://github.com/dezhishen/self-hosted-server-traefik/tree/shell) 分支。
 
-### 一键安装
-交互式配置，参数自动保存 `~/.args/`，再次运行无需重复输入。支持 bash 自动补全（`./bash-complete.sh install`）。
+## Features
 
-### 网络模式
+- **一键安装** 40+ 自托管服务，交互式参数配置，自动持久化 (`~/.args/`)
+- **Web 管理面板** 使用 Vue 3 + Element Plus，内嵌于 Go 二进制
+- **多容器运行时** 支持 Docker / Podman，本地或远程 (unix/tcp/ssh)
+- **订阅同步** 从远程 registry 拉取社区服务定义
+- **类型化参数** string / password(加密) / bool / number / select / array
+- **Managed Labels** 统一标签管理 (`selfhosted.*`)
+- **多模块架构** `contracts` → `backend` → `sdk` → `cli`
 
-| 模式 | 创建命令 | 适用场景 | 容器互通 |
-|------|---------|---------|---------|
-| **bridge** | `create-docker-bridge-network.sh` | 大部分服务 | 容器名互访 |
-| **macvlan** | `create-docker-macvlan-network.sh` | 需独立 IP（BT 下载） | 通过 `macvlan_forward` 子接口与宿主机互通 |
-| **internal** | `create-docker-internal-network.sh` | 数据库等需隔离 | 仅同网络内互通，阻隔外网 |
+## Installation
 
-> macvlan 容器默认无法被宿主机直接访问。本项目的 macvlan 创建脚本会自动配置 `_forward` 子接口 + 静态路由 + systemd 持久化，解决宿主机与 macvlan 容器互通问题。
+### 从 Release 下载
 
-### 反向代理
-Traefik 自动路由，bridge 模式用 Docker labels，macvlan 模式生成静态 provider 文件，TLS 自动签发续期。
+从 [Releases](https://github.com/dezhishen/self-hosted-server-traefik/releases) 下载对应平台的二进制。
 
-### 关键脚本
+```bash
+chmod +x selfhosted
+./selfhosted help
+```
 
-| 脚本 | 用途 |
+### Docker
+
+```bash
+docker pull ghcr.io/dezhishen/self-hosted-server-traefik/cli:latest
+docker run --rm ghcr.io/dezhishen/self-hosted-server-traefik/cli:latest help
+```
+
+### 从源码构建
+
+```bash
+make build        # 构建 CLI（含前端）
+make build-backend # 仅后端
+make test         # 运行测试
+```
+
+## Usage
+
+```bash
+# 查看可用服务
+selfhosted list
+
+# 安装服务
+selfhosted -c selfhosted.yaml install traefik
+
+# 带参数安装
+selfhosted install jellyfin --param jellyfin_port=8096
+
+# 启动 Web 面板
+selfhosted -c selfhosted.yaml serve
+
+# 管理订阅
+selfhosted sub add community https://example.com/templates
+
+# 管理远程主机
+selfhosted remote add myserver ssh://user@host
+```
+
+### Configuration
+
+参考 [`selfhosted.example.yaml`](selfhosted.example.yaml):
+
+```yaml
+config_path: ~/.args
+engine: docker
+
+remotes:
+  - name: myserver
+    type: ssh
+    host: user@192.168.1.100
+
+subscriptions:
+  - name: community
+    url: https://example.com/templates
+```
+
+## Services
+
+| 分类 | 服务 |
 |------|------|
-| `install-one.sh <服务>` | 统一安装入口，自动调用 `scripts/install-*.sh` |
-| `scripts/install-*.sh` | 各服务安装脚本，交互式配置 + docker run |
-| `scripts/create-docker-*-network.sh` | 创建 bridge / macvlan / internal 网络 |
-| `scripts/create-traefik-provider*.sh` | 生成 Traefik 路由配置 |
-| `scripts/get-args.sh / set-args.sh` | 参数持久化读写 |
-| `scripts/stop-container.sh` | 停止并删除容器 |
-| `update.sh / update-one.sh` | 更新全部/单个容器 |
-| `update-self.sh` | git pull 更新项目 |
-| `bash-complete.sh` | bash Tab 自动补全（动态扫描脚本目录） |
-| `xiaoya.sh / xiaoya-traefik.sh` | xiaoya 媒体库安装 & Traefik 代理配置 |
+| **Proxy** | traefik, nginx |
+| **Media** | jellyfin, plex, emby, xiaoya |
+| **Download** | qbittorrent, transmission, aria2 |
+| **Database** | postgres, mysql, mariadb, redis, mongodb |
+| **Dashboard** | homepage, homer, dashy, organizr |
+| **Monitoring** | prometheus, grafana, node-exporter |
+| **Storage** | minio, nextcloud, seafile |
+| **Auth** | authelia, authentik, keycloak |
+| **Dev Tools** | gitlab, jenkins, gitea |
+| ... | 共 65+ 服务 |
 
-## 目录
+## Architecture
 
 ```
-.
-├── install-one.sh          # 入口
-├── scripts/                # 安装 & 工具脚本
-├── docker/                 # 定制镜像
-├── docs/                   # 教程 & 容器指南
-└── template/               # Traefik 配置模板
+               ┌─────────┐
+               │  CLI    │ ← ─ ─ embed ─ ─ ─ ─ Frontend
+               │  (Go)   │                     (Vue 3)
+               └────┬────┘
+                    │
+               ┌────▼────┐
+               │  SDK    │
+               │  (Go)   │
+               └────┬────┘
+                    │
+          ┌─────────┼─────────┐
+          │         │         │
+   ┌──────▼──┐ ┌───▼────┐ ┌──▼──────┐
+   │Contract │ │ Backend│ │ Remote  │
+   │(interf) │ │ (impl) │ │ Registry│
+   └─────────┘ └───┬────┘ └─────────┘
+                   │
+          ┌────────┼────────┐
+          │        │        │
+     ┌────▼──┐ ┌──▼───┐ ┌──▼───┐
+     │Docker │ │Podman│ │~/.args│
+     └───────┘ └──────┘ └──────┘
 ```
 
-## 更多
+详细架构 → [docs/architecture.md](docs/architecture.md)
 
-- 教程 & 网络配置 → [docs/tutorials/](docs/tutorials/)
-- 特定容器指南 → [docs/containers/](docs/containers/)
-- 更新: `./update.sh` 或 `./update-one.sh <容器名>`
+## Development
 
+```bash
+make dev-frontend   # 前端热重载
+make dev            # CLI 调试
+make test           # Go 测试
+make test-e2e       # Playwright E2E
+```
 
+详见 [docs/development.md](docs/development.md)
 
+## License
 
-
-
-
-
+[MIT](LICENSE)

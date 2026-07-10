@@ -1,0 +1,34 @@
+api_version: "1.0"
+name: grafana
+description: "Grafana observability and monitoring dashboard"
+category: monitoring
+tags: [monitoring, dashboard, analytics, metrics]
+dependencies: []
+
+container:
+  name: grafana
+  image: grafana/grafana
+  user: "{{ .Custom.PUID | default "1000" }}:{{ .Custom.PGID | default "1000" }}"
+  volumes:
+    - "{{ .DataDir }}/grafana:/var/lib/grafana"
+  environment:
+    TZ: "{{ .Custom.TZ | default "Asia/Shanghai" }}"
+    LANG: "zh_CN.UTF-8"
+    GF_SERVER_ROOT_URL: "https://grafana.{{ .Domain }}"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: unless-stopped
+  resources:
+    memory: "64M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "grafana.{{ .Domain }}"
+  tls: "{{ .TLSEnabled }}"
+  cert_resolver: traefik
+  network_mode: bridge
+  extra_labels:
+    traefik.http.middlewares.allow-embed.headers.customresponseheaders.X-Frame-Options: ""
+    traefik.http.middlewares.allow-embed.headers.customresponseheaders.Content-Security-Policy: "frame-ancestors 'self' https://{{ .Domain }} https://*.{{ .Domain }}"
+    traefik.http.routers.grafana.middlewares: allow-embed@docker

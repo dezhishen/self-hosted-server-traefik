@@ -1,0 +1,49 @@
+api_version: "1.0"
+name: jackett
+description: "Jackett indexer proxy"
+category: media
+tags:
+  - indexer
+  - torrent
+dependencies:
+  - traefik
+
+container:
+  name: jackett
+  image: linuxserver/jackett
+  volumes:
+    - "{{ .DataDir }}/jackett/config:/config"
+    - "{{ .DataDir }}/public/downloads:/downloads"
+    - "{{ .DataDir }}/public/:/data"
+  environment:
+    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
+    LANG: "{{ .Custom.LANG | default \"zh_CN.UTF-8\" }}"
+    PUID: "{{ .Custom.PUID | default \"1000\" }}"
+    PGID: "{{ .Custom.PGID | default \"1000\" }}"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.jackett.rule: "Host(`jackett.{{ .Domain }}`)"
+    traefik.http.routers.jackett.tls: "{{ .TLSEnabled }}"
+    traefik.http.routers.jackett.tls.certresolver: "traefik"
+    traefik.http.routers.jackett.tls.domains[0].main: "jackett.{{ .Domain }}"
+    traefik.http.services.jackett.loadbalancer.server.port: "9117"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: unless-stopped
+  privileged: false
+
+  resources:
+    memory: "512M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "jackett.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+  network_mode: bridge
+
+post_install:
+  message: |
+    Jackett installed successfully!
+    URL: https://jackett.{{ .Domain }}

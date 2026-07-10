@@ -1,0 +1,51 @@
+api_version: "1.0"
+name: iyuu
+description: "IYUU Plus PT auto-seed tool"
+category: media
+tags:
+  - pt
+  - seeding
+  - automation
+dependencies:
+  - traefik
+
+container:
+  name: iyuu
+  volumes:
+    - "{{ .DataDir }}/public/downloads:/data/downloads"
+    - "{{ .DataDir }}/iyuu/iyuu:/iyuu"
+    - "{{ .DataDir }}/iyuu/data:/data"
+  environment:
+    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
+    LANG: "{{ .Custom.LANG | default \"zh_CN.UTF-8\" }}"
+    PUID: "{{ .Custom.PUID | default \"1000\" }}"
+    PGID: "{{ .Custom.PGID | default \"1000\" }}"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.iyuu.rule: "Host(`iyuu.{{ .Domain }}`)"
+    traefik.http.routers.iyuu.tls: "{{ .TLSEnabled }}"
+    traefik.http.routers.iyuu.tls.certresolver: "traefik"
+    traefik.http.routers.iyuu.tls.domains[0].main: "iyuu.{{ .Domain }}"
+    traefik.http.services.iyuu.loadbalancer.server.port: "8780"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: unless-stopped
+  privileged: false
+
+  resources:
+    memory: "512M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "iyuu.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+  network_mode: bridge
+
+post_install:
+  message: |
+    IYUU Plus installed successfully!
+    URL: https://iyuu.{{ .Domain }}
+    Two image variants available: iyuucn/iyuuplus-dev (with database) and iyuucn/iyuuplus-dev-nodb (no database).
+    If qbittorrent or transmission are installed, their config directories are mounted automatically.

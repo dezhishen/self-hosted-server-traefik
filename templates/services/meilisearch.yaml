@@ -1,0 +1,49 @@
+api_version: "1.0"
+name: meilisearch
+description: "Meilisearch - open-source search engine"
+category: database
+tags:
+  - search
+  - database
+  - full-text
+dependencies:
+  - traefik
+
+container:
+  name: meilisearch
+  ports:
+    - "7700:7700"
+  volumes:
+    - "{{ .DataDir }}/meilisearch/data:/meili_data"
+  environment:
+    MEILI_ENV: "development"
+    TZ: "Asia/Shanghai"
+    LANG: "zh_CN.UTF-8"
+  labels:
+    traefik.enable: "false"
+    traefik.http.routers.meilisearch.entrypoints: "websecure"
+    traefik.http.routers.meilisearch.rule: "Host(`meilisearch.{{ .Domain }}`)"
+    traefik.http.routers.meilisearch.tls.certresolver: "traefik"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  user: "{{ .Custom.PUID | default \"1000\" }}:{{ .Custom.PGID | default \"1000\" }}"
+  privileged: false
+  resources:
+    memory: "1200M"
+  command:
+    - /bin/meilisearch
+    - --log-level
+    - info
+    - --max-indexing-memory=512M
+    - --master-key={{ .Custom.MEILI_MASTER_KEY }}
+    - --max-indexing-threads=2
+
+traefik:
+  enabled: false
+
+post_install:
+  message: |
+    Meilisearch installed successfully!
+    Service available internally on port 7700.
+    Master key must be set via MEILI_MASTER_KEY custom variable.

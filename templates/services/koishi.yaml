@@ -1,0 +1,45 @@
+api_version: "1.0"
+name: koishi
+description: "Koishi - cross-platform chatbot framework"
+category: ai
+tags:
+  - chatbot
+  - bot
+  - ai
+dependencies:
+  - traefik
+
+container:
+  name: koishi
+  ports: []
+  volumes:
+    - "{{ .DataDir }}/koishi/data:/koishi"
+  devices:
+    - "/dev/dri"
+  environment:
+    TZ: "Asia/Shanghai"
+    LANG: "zh_CN.UTF-8"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.koishi.entrypoints: "websecure"
+    traefik.http.routers.koishi.rule: "Host(`koishi.{{ .Domain }}`)"
+    traefik.http.routers.koishi.tls.certresolver: "traefik"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  shm_size: 512M
+  privileged: true
+  resources:
+    memory: "512M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "koishi.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+
+post_install:
+  message: |
+    Koishi installed successfully!
+    URL: https://koishi.{{ .Domain }}

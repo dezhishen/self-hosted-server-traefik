@@ -1,0 +1,44 @@
+api_version: "1.0"
+name: pbh
+description: "PeerBanHelper - BitTorrent peer ban automation tool"
+category: utility
+tags:
+  - bittorrent
+  - torrent
+  - ban
+dependencies:
+  - traefik
+
+container:
+  name: pbh
+  ports: []
+  volumes:
+    - "{{ .DataDir }}/pbh/data:/app/data"
+  environment:
+    TZ: "Asia/Shanghai"
+    LANG: "zh_CN.UTF-8"
+    PUID: "{{ .Custom.PUID | default \"1000\" }}"
+    PGID: "{{ .Custom.PGID | default \"1000\" }}"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.pbh.entrypoints: "websecure"
+    traefik.http.routers.pbh.rule: "Host(`pbh.{{ .Domain }}`)"
+    traefik.http.routers.pbh.tls.certresolver: "traefik"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  privileged: false
+  resources:
+    memory: "512M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "pbh.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+
+post_install:
+  message: |
+    PeerBanHelper installed successfully!
+    URL: https://pbh.{{ .Domain }}

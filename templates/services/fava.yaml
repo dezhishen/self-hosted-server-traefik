@@ -1,0 +1,50 @@
+api_version: "1.0"
+name: fava
+description: "Fava - web interface for Beancount double-entry accounting"
+category: finance
+tags:
+  - finance
+  - accounting
+  - beancount
+dependencies:
+  - traefik
+
+container:
+  name: fava
+  ports: []
+  volumes:
+    - "{{ .DataDir }}/fava/bean:/bean:Z"
+  environment:
+    TZ: "Asia/Shanghai"
+    LANG: "zh_CN.UTF-8"
+    BEANCOUNT_FILE: "/bean/main.bean"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.fava.entrypoints: "websecure"
+    traefik.http.routers.fava.rule: "Host(`fava.{{ .Domain }}`)"
+    traefik.http.routers.fava.tls.certresolver: "traefik"
+    traefik.http.middlewares.fava-auth.digestauth.users: "{{ .Custom.FAVA_AUTH_USER | default \"admin\" }}:traefik:{{ .Custom.FAVA_AUTH_DIGEST }}"
+    traefik.http.routers.fava.middlewares: "fava-auth@docker"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  user: "{{ .Custom.PUID | default \"1000\" }}:{{ .Custom.PGID | default \"1000\" }}"
+  privileged: false
+  resources:
+    memory: "512M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "fava.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+  middlewares:
+    - "fava-auth@docker"
+  auth: true
+
+post_install:
+  message: |
+    Fava installed successfully!
+    URL: https://fava.{{ .Domain }}
+    You may need to set FAVA_AUTH_USER and FAVA_AUTH_PASSWORD custom variables.

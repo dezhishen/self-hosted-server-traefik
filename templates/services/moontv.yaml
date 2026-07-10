@@ -1,0 +1,52 @@
+api_version: "1.0"
+name: moontv
+description: "MoonTV IPTV streaming platform"
+category: media
+tags:
+  - iptv
+  - tv
+  - streaming
+dependencies:
+  - traefik
+
+container:
+  name: moontv
+  image: ghcr.io/senshinya/moontv:latest
+  environment:
+    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
+    LANG: "{{ .Custom.LANG | default \"zh_CN.UTF-8\" }}"
+    USERNAME: "admin"
+    PASSWORD: "{{ .Custom.MOONTV_PASSWORD }}"
+    NEXT_PUBLIC_STORAGE_TYPE: "redis"
+    NEXT_PUBLIC_ENABLE_REGISTER: "false"
+    REDIS_URL: "redis://{{ .Custom.REDIS_PASSWORD | default \"\" }}@redis:6379/{{ .Custom.MOONTV_REDIS_DBINDEX | default \"0\" }}"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.moontv.rule: "Host(`moontv.{{ .Domain }}`)"
+    traefik.http.routers.moontv.tls: "{{ .TLSEnabled }}"
+    traefik.http.routers.moontv.tls.certresolver: "traefik"
+    traefik.http.routers.moontv.tls.domains[0].main: "moontv.{{ .Domain }}"
+    traefik.http.services.moontv.loadbalancer.server.port: "3000"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: unless-stopped
+  privileged: false
+
+  resources:
+    memory: "128M"
+    cpu_max: ""
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "moontv.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+  network_mode: bridge
+
+post_install:
+  message: |
+    MoonTV installed successfully!
+    URL: https://moontv.{{ .Domain }}
+    Default username: admin
+    Requires a Redis instance accessible at hostname 'redis'.

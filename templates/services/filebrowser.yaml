@@ -1,0 +1,58 @@
+api_version: "1.0"
+name: filebrowser
+description: "File browser with web UI"
+category: utility
+tags:
+  - files
+  - manager
+  - web-ui
+dependencies:
+  - traefik
+
+container:
+  name: filebrowser
+  image: filebrowser/filebrowser
+  volumes:
+    - "{{ .DataDir }}:/srv"
+    - "{{ .DataDir }}/filebrowser/database.db:/database.db"
+    - "{{ .DataDir }}/filebrowser/filebrowser.json:/.filebrowser.json"
+  environment:
+    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
+    LANG: "{{ .Custom.LANG | default \"zh_CN.UTF-8\" }}"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.filebrowser.rule: "Host(`filebrowser.{{ .Domain }}`)"
+    traefik.http.routers.filebrowser.tls: "{{ .TLSEnabled }}"
+    traefik.http.routers.filebrowser.tls.certresolver: "traefik"
+    traefik.http.routers.filebrowser.tls.domains[0].main: "filebrowser.{{ .Domain }}"
+    traefik.http.services.filebrowser.loadbalancer.server.port: "8080"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: unless-stopped
+  privileged: false
+  user: "{{ .Custom.PUID | default \"1000\" }}:{{ .Custom.PGID | default \"1000\" }}"
+
+  healthcheck:
+    test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+    interval: 30s
+    timeout: 10s
+    retries: 3
+    start_period: 10s
+
+  resources:
+    memory: "256M"
+    cpu_max: ""
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "filebrowser.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+  network_mode: bridge
+
+post_install:
+  message: |
+    FileBrowser installed successfully!
+    URL: https://filebrowser.{{ .Domain }}
+    Serves files from {{ .DataDir }}

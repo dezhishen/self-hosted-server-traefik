@@ -1,0 +1,53 @@
+api_version: "1.0"
+name: jellyfin
+description: "Jellyfin media server"
+category: media
+tags:
+  - media
+  - video
+  - streaming
+dependencies:
+  - traefik
+
+container:
+  name: jellyfin
+  image: linuxserver/jellyfin:latest
+  ports:
+    - "8096:8096"
+  volumes:
+    - "{{ .DataDir }}/jellyfin/config:/config"
+    - "{{ .DataDir }}/public/:/data"
+  devices:
+    - "/dev/dri:/dev/dri:rwm"
+  environment:
+    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
+    LANG: "{{ .Custom.LANG | default \"zh_CN.UTF-8\" }}"
+    PUID: "{{ .Custom.PUID | default \"1000\" }}"
+    PGID: "{{ .Custom.PGID | default \"1000\" }}"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.jellyfin.rule: "Host(`jellyfin.{{ .Domain }}`)"
+    traefik.http.routers.jellyfin.tls: "{{ .TLSEnabled }}"
+    traefik.http.routers.jellyfin.tls.certresolver: "traefik"
+    traefik.http.routers.jellyfin.tls.domains[0].main: "jellyfin.{{ .Domain }}"
+    traefik.http.services.jellyfin.loadbalancer.server.port: "8096"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: unless-stopped
+  privileged: false
+
+  resources:
+    memory: "1024M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "jellyfin.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+  network_mode: bridge
+
+post_install:
+  message: |
+    Jellyfin installed successfully!
+    URL: https://jellyfin.{{ .Domain }}

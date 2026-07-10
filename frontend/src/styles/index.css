@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --sidebar-bg: #1d1e1f;
+  --sidebar-text: #bfcbd9;
+  --sidebar-active-bg: #409eff;
+  --sidebar-width: 220px;
+  --header-height: 60px;
+  --content-bg: #f0f2f5;
+}
+
+.el-menu-vertical-demo:not(.el-menu--collapse) {
+  width: var(--sidebar-width);
+}
+
+.sidebar-logo {
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-logo img {
+  height: 32px;
+  width: 32px;
+}
+
+.sidebar-logo span {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  margin-left: 10px;
+}
+
+.page-header {
+  margin-bottom: 20px;
+}
+
+.page-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #303133;
+  margin: 0;
+}
+
+.stat-card {
+  cursor: default;
+  transition: transform 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+}
+
+.log-output {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  padding: 16px;
+  border-radius: 4px;
+  min-height: 400px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}

@@ -1,0 +1,53 @@
+api_version: "1.0"
+name: adguardhome
+description: "AdGuard Home network-wide ad and tracker blocker"
+category: network
+tags:
+  - dns
+  - ad-blocker
+  - privacy
+dependencies:
+  - traefik
+
+container:
+  name: adguardhome
+  image: adguard/adguardhome
+  ports:
+    - "53:53"
+    - "53:53/udp"
+  volumes:
+    - "{{ .DataDir }}/adguardhome/work:/opt/adguardhome/work"
+    - "{{ .DataDir }}/adguardhome/conf:/opt/adguardhome/conf"
+  environment:
+    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
+    LANG: "{{ .Custom.LANG | default \"zh_CN.UTF-8\" }}"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.adguardhome.rule: "Host(`adguardhome.{{ .Domain }}`)"
+    traefik.http.routers.adguardhome.tls: "{{ .TLSEnabled }}"
+    traefik.http.routers.adguardhome.tls.certresolver: "traefik"
+    traefik.http.routers.adguardhome.tls.domains[0].main: "adguardhome.{{ .Domain }}"
+    traefik.http.services.adguardhome.loadbalancer.server.port: "80"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: unless-stopped
+  privileged: false
+
+  resources:
+    memory: "128M"
+    cpu_max: ""
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "adguardhome.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+  network_mode: bridge
+
+post_install:
+  message: |
+    AdGuard Home installed successfully!
+    Initial setup: https://adguardhome.{{ .Domain }}
+    During initial setup, set the web interface port to 80, then reinstall.
+    DNS server runs on port 53 (TCP and UDP).

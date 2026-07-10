@@ -1,3 +1,56 @@
-.args
+# IDE
 .vscode
 .idea
+
+# Build artifacts
+bin/
+vendor/
+*.exe
+*.test
+*.out
+
+# Old bash-based code (moved to `shell` branch)
+old/
+.old/
+legacy/
+
+# Build/packaging
+build/
+
+# Dev runtime
+.dev/
+.args/
+.args/
+
+# Runtime data (created on startup under base_data_dir)
+*.log
+logs/
+args/
+config/
+
+# Personal config files (never commit)
+.selfhosted.yaml
+selfhosted.yaml
+*.local.yaml
+*.local.yml
+dev.yaml
+.dev.yaml
+.selfhosted.dev.yaml
+
+# Frontend
+node_modules/
+frontend/dist/
+
+# Env files
+.env
+.env.*
+
+# OS junk
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Temp
+tmp/

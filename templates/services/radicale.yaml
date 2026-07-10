@@ -1,0 +1,28 @@
+api_version: "1.0"
+name: radicale
+description: "Radicale CalDAV and CardDAV server"
+category: utility
+tags: [calendar, contacts, caldav, carddav]
+dependencies: []
+
+container:
+  name: radicale
+  image: ghcr.io/kozea/radicale:stable
+  user: "{{ .Custom.PUID | default "1000" }}:{{ .Custom.PGID | default "1000" }}"
+  volumes:
+    - "{{ .DataDir }}/radicale/data:/var/lib/radicale"
+    - "{{ .DataDir }}/radicale/config:/etc/radicale"
+    - "{{ .DataDir }}/radicale/users:/etc/users"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  resources:
+    memory: "128M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "radicale.{{ .Domain }}"
+  tls: "{{ .TLSEnabled }}"
+  cert_resolver: traefik
+  network_mode: bridge

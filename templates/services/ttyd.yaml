@@ -1,0 +1,35 @@
+api_version: "1.0"
+name: ttyd
+description: "Web terminal emulator (Wetty)"
+category: utility
+tags: [terminal, ssh, web, tty]
+dependencies: []
+
+container:
+  name: ttyd
+  image: wettyoss/wetty
+  command:
+    - "--ssh-host={{ .GatewayIP }}"
+  volumes:
+    - "{{ .DataDir }}/ttyd/data:/data"
+  environment:
+    TZ: "{{ .Custom.TZ | default "Asia/Shanghai" }}"
+    LANG: "zh_CN.UTF-8"
+    UID: "{{ .Custom.PUID | default "1000" }}"
+    GID: "{{ .Custom.PGID | default "1000" }}"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  resources:
+    memory: "64M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "ttyd.{{ .Domain }}"
+  tls: "{{ .TLSEnabled }}"
+  cert_resolver: traefik
+  network_mode: bridge
+  extra_labels:
+    traefik.http.middlewares.ttyd-auth.digestauth.users: "{{ .Custom.TTYD_AUTH_USER }}:traefik:{{ .Custom.TTYD_AUTH_DIGEST }}"
+    traefik.http.routers.ttyd.middlewares: ttyd-auth@docker

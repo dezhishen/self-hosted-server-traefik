@@ -1,0 +1,51 @@
+api_version: "1.0"
+name: prowlarr
+description: "Prowlarr indexer manager"
+category: media
+tags:
+  - indexer
+  - torrent
+  - usenet
+dependencies:
+  - traefik
+
+container:
+  name: prowlarr
+  image: linuxserver/prowlarr:latest
+  volumes:
+    - "{{ .DataDir }}/prowlarr/config:/config"
+    - "{{ .DataDir }}/public/downloads:/downloads"
+    - "{{ .DataDir }}/public/:/data"
+  environment:
+    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
+    LANG: "{{ .Custom.LANG | default \"zh_CN.UTF-8\" }}"
+    PUID: "{{ .Custom.PUID | default \"1000\" }}"
+    PGID: "{{ .Custom.PGID | default \"1000\" }}"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.prowlarr.rule: "Host(`prowlarr.{{ .Domain }}`)"
+    traefik.http.routers.prowlarr.tls: "{{ .TLSEnabled }}"
+    traefik.http.routers.prowlarr.tls.certresolver: "traefik"
+    traefik.http.routers.prowlarr.tls.domains[0].main: "prowlarr.{{ .Domain }}"
+    traefik.http.services.prowlarr.loadbalancer.server.port: "9696"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: unless-stopped
+  privileged: false
+
+  resources:
+    memory: "256M"
+    cpu_max: ""
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "prowlarr.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+  network_mode: bridge
+
+post_install:
+  message: |
+    Prowlarr installed successfully!
+    URL: https://prowlarr.{{ .Domain }}

@@ -1,0 +1,51 @@
+api_version: "1.0"
+name: ejbca
+description: "EJBCA - Enterprise Java Certificate Authority"
+category: security
+tags:
+  - ca
+  - certificate
+  - pki
+  - security
+dependencies:
+  - traefik
+
+container:
+  name: ejbca
+  ports: []
+  volumes:
+    - "{{ .DataDir }}/ejbca/data:/mnt/persistent"
+  environment:
+    TZ: "Asia/Shanghai"
+    LANG: "zh_CN.UTF-8"
+    DATABASE_JDBC_URL: "{{ .Custom.EJBCA_DATABASE_JDBC_URL | default \"jdbc:h2:file:/mnt/persistent/h2/ejbca;DB_CLOSE_DELAY=-1\" }}"
+    DATABASE_USER: "{{ .Custom.EJBCA_DATABASE_USER | default \"root\" }}"
+    DATABASE_PASSWORD: "{{ .Custom.EJBCA_DATABASE_PASSWORD | default \"\" }}"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.ejbca.entrypoints: "websecure"
+    traefik.http.routers.ejbca.rule: "Host(`ejbca.{{ .Domain }}`)"
+    traefik.http.routers.ejbca.tls.certresolver: "traefik"
+    traefik.http.services.ejbca.loadbalancer.server.scheme: "https"
+    traefik.http.services.ejbca.loadbalancer.server.insecureskipverify: "true"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  user: "{{ .Custom.PUID | default \"1000\" }}:{{ .Custom.PGID | default \"1000\" }}"
+  privileged: false
+  resources:
+    memory: "2G"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "ejbca.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+
+post_install:
+  message: |
+    EJBCA installed successfully!
+    URL: https://ejbca.{{ .Domain }}
+    Note: Uses HTTPS backend with self-signed certificate (InsecureSkipVerify enabled).
+    Set EJBCA_DATABASE_JDBC_URL and related environment variables for your database.

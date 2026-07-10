@@ -1,0 +1,29 @@
+api_version: "1.0"
+name: certd
+description: "CertD automatic SSL certificate management tool"
+category: security
+tags: [ssl, certificate, letsencrypt, automation]
+dependencies: []
+
+container:
+  name: certd
+  image: ghcr.io/certd/certd:latest
+  volumes:
+    - "{{ .DataDir }}/certd/data:/app/data"
+  environment:
+    TZ: "{{ .Custom.TZ | default "Asia/Shanghai" }}"
+    LANG: "zh_CN.UTF-8"
+    certd_koa_hostname: "0.0.0.0"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  resources:
+    memory: "128M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "certd.{{ .Domain }}"
+  tls: "{{ .TLSEnabled }}"
+  cert_resolver: traefik
+  network_mode: bridge

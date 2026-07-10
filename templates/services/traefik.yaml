@@ -1,0 +1,78 @@
+api_version: "1.0"
+name: traefik
+description: "Traefik reverse proxy with automatic TLS (Let's Encrypt)"
+category: network
+tags:
+  - proxy
+  - tls
+  - reverse-proxy
+dependencies:
+  - dockerproxy
+
+container:
+  name: traefik
+  ports:
+    - "80:80"
+    - "80:80/udp"
+    - "443:443"
+    - "443:443/udp"
+  environment:
+    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
+    LANG: "{{ .Custom.LANG | default \"zh_CN.UTF-8\" }}"
+    UID: "{{ .Custom.PUID | default \"1000\" }}"
+    GID: "{{ .Custom.PGID | default \"1000\" }}"
+    CF_API_EMAIL: "{{ .Custom.CF_API_EMAIL }}"
+    CF_DNS_API_TOKEN: "{{ .Custom.CF_DNS_API_TOKEN }}"
+  labels:
+    traefik.enable: "true"
+    traefik.http.middlewares.traefik.compress: "true"
+    traefik.http.routers.traefik.rule: "Host(`traefik.{{ .Domain }}`)"
+    traefik.http.routers.traefik.tls: "{{ .TLSEnabled }}"
+    traefik.http.routers.traefik.service: "traefik"
+    traefik.http.routers.traefik.tls.certresolver: "traefik"
+    traefik.http.routers.traefik.tls.domains[0].main: "traefik.{{ .Domain }}"
+    traefik.http.services.traefik.loadbalancer.server.port: "8080"
+    traefik.http.routers.traefik.middlewares: "traefik-auth@docker"
+  volumes:
+    - "{{ .DataDir }}/traefik/acme:/acme"
+    - "{{ .DataDir }}/traefik/config/providers:/config/providers"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: unless-stopped
+  privileged: false
+  command:
+    - --log.level=INFO
+    - --api=true
+    - --api.dashboard=true
+    - --api.insecure=true
+    - --providers.docker=true
+    - --providers.docker.endpoint=tcp://dockerproxy:2375
+    - --providers.docker.exposedbydefault=false
+    - --providers.file.directory=/config/providers
+    - --global.sendAnonymousUsage=true
+    - --global.checkNewVersion=false
+    - --serverstransport.insecureskipverify=true
+    - --experimental.plugins.htransformation.moduleName=github.com/tomMoulard/htransformation
+    - --experimental.plugins.htransformation.version=v0.4.1
+    - --entrypoints.web.address=:80
+    - --entrypoints.websecure.address=:443
+    - --entrypoints.web.http.redirections.entryPoint.to=websecure
+    - --entrypoints.web.http.redirections.entryPoint.scheme=https
+    - --certificatesresolvers.traefik.acme.email={{ .Custom.ACME_EMAIL }}
+    - --certificatesresolvers.traefik.acme.storage=/acme/acme.json
+    - --certificatesresolvers.traefik.acme.httpchallenge=true
+    - --certificatesresolvers.traefik.acme.httpchallenge.entrypoint=web
+
+  resources:
+    memory: "128M"
+
+traefik:
+  enabled: false
+
+post_install:
+  message: |
+    Traefik installed successfully!
+    Dashboard: https://traefik.{{ .Domain }}
+    Digest auth middleware requires TRAEFIK_AUTH_USER and TRAEFIK_AUTH_PASSWORD custom variables.
+    Digest userlist is computed as MD5(user:realm:password) and set on the middleware label.
+    For DNS challenge (Cloudflare), set CF_API_EMAIL and CF_DNS_API_TOKEN custom variables.

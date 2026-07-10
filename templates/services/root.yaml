@@ -1,0 +1,49 @@
+api_version: "1.0"
+name: root
+description: "Root - nginx-based root site with digest authentication"
+category: utility
+tags:
+  - nginx
+  - web
+  - landing
+dependencies:
+  - traefik
+
+container:
+  name: root
+  ports: []
+  volumes:
+    - "{{ .DataDir }}/root/data:/usr/share/nginx/html"
+    - "{{ .DataDir }}/root/conf.d:/etc/nginx/conf.d"
+  environment:
+    USER_UID: "{{ .Custom.PUID | default \"1000\" }}"
+    USER_GID: "{{ .Custom.PGID | default \"1000\" }}"
+    TZ: "Asia/Shanghai"
+    LANG: "zh_CN.UTF-8"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.root.entrypoints: "websecure"
+    traefik.http.routers.root.rule: "Host(`root.{{ .Domain }}`)"
+    traefik.http.routers.root.tls.certresolver: "traefik"
+    traefik.http.middlewares.root-auth.digestauth.users: "{{ .Custom.ROOT_AUTH_USER | default \"admin\" }}:traefik:{{ .Custom.ROOT_AUTH_DIGEST }}"
+    traefik.http.routers.root.middlewares: "root-auth@docker"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  privileged: false
+  resources:
+    memory: "128M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "root.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+  auth: true
+
+post_install:
+  message: |
+    Root site installed successfully!
+    URL: https://root.{{ .Domain }}
+    Set ROOT_AUTH_USER and ROOT_AUTH_PASSWORD custom variables for authentication.

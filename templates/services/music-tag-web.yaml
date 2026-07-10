@@ -1,0 +1,53 @@
+api_version: "1.0"
+name: music-tag-web
+description: "Music Tag Web - web-based music tag editor"
+category: media
+tags:
+  - music
+  - tag-editor
+  - media
+dependencies:
+  - traefik
+
+container:
+  name: music-tag-web
+  ports: []
+  volumes:
+    - "{{ .DataDir }}/music-tag-web/data:/app/data"
+    - "{{ .DataDir }}/music-tag-web/log:/app/log"
+    - "{{ .DataDir }}/public/music:/app/media"
+  environment:
+    TZ: "Asia/Shanghai"
+    LANG: "zh_CN.UTF-8"
+    DEBUG: "True"
+    PUID: "{{ .Custom.PUID | default \"1000\" }}"
+    PGID: "{{ .Custom.PGID | default \"1000\" }}"
+    WORKER_NUM: "4"
+    MYSQL_HOST: "{{ .Custom.MYSQL_HOST | default \"\" }}"
+    MYSQL_PASSWORD: "{{ .Custom.MYSQL_PASSWORD | default \"\" }}"
+    MYSQL_DB_NAME: "{{ .Custom.MYSQL_DB_NAME | default \"\" }}"
+    MYSQL_USER: "{{ .Custom.MYSQL_USER | default \"\" }}"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.music-tag-web.entrypoints: "websecure"
+    traefik.http.routers.music-tag-web.rule: "Host(`music-tag-web.{{ .Domain }}`)"
+    traefik.http.routers.music-tag-web.tls.certresolver: "traefik"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  privileged: false
+  resources:
+    memory: "1G"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "music-tag-web.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+
+post_install:
+  message: |
+    Music Tag Web installed successfully!
+    URL: https://music-tag-web.{{ .Domain }}
+    Set MYSQL_* custom variables if using MySQL.

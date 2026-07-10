@@ -1,0 +1,45 @@
+api_version: "1.0"
+name: audiobookshelf
+description: "Audiobookshelf - self-hosted audiobook and podcast server"
+category: media
+tags:
+  - audiobook
+  - podcast
+  - media
+dependencies:
+  - traefik
+
+container:
+  name: audiobookshelf
+  ports: []
+  volumes:
+    - "{{ .DataDir }}/public/audiobooks:/audiobooks"
+    - "{{ .DataDir }}/public/podcasts:/podcasts"
+    - "{{ .DataDir }}/audiobookshelf/config:/config"
+    - "{{ .DataDir }}/audiobookshelf/metadata:/metadata"
+  environment: {}
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.audiobookshelf.entrypoints: "websecure"
+    traefik.http.routers.audiobookshelf.rule: "Host(`audiobookshelf.{{ .Domain }}`)"
+    traefik.http.routers.audiobookshelf.tls.certresolver: "traefik"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  user: "{{ .Custom.PUID | default \"1000\" }}:{{ .Custom.PGID | default \"1000\" }}"
+  shm_size: ""
+  privileged: false
+  resources:
+    memory: "128M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "audiobookshelf.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+
+post_install:
+  message: |
+    Audiobookshelf installed successfully!
+    URL: https://audiobookshelf.{{ .Domain }}

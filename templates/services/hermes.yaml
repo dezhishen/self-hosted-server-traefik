@@ -1,0 +1,55 @@
+api_version: "1.0"
+name: hermes
+description: "Hermes Agent - AI assistant agent"
+category: ai
+tags:
+  - ai
+  - agent
+dependencies:
+  - traefik
+
+container:
+  name: hermes
+  ports: []
+  volumes:
+    - "{{ .DataDir }}/hermes/data:/opt/data"
+  devices:
+    - "/dev/dri:/dev/dri"
+  group_add:
+    - "{{ .Custom.VIDEO_GID | default \"44\" }}"
+    - "{{ .Custom.RENDER_GID | default \"107\" }}"
+  environment:
+    HERMES_DASHBOARD: "1"
+    HERMES_DASHBOARD_HOST: "0.0.0.0"
+    HERMES_DASHBOARD_BASIC_AUTH_USERNAME: "{{ .Custom.HERMES_USERNAME | default \"admin\" }}"
+    HERMES_DASHBOARD_BASIC_AUTH_PASSWORD: "{{ .Custom.HERMES_PASSWORD }}"
+    HERMES_DASHBOARD_BASIC_AUTH_SECRET: "{{ .Custom.HERMES_SECRET }}"
+    TZ: "Asia/Shanghai"
+    LANG: "zh_CN.UTF-8"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.hermes.entrypoints: "websecure"
+    traefik.http.routers.hermes.rule: "Host(`hermes.{{ .Domain }}`)"
+    traefik.http.routers.hermes.tls.certresolver: "traefik"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  shm_size: 1g
+  privileged: false
+  resources:
+    memory: "2G"
+  command:
+    - gateway
+    - run
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "hermes.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+
+post_install:
+  message: |
+    Hermes Agent installed successfully!
+    URL: https://hermes.{{ .Domain }}

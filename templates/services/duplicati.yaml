@@ -1,0 +1,32 @@
+api_version: "1.0"
+name: duplicati
+description: "Duplicati encrypted backup solution"
+category: utility
+tags: [backup, encryption, storage]
+dependencies: []
+
+container:
+  name: duplicati
+  image: linuxserver/duplicati:latest
+  volumes:
+    - "{{ .DataDir }}/duplicati/config:/config"
+    - "{{ .DataDir }}/duplicati/backups:/backups"
+    - "{{ .DataDir }}:/source"
+  environment:
+    PUID: "{{ .Custom.PUID | default "1000" }}"
+    PGID: "{{ .Custom.PGID | default "1000" }}"
+    TZ: "{{ .Custom.TZ | default "Asia/Shanghai" }}"
+    LANG: "zh_CN.UTF-8"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  resources:
+    memory: "512M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "duplicati.{{ .Domain }}"
+  tls: "{{ .TLSEnabled }}"
+  cert_resolver: traefik
+  network_mode: bridge

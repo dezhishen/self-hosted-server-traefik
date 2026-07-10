@@ -1,0 +1,41 @@
+api_version: "1.0"
+name: astrbot
+description: "AstrBot - multi-platform chatbot framework"
+category: ai
+tags:
+  - chatbot
+  - bot
+  - ai
+dependencies:
+  - traefik
+
+container:
+  name: astrbot
+  ports: []
+  volumes:
+    - "{{ .DataDir }}/astrbot/data:/AstrBot/data"
+  environment: {}
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.astrbot.entrypoints: "websecure"
+    traefik.http.routers.astrbot.rule: "Host(`astrbot.{{ .Domain }}`)"
+    traefik.http.routers.astrbot.tls.certresolver: "traefik"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  user: "{{ .Custom.PUID | default \"1000\" }}:{{ .Custom.PGID | default \"1000\" }}"
+  privileged: false
+  resources:
+    memory: "128M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "astrbot.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+
+post_install:
+  message: |
+    AstrBot installed successfully!
+    URL: https://astrbot.{{ .Domain }}

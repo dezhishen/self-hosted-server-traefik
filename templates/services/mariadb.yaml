@@ -1,0 +1,23 @@
+api_version: "1.0"
+name: mariadb
+description: "MariaDB database server"
+category: database
+tags: [mariadb, mysql, database, sql]
+dependencies: []
+
+container:
+  name: mariadb
+  image: mariadb:11.3.2
+  user: "{{ .Custom.PUID | default "1000" }}:{{ .Custom.PGID | default "1000" }}"
+  volumes:
+    - "{{ .DataDir }}/mariadb/data:/var/lib/mysql:Z"
+  environment:
+    TZ: "{{ .Custom.TZ | default "Asia/Shanghai" }}"
+    LANG: "zh_CN.UTF-8"
+    MARIADB_USER: root
+    MARIADB_ROOT_PASSWORD: "{{ .Custom.MYSQL_PASSWORD }}"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  resources:
+    memory: "512M"

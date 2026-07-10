@@ -1,0 +1,28 @@
+api_version: "1.0"
+name: gotify
+description: "Gotify push notification server"
+category: utility
+tags: [notifications, push]
+dependencies: []
+
+container:
+  name: gotify
+  image: gotify/server
+  volumes:
+    - "{{ .DataDir }}/gotify/data:/app/data"
+  environment:
+    TZ: "{{ .Custom.TZ | default "Asia/Shanghai" }}"
+    LANG: "zh_CN.UTF-8"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  resources:
+    memory: "64M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "gotify.{{ .Domain }}"
+  tls: "{{ .TLSEnabled }}"
+  cert_resolver: traefik
+  network_mode: bridge

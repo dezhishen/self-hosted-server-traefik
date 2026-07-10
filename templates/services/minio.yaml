@@ -1,0 +1,37 @@
+api_version: "1.0"
+name: minio
+description: "MinIO S3-compatible object storage server"
+category: storage
+tags: [s3, storage, object-storage]
+dependencies: []
+
+container:
+  name: minio
+  image: minio/minio:latest
+  user: "{{ .Custom.PUID | default "1000" }}:{{ .Custom.PGID | default "1000" }}"
+  command:
+    - server
+    - /data
+    - "--console-address"
+    - ":9001"
+  volumes:
+    - "{{ .DataDir }}/minio/latest/data:/data"
+  environment:
+    TZ: "{{ .Custom.TZ | default "Asia/Shanghai" }}"
+    LANG: "C.UTF-8"
+    LC_ALL: "C.UTF-8"
+    MINIO_ROOT_USER: "{{ .Custom.MINIO_ROOT_USER }}"
+    MINIO_ROOT_PASSWORD: "{{ .Custom.MINIO_ROOT_PASSWORD }}"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  resources:
+    memory: "512M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "minio.{{ .Domain }}"
+  tls: "{{ .TLSEnabled }}"
+  cert_resolver: traefik
+  network_mode: bridge

@@ -1,0 +1,34 @@
+api_version: "1.0"
+name: baikal
+description: "Baikal CalDAV and CardDAV server"
+category: utility
+tags: [calendar, contacts, caldav, carddav]
+dependencies: []
+
+container:
+  name: baikal
+  image: ckulka/baikal:nginx
+  user: "{{ .Custom.PUID | default "1000" }}:{{ .Custom.PGID | default "1000" }}"
+  volumes:
+    - "{{ .DataDir }}/baikal/config:/var/www/baikal/config"
+    - "{{ .DataDir }}/baikal/data:/var/www/baikal/Specific"
+    - "{{ .DataDir }}/baikal/docker-entrypoint/40-fix-baikal-file-permissions.sh:/docker-entrypoint.d/40-fix-baikal-file-permissions.sh"
+    - "{{ .DataDir }}/baikal/Plugin.php:/var/www/baikal/vendor/sabre/dav/lib/CalDAV/Plugin.php"
+  environment:
+    BAIKAL_SERVERNAME: "baikal.{{ .Domain }}"
+    BAIKAL_SKIP_CHOWN: "False"
+    PUID: "{{ .Custom.PUID | default "1000" }}"
+    PGID: "{{ .Custom.PGID | default "1000" }}"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  resources:
+    memory: "128M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "baikal.{{ .Domain }}"
+  tls: "{{ .TLSEnabled }}"
+  cert_resolver: traefik
+  network_mode: bridge

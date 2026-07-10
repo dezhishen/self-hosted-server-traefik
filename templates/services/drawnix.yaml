@@ -1,0 +1,44 @@
+api_version: "1.0"
+name: drawnix
+description: "Drawnix - collaborative drawing and whiteboard tool"
+category: productivity
+tags:
+  - drawing
+  - whiteboard
+  - collaboration
+dependencies:
+  - traefik
+
+container:
+  name: drawnix
+  ports: []
+  environment:
+    TZ: "Asia/Shanghai"
+    LANG: "zh_CN.UTF-8"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.drawnix.entrypoints: "websecure"
+    traefik.http.routers.drawnix.rule: "Host(`drawnix.{{ .Domain }}`)"
+    traefik.http.routers.drawnix.tls.certresolver: "traefik"
+    traefik.http.middlewares.common-auth.digestauth.users: "{{ .Custom.COMMON_AUTH_USERLIST }}"
+    traefik.http.routers.drawnix.middlewares: "common-auth@docker"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  privileged: false
+  resources:
+    memory: "128M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "drawnix.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+  auth: true
+
+post_install:
+  message: |
+    Drawnix installed successfully!
+    URL: https://drawnix.{{ .Domain }}
+    Common auth userlist must be configured.

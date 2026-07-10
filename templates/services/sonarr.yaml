@@ -1,0 +1,51 @@
+api_version: "1.0"
+name: sonarr
+description: "Sonarr TV series management"
+category: media
+tags:
+  - tv
+  - series
+  - automation
+dependencies:
+  - traefik
+
+container:
+  name: sonarr
+  image: lscr.io/linuxserver/sonarr
+  volumes:
+    - "{{ .DataDir }}/sonarr/config:/config"
+    - "{{ .DataDir }}/public/downloads:/downloads"
+    - "{{ .DataDir }}/public/:/data"
+  environment:
+    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
+    LANG: "{{ .Custom.LANG | default \"zh_CN.UTF-8\" }}"
+    PUID: "{{ .Custom.PUID | default \"1000\" }}"
+    PGID: "{{ .Custom.PGID | default \"1000\" }}"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.sonarr.rule: "Host(`sonarr.{{ .Domain }}`)"
+    traefik.http.routers.sonarr.tls: "{{ .TLSEnabled }}"
+    traefik.http.routers.sonarr.tls.certresolver: "traefik"
+    traefik.http.routers.sonarr.tls.domains[0].main: "sonarr.{{ .Domain }}"
+    traefik.http.services.sonarr.loadbalancer.server.port: "8989"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: unless-stopped
+  privileged: false
+
+  resources:
+    memory: "128M"
+    cpu_max: ""
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "sonarr.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+  network_mode: bridge
+
+post_install:
+  message: |
+    Sonarr installed successfully!
+    URL: https://sonarr.{{ .Domain }}

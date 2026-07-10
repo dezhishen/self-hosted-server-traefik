@@ -1,0 +1,53 @@
+api_version: "1.0"
+name: vaultwarden
+description: "Vaultwarden password manager (Bitwarden compatible)"
+category: security
+tags:
+  - passwords
+  - bitwarden
+  - vault
+dependencies:
+  - traefik
+
+container:
+  name: vaultwarden
+  image: vaultwarden/server:latest
+  volumes:
+    - "{{ .DataDir }}/vaultwarden/data:/data/"
+  environment:
+    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
+    LANG: "{{ .Custom.LANG | default \"zh_CN.UTF-8\" }}"
+    SIGNUPS_ALLOWED: "{{ .Custom.SIGNUPS_ALLOWED | default \"true\" }}"
+    ENABLE_DB_WAL: "{{ .Custom.VAULTWARDEN_DATABASE_WAL | default \"false\" }}"
+    DATABASE_URL: "{{ .Custom.VAULTWARDEN_DATABASE_URL }}"
+  labels:
+    traefik.docker.network: "{{ .NetworkName }}"
+    traefik.enable: "true"
+    traefik.http.routers.vaultwarden.rule: "Host(`vaultwarden.{{ .Domain }}`)"
+    traefik.http.routers.vaultwarden.tls: "{{ .TLSEnabled }}"
+    traefik.http.routers.vaultwarden.tls.certresolver: "traefik"
+    traefik.http.routers.vaultwarden.tls.domains[0].main: "vaultwarden.{{ .Domain }}"
+    traefik.http.services.vaultwarden.loadbalancer.server.port: "80"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: unless-stopped
+  privileged: false
+  user: "{{ .Custom.PUID | default \"1000\" }}:{{ .Custom.PGID | default \"1000\" }}"
+
+  resources:
+    memory: "256M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "vaultwarden.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+  network_mode: bridge
+
+post_install:
+  message: |
+    Vaultwarden installed successfully!
+    URL: https://vaultwarden.{{ .Domain }}
+    Database types: sqlite3 (default), mysql. Set VAULTWARDEN_DATABASE_TYPE and related credentials via custom variables.
+    For MySQL, set: VAULTWARDEN_DATABASE_URL=mysql://user:password@host:port/vaultwarden

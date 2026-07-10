@@ -1,0 +1,47 @@
+api_version: "1.0"
+name: flaresolverr
+description: "FlareSolverr proxy for Cloudflare bypass"
+category: utility
+tags:
+  - proxy
+  - cloudflare
+dependencies:
+  - traefik
+
+container:
+  name: flaresolverr
+  image: ghcr.io/flaresolverr/flaresolverr:latest
+  environment:
+    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
+    LANG: "{{ .Custom.LANG | default \"zh_CN.UTF-8\" }}"
+    LOG_LEVEL: "info"
+    TEST_URL: "https://www.baidu.com"
+    BROWSER_TIMEOUT: "80000"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.flaresolverr.rule: "Host(`flaresolverr.{{ .Domain }}`)"
+    traefik.http.routers.flaresolverr.tls: "{{ .TLSEnabled }}"
+    traefik.http.routers.flaresolverr.tls.certresolver: "traefik"
+    traefik.http.routers.flaresolverr.tls.domains[0].main: "flaresolverr.{{ .Domain }}"
+    traefik.http.services.flaresolverr.loadbalancer.server.port: "8191"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: unless-stopped
+  privileged: false
+  network_mode: ""
+
+  resources:
+    memory: "512M"
+    cpu_max: ""
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "flaresolverr.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+  network_mode: bridge
+
+post_install:
+  message: |
+    FlareSolverr installed successfully!

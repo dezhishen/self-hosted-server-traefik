@@ -1,0 +1,20 @@
+api_version: "1.0"
+name: natfrpc
+description: "SakuraFrp (NatFrp) client for NAT traversal"
+category: network
+tags: [nat, tunnel, frp, proxy]
+dependencies: []
+
+container:
+  name: natfrpc
+  image: ghcr.io/natfrp/frpc:latest
+  command:
+    - "-f"
+    - "{{ .Custom.NATFRPC_TOKEN }}:{{ .Custom.NATFRPC_TUNNELS }}"
+  environment:
+    TZ: "{{ .Custom.TZ | default "Asia/Shanghai" }}"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  resources:
+    memory: "64M"

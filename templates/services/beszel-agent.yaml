@@ -1,0 +1,24 @@
+api_version: "1.0"
+name: beszel-agent
+description: "Beszel monitoring agent for remote servers"
+category: monitoring
+tags: [monitoring, metrics, agent]
+dependencies: [beszel]
+
+container:
+  name: beszel-agent
+  image: henrygd/beszel-agent
+  volumes:
+    - "/var/run/docker.sock:/var/run/docker.sock:ro"
+  environment:
+    TZ: "{{ .Custom.TZ | default "Asia/Shanghai" }}"
+    LANG: "zh_CN.UTF-8"
+    PORT: "45876"
+    KEY: "{{ .Custom.BESZEL_PUBLIC_KEY }}"
+    HUB_URL: "{{ .Custom.BESZEL_HUB_URL | default "http://beszel:8090" }}"
+    TOKEN: "{{ .Custom.BESZEL_TOKEN }}"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  resources:
+    memory: "64M"

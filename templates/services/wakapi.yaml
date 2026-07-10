@@ -1,0 +1,35 @@
+api_version: "1.0"
+name: wakapi
+description: "Wakapi coding statistics tracking server"
+category: utility
+tags: [coding, stats, wakatime, tracking]
+dependencies: []
+
+container:
+  name: wakapi
+  image: ghcr.io/muety/wakapi:latest
+  volumes:
+    - "{{ .DataDir }}/wakapi/data:/data"
+  environment:
+    TZ: "{{ .Custom.TZ | default "Asia/Shanghai" }}"
+    LANG: "zh_CN.UTF-8"
+    WAKAPI_PASSWORD_SALT: "{{ .Custom.WAKAPI_PASSWORD_SALT }}"
+    WAKAPI_DB_TYPE: mysql
+    WAKAPI_DB_HOST: "{{ .Custom.MYSQL_HOST }}"
+    WAKAPI_DB_PORT: "{{ .Custom.MYSQL_PORT | default "3306" }}"
+    WAKAPI_DB_NAME: wakapi
+    WAKAPI_DB_USER: "{{ .Custom.MYSQL_USER }}"
+    WAKAPI_DB_PASSWORD: "{{ .Custom.MYSQL_PASSWORD }}"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  resources:
+    memory: "128M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "wakapi.{{ .Domain }}"
+  tls: "{{ .TLSEnabled }}"
+  cert_resolver: traefik
+  network_mode: bridge

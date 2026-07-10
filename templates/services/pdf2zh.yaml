@@ -1,0 +1,40 @@
+api_version: "1.0"
+name: pdf2zh
+description: "PDF2ZH - PDF translation tool (Chinese-oriented)"
+category: utility
+tags:
+  - pdf
+  - translation
+  - documents
+dependencies:
+  - traefik
+
+container:
+  name: pdf2zh
+  ports: []
+  environment:
+    TZ: "Asia/Shanghai"
+    LANG: "zh_CN.UTF-8"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.pdf2zh.entrypoints: "websecure"
+    traefik.http.routers.pdf2zh.rule: "Host(`pdf2zh.{{ .Domain }}`)"
+    traefik.http.routers.pdf2zh.tls.certresolver: "traefik"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  privileged: false
+  resources:
+    memory: "512M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "pdf2zh.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+
+post_install:
+  message: |
+    PDF2ZH installed successfully!
+    URL: https://pdf2zh.{{ .Domain }}

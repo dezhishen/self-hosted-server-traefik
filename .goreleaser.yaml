@@ -1,0 +1,57 @@
+version: 2
+
+project_name: selfhosted
+
+builds:
+  - id: selfhosted
+    main: ./cli
+    binary: selfhosted
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - freebsd
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    goarm:
+      - 6
+      - 7
+    ignore:
+      - goos: darwin
+        goarch: arm
+      - goos: freebsd
+        goarch: arm
+
+archives:
+  - id: binary
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: freebsd
+        formats:
+          - tar.gz
+
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+
+snapshot:
+  version_template: "{{ .Version }}-SNAPSHOT-{{ .ShortCommit }}"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - Merge pull request
+      - Merge branch

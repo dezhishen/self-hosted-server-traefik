@@ -1,0 +1,118 @@
+# =============================================================================
+# Service Definition Schema v1.0
+# =============================================================================
+# Each service is defined as a .yaml file under templates/<namespace>/.
+# The Go ServiceLoader reads all .yaml files across all namespaces.
+#
+# Template variables (Go template syntax):
+#   {{ .Domain }}           - Primary domain
+#   {{ .DataDir }}          - Base data directory
+#   {{ .NetworkName }}      - Docker bridge network name
+#   {{ .InternalNet }}      - Internal network name
+#   {{ .TLSEnabled }}       - TLS enabled (true/false)
+#   {{ .ServiceName }}      - Service name
+#   {{ .Custom.KEY }}       - User-defined variables (from ParamStore)
+# =============================================================================
+
+# ---- Top-level fields ----
+# api_version:   string (required) - Schema version
+# name:          string (required) - Service identifier (lowercase, hyphenated)
+# description:   string (required) - Human-readable description
+# image:         string (required) - Container image with tag
+# category:      string (optional) - Grouping category
+# tags:          []string (optional) - Search/filter tags
+# dependencies:  []string (optional) - Other services required first
+#
+# params:                   (optional) - Interactive parameter definitions
+#   - key:        string    - Parameter key
+#     type:       string    - Type: string|password|array|bool|number|select
+#     label:      string    - Display label for prompts
+#     description: string   - Help text
+#     default:    any       - Default value
+#     required:   bool      - Whether user must provide
+#     options:    []string  - For select type
+#     validate:   string    - Regex validation pattern
+#     group:      string    - Logical grouping
+#
+# init:                     (optional) - Initialization steps before main container
+#   pre_exec:               - Host-level commands (mkdir, chown, download)
+#     - command: [cmd, arg1, arg2]
+#       ignore_error: false
+#
+#   containers:             - One-shot init containers
+#     - name:     string    - Init container name
+#       image:    string    - Container image
+#       command:  []string  - Init command
+#       volumes:  []string  - Shared volumes for data init
+#       environment: {}     - Env vars for init
+#       wait_exit: true     - Wait for completion before starting main
+#
+#   wait_for:               - Block until condition met
+#     - type:     string    - container_running|tcp_ready|http_ready|file_exists
+#       target:   string    - Target identifier
+#       timeout:  string    - Max wait time
+#
+# container:                (required) - Main container config
+#   name:        string     - Container name
+#   image:       string     - Override top-level image
+#   command:     []string   - Override CMD
+#   entrypoint:  []string   - Override ENTRYPOINT
+#   ports:       []string   - "HOST:CONTAINER/PROTO"
+#   volumes:     []string   - "SOURCE:TARGET:OPTIONS"
+#   devices:     []string   - "HOST_PATH:CONTAINER_PATH:PERM"
+#   environment: {}         - Env vars (supports template)
+#   labels:      {}         - Docker labels
+#   networks:    []string   - Networks to attach
+#   restart:     string     - Restart policy
+#   privileged:  bool       - Privileged mode
+#   cap_add:     []string   - Linux capabilities to add
+#   cap_drop:    []string   - Linux capabilities to drop
+#   sysctls:     {}         - Kernel parameters
+#   extra_hosts: []string   - Extra host mappings
+#   network_mode: string    - bridge|host|none
+#   pid_mode:    string     - PID namespace
+#   ipc:         string     - IPC namespace
+#   shm_size:    string     - Shared memory size
+#   group_add:   []string   - Supplementary groups
+#   user:        string     - UID:GID
+#   hostname:    string     - Container hostname
+#   dns:         []string   - DNS servers
+#   dns_search:  []string   - DNS search domains
+#   stop_signal: string     - Stop signal
+#   stop_timeout: int       - Stop timeout seconds
+#
+#   healthcheck:            (optional)
+#     test:       []string  - Command
+#     interval:   string    - Check interval
+#     timeout:    string    - Per-check timeout
+#     retries:    int       - Failure threshold
+#     start_period: string  - Initial grace period
+#
+#   resources:              (optional)
+#     memory:     string    - Memory limit
+#     cpu_count:  string    - CPU count
+#     cpu_max:    string    - CPU max
+#     cpu_set:    string    - CPU pinning
+#
+# traefik:                  (optional) - Traefik routing
+#   enabled:      bool      - Enable routing
+#   entrypoint:   string    - Entry point
+#   host:         string    - Host rule
+#   tls:          bool      - Enable TLS
+#   cert_resolver: string   - Cert resolver name
+#   middlewares:  []string  - Middleware chain
+#   auth:         bool      - Enable auth
+#   network_mode: string    - Routing mode
+#   scheme:       string    - Backend scheme (http/https)
+#   routers:                - Multiple router definitions
+#     - name:     string
+#       host:     string
+#       port:     int
+#       entrypoint: string
+#       tls:      bool
+#       scheme:   string
+#
+# post_install:             (optional)
+#   exec:        []string  - Post-install commands
+#   message:     string    - Display message
+#   cleanup:     []string  - Cleanup commands

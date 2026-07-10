@@ -1,0 +1,30 @@
+api_version: "1.0"
+name: cloudbak
+description: "CloudBak cloud backup tool"
+category: utility
+tags: [backup, cloud, storage]
+dependencies: []
+
+container:
+  name: cloudbak
+  image: likeflyme/cloudbak
+  volumes:
+    - "{{ .DataDir }}/cloudbak/data:/app/data"
+  environment:
+    PUID: "{{ .Custom.PUID | default "1000" }}"
+    PGID: "{{ .Custom.PGID | default "1000" }}"
+    TZ: "{{ .Custom.TZ | default "Asia/Shanghai" }}"
+    LANG: "zh_CN.UTF-8"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  resources:
+    memory: "512M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "cloudbak.{{ .Domain }}"
+  tls: "{{ .TLSEnabled }}"
+  cert_resolver: traefik
+  network_mode: bridge

@@ -1,0 +1,40 @@
+api_version: "1.0"
+name: how-to-cook
+description: "How to Cook - web-based cooking guide"
+category: lifestyle
+tags:
+  - cooking
+  - recipes
+  - reference
+dependencies:
+  - traefik
+
+container:
+  name: how-to-cook
+  ports: []
+  environment:
+    TZ: "Asia/Shanghai"
+    LANG: "zh_CN.UTF-8"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.how-to-cook.entrypoints: "websecure"
+    traefik.http.routers.how-to-cook.rule: "Host(`how-to-cook.{{ .Domain }}`)"
+    traefik.http.routers.how-to-cook.tls.certresolver: "traefik"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  privileged: false
+  resources:
+    memory: "128M"
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "how-to-cook.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+
+post_install:
+  message: |
+    How to Cook installed successfully!
+    URL: https://how-to-cook.{{ .Domain }}

@@ -1,0 +1,50 @@
+api_version: "1.0"
+name: radarr
+description: "Radarr movie management"
+category: media
+tags:
+  - movies
+  - automation
+dependencies:
+  - traefik
+
+container:
+  name: radarr
+  image: lscr.io/linuxserver/radarr
+  volumes:
+    - "{{ .DataDir }}/radarr/config:/config"
+    - "{{ .DataDir }}/public/downloads:/downloads"
+    - "{{ .DataDir }}/public/:/data"
+  environment:
+    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
+    LANG: "{{ .Custom.LANG | default \"zh_CN.UTF-8\" }}"
+    PUID: "{{ .Custom.PUID | default \"1000\" }}"
+    PGID: "{{ .Custom.PGID | default \"1000\" }}"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.radarr.rule: "Host(`radarr.{{ .Domain }}`)"
+    traefik.http.routers.radarr.tls: "{{ .TLSEnabled }}"
+    traefik.http.routers.radarr.tls.certresolver: "traefik"
+    traefik.http.routers.radarr.tls.domains[0].main: "radarr.{{ .Domain }}"
+    traefik.http.services.radarr.loadbalancer.server.port: "7878"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: unless-stopped
+  privileged: false
+
+  resources:
+    memory: "128M"
+    cpu_max: ""
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "radarr.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+  network_mode: bridge
+
+post_install:
+  message: |
+    Radarr installed successfully!
+    URL: https://radarr.{{ .Domain }}

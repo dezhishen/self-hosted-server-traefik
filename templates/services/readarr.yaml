@@ -1,0 +1,51 @@
+api_version: "1.0"
+name: readarr
+description: "Readarr ebook and audiobook management"
+category: media
+tags:
+  - books
+  - audiobooks
+  - automation
+dependencies:
+  - traefik
+
+container:
+  name: readarr
+  image: lscr.io/linuxserver/readarr
+  volumes:
+    - "{{ .DataDir }}/readarr/config:/config"
+    - "{{ .DataDir }}/public/downloads:/downloads"
+    - "{{ .DataDir }}/public/:/data"
+  environment:
+    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
+    LANG: "{{ .Custom.LANG | default \"zh_CN.UTF-8\" }}"
+    PUID: "{{ .Custom.PUID | default \"1000\" }}"
+    PGID: "{{ .Custom.PGID | default \"1000\" }}"
+  labels:
+    traefik.enable: "true"
+    traefik.http.routers.readarr.rule: "Host(`readarr.{{ .Domain }}`)"
+    traefik.http.routers.readarr.tls: "{{ .TLSEnabled }}"
+    traefik.http.routers.readarr.tls.certresolver: "traefik"
+    traefik.http.routers.readarr.tls.domains[0].main: "readarr.{{ .Domain }}"
+    traefik.http.services.readarr.loadbalancer.server.port: "8787"
+  networks:
+    - "{{ .NetworkName }}"
+  restart: unless-stopped
+  privileged: false
+
+  resources:
+    memory: "64M"
+    cpu_max: ""
+
+traefik:
+  enabled: true
+  entrypoint: websecure
+  host: "readarr.{{ .Domain }}"
+  tls: true
+  cert_resolver: traefik
+  network_mode: bridge
+
+post_install:
+  message: |
+    Readarr installed successfully!
+    URL: https://readarr.{{ .Domain }}

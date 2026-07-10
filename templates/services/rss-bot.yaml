@@ -1,0 +1,39 @@
+api_version: "1.0"
+name: rss-bot
+description: "RSS to Telegram - forward RSS feeds to Telegram"
+category: utility
+tags:
+  - rss
+  - telegram
+  - bot
+dependencies: []
+
+container:
+  name: rss-bot
+  ports: []
+  volumes:
+    - "{{ .DataDir }}/rss-bot/config:/app/config"
+    - "{{ .DataDir }}/rss-bot/data:/data"
+  environment:
+    TZ: "Asia/Shanghai"
+    LANG: "zh_CN.UTF-8"
+    DEBUG: "{{ .Custom.RSS_BOT_DEBUG | default \"0\" }}"
+    TOKEN: "{{ .Custom.RSS_BOT_TOKEN }}"
+    MANAGER: "{{ .Custom.RSS_BOT_MANAGER }}"
+    DATABASE_URL: "{{ .Custom.RSS_BOT_DATABASE_URL | default \"\" }}"
+    TELEGRAPH_TOKEN: "{{ .Custom.RSS_BOT_TELEGRAPH_TOKEN }}"
+  labels: {}
+  networks:
+    - "{{ .NetworkName }}"
+  restart: always
+  privileged: false
+  resources:
+    memory: "256M"
+
+traefik:
+  enabled: false
+
+post_install:
+  message: |
+    RSS Bot installed successfully!
+    Set RSS_BOT_TOKEN and RSS_BOT_MANAGER custom variables.

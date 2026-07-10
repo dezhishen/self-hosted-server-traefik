@@ -1,0 +1,51 @@
+# selfhosted configuration file
+# Default path: ~/.config/selfhosted/config.yaml
+# Custom path:  selfhosted -c ./selfhosted.yaml <command>
+#
+# This file defines the base data directory and endpoint connections.
+
+# Base directory for runtime data (logs, args, configs, etc.)
+# Default: ~/.local/share/selfhosted
+base_data_dir: /var/lib/selfhosted
+
+# Endpoint connections (formerly "remotes")
+# Each endpoint is an independent runtime with its own args and config.
+endpoints:
+  default:
+    name: default
+    default: true                    # use this as default when no X-Remote-Name header
+    connection:
+      type: unix                     # unix | tcp | ssh
+      endpoint: /var/run/docker.sock # socket path or host:port
+      engine: auto                   # docker | podman | auto
+
+  # myserver:
+  #   name: myserver
+  #   connection:
+  #     type: tcp
+  #     endpoint: 192.168.1.100:2375
+  #     engine: docker
+  #     tls:
+  #       enabled: true
+  #       cert_file: /path/to/cert.pem
+  #       key_file: /path/to/key.pem
+  #       ca_file: /path/to/ca.pem
+  #       skip_verify: false
+
+  # podman-vm:
+  #   name: podman-vm
+  #   connection:
+  #     type: ssh
+  #     endpoint: 10.0.0.50
+  #     engine: podman
+  #     ssh_user: user
+  #     ssh_key_path: /home/user/.ssh/id_rsa
+
+# Service template subscriptions
+# Subscribed YAML files are synced to templates/<name>/ and
+# discovered automatically alongside local templates (templates/services/).
+subscriptions:
+  # - name: community
+  #   url: https://github.com/user/repo
+  #   enabled: true
+  #   auto_update: false
