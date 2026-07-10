@@ -5,6 +5,7 @@ type ConnectionType string
 const (
 	ConnectionTypeUnix  ConnectionType = "unix"
 	ConnectionTypeTCP   ConnectionType = "tcp"
+	ConnectionTypeHTTP  ConnectionType = "http"
 	ConnectionTypeHTTPS ConnectionType = "https"
 	ConnectionTypeSSH   ConnectionType = "ssh"
 )

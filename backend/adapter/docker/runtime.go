@@ -38,7 +38,7 @@ func (r *Runtime) docker(args ...string) (string, error) {
 		switch r.cfg.Type {
 		case contracts.ConnectionTypeUnix:
 			cmd.Env = append(cmd.Env, "DOCKER_HOST=unix://"+r.cfg.Endpoint)
-		case contracts.ConnectionTypeTCP, contracts.ConnectionTypeHTTPS:
+		case contracts.ConnectionTypeTCP, contracts.ConnectionTypeHTTP, contracts.ConnectionTypeHTTPS:
 			cmd.Env = append(cmd.Env, "DOCKER_HOST=tcp://"+r.cfg.Endpoint)
 		}
 	}

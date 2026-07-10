@@ -14,7 +14,10 @@ async function fetchConfig() {
   try {
     const res = await getConfig()
     for (const ep of Object.values(res.data.endpoints)) {
-      if (showTLS(ep.connection.type) && !ep.connection.tls) {
+      if (ep.connection.type === 'https' && !ep.connection.tls) {
+        ep.connection.tls = { enabled: true }
+      }
+      if (ep.connection.type === 'tcp' && !ep.connection.tls) {
         ep.connection.tls = { enabled: false }
       }
     }
@@ -53,8 +56,8 @@ function removeEndpoint(name: string) {
   delete config.value.endpoints[name]
 }
 
-function initTLS(ep: { connection: { tls?: TLSConfig } }) {
-  if (!ep.connection.tls) {
+function initTLS(ep: { connection: { type: string; tls?: TLSConfig } }) {
+  if (showTLS(ep.connection.type) && !ep.connection.tls) {
     ep.connection.tls = { enabled: true }
   }
 }
@@ -106,6 +109,7 @@ onMounted(fetchConfig)
                   <el-select v-model="ep.connection.type" @change="initTLS(ep as any)">
                     <el-option label="unix" value="unix" />
                     <el-option label="tcp" value="tcp" />
+                    <el-option label="http" value="http" />
                     <el-option label="https" value="https" />
                   </el-select>
                 </el-form-item>
