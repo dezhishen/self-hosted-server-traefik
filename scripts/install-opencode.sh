@@ -322,6 +322,27 @@ if $NEED_LOCAL_BUILD; then
         -t ${CUSTOM_IMAGE} \
         ${DOCKERFILE_DIR}
 fi
+
+# ---------- 网络模式选择 ----------
+usemacvlan=$(`dirname $0`/get-args.sh usemacvlan "是否使用macvlan[y/n]")
+if [ -z "$usemacvlan" ]; then
+    read -p "是否使用macvlan[y/n]:" usemacvlan
+    `dirname $0`/set-args.sh usemacvlan "$usemacvlan"
+fi
+
+case $usemacvlan in
+    y)
+        docker_macvlan_network_name=$(`dirname $0`/get-args.sh docker_macvlan_network_name "macvlan的网络名")
+        `dirname $0`/set-docker-macvlan-ip.sh ${container_name}
+        the_ip=$(`dirname $0`/get-docker-macvlan-ip.sh ${container_name})
+        echo "macvlan 模式: IP=${the_ip}"
+        MACVLAN_NET="--network=${docker_macvlan_network_name} --ip=${the_ip} --hostname=${container_name}"
+    ;;
+    *)
+        BRIDGE_NET="--network=${docker_network_name} --network-alias=${container_name} --hostname=${container_name}"
+    ;;
+esac
+
 # ---------- GPU 透传 ----------
 GPU_DEVICE=""
 GPU_GROUP_ADD=""
@@ -362,8 +383,8 @@ docker run -d --name=${container_name} \
     -v ${base_data_dir}/${container_name}/workspace:/workspace \
     -v ${base_data_dir}/${container_name}/apt-cache:/var/cache/apt \
     -w /workspace \
-    --network=${docker_network_name} --network-alias=${container_name} \
-    --hostname=${container_name} \
+    ${MACVLAN_NET} \
+    ${BRIDGE_NET} \
     --label "traefik.enable=true" \
     --label 'traefik.http.routers.'${container_name}'.rule=Host(`'${container_name}.$domain'`)' \
     --label "traefik.http.routers.${container_name}.tls=${tls}" \
@@ -371,6 +392,13 @@ docker run -d --name=${container_name} \
     --label "traefik.http.routers.${container_name}.tls.domains[0].main=${container_name}.$domain" \
     --label "traefik.http.services.${container_name}.loadbalancer.server.port=${port}" \
 ${CUSTOM_IMAGE} serve --port ${port} --hostname 0.0.0.0
+
+# macvlan 模式: 生成 Traefik provider 配置文件
+case $usemacvlan in
+    y)
+        `dirname $0`/create-traefik-provider-macvlan.sh $domain $base_data_dir $docker_macvlan_network_name $tls $container_name $port
+    ;;
+esac
 
 # ═══════════════════════════════════════════════════════════════
 # 启动后汇总信息 & 使用帮助

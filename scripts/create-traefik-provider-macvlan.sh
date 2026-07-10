@@ -1,5 +1,6 @@
 #!/bin/bash
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 domain=$1
 base_data_dir=$2
 docker_network_name=$3
@@ -11,9 +12,9 @@ echo "生成traefik代理配置文件:$base_data_dir/traefik/config/providers/${
 mkdir -p $base_data_dir/traefik/config/providers
 # 检验 $base_data_dir/traefik/config/providers/${container_name}.yaml 是否存在
 if [ ! -f "$base_data_dir/traefik/config/providers/${container_name}.yaml" ]; then
-    host_ip=$(`dirname $0`/get-docker-macvlan-ip.sh ${container_name})
-    # 优先读取github上的traefik-providers-template.yaml文件内容到template变量，如果异常则读取本地文件../template/traefik-providers-template.yaml
-    template=$(curl -s https://raw.githubusercontent.com/dezhishen/self-hosted-server-traefik/master/template/traefik-providers-template.yaml || cat ../template/traefik-providers-template.yaml)
+    host_ip=$(${SCRIPT_DIR}/get-docker-macvlan-ip.sh ${container_name})
+    # 优先读取github上的模板，异常则读取本地文件
+    template=$(curl -s https://raw.githubusercontent.com/dezhishen/self-hosted-server-traefik/main/template/traefik-providers-template.yaml || cat "${SCRIPT_DIR}/../template/traefik-providers-template.yaml")
     # 替换template中的变量
     # 如果tls为true,则替换entryPoint为websecure,否则替换为web
     if [ "$tls" = "true" ]; then
