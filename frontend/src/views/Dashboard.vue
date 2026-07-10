@@ -46,8 +46,8 @@ onMounted(() => {
   </div>
 
   <div v-loading="loading">
-    <el-row :gutter="20" class="mb-6">
-      <el-col :span="6">
+    <el-row :gutter="[20, 16]" class="mb-6">
+      <el-col :xs="12" :sm="12" :md="6">
         <SdCard padding="24px">
           <div class="flex items-center gap-4">
             <el-icon :size="36" color="#409eff"><Monitor /></el-icon>
@@ -58,7 +58,7 @@ onMounted(() => {
           </div>
         </SdCard>
       </el-col>
-      <el-col :span="6">
+      <el-col :xs="12" :sm="12" :md="6">
         <SdCard padding="24px">
           <div class="flex items-center gap-4">
             <el-icon :size="36" color="#67c23a"><Monitor /></el-icon>
@@ -69,7 +69,7 @@ onMounted(() => {
           </div>
         </SdCard>
       </el-col>
-      <el-col :span="6">
+      <el-col :xs="12" :sm="12" :md="6">
         <SdCard padding="24px">
           <div class="flex items-center gap-4">
             <el-icon :size="36" color="#67c23a"><Grid /></el-icon>
@@ -80,7 +80,7 @@ onMounted(() => {
           </div>
         </SdCard>
       </el-col>
-      <el-col :span="6">
+      <el-col :xs="12" :sm="12" :md="6">
         <SdCard padding="24px">
           <div class="flex items-center gap-4">
             <el-icon :size="36" color="#f56c6c"><Grid /></el-icon>
@@ -93,8 +93,8 @@ onMounted(() => {
       </el-col>
     </el-row>
 
-    <el-row :gutter="20" class="mb-6">
-      <el-col :span="12">
+    <el-row :gutter="[20, 16]" class="mb-6">
+      <el-col :xs="24" :md="12">
         <SdCard>
           <template #header>
             <span class="font-semibold">Runtime Info</span>
@@ -107,7 +107,7 @@ onMounted(() => {
           </el-descriptions>
         </SdCard>
       </el-col>
-      <el-col :span="12">
+      <el-col :xs="24" :md="12">
         <SdCard>
           <template #header>
             <span class="font-semibold">Quick Actions</span>
@@ -131,16 +131,18 @@ onMounted(() => {
       <template #header>
         <span class="font-semibold">Container Overview</span>
       </template>
-      <el-table :data="containers" stripe border size="small" style="width: 100%">
-        <el-table-column prop="name" label="Name" />
-        <el-table-column prop="image" label="Image" />
-        <el-table-column prop="status" label="Status" width="120">
-          <template #default="{ row }">
-            <SdStatus :status="row.state" />
-          </template>
-        </el-table-column>
-        <el-table-column prop="uptime" label="Uptime" width="160" />
-      </el-table>
+      <div class="table-responsive">
+        <el-table :data="containers" stripe border size="small" style="width: 100%; min-width: 500px;">
+          <el-table-column prop="name" label="Name" />
+          <el-table-column prop="image" label="Image" />
+          <el-table-column prop="status" label="Status" width="120">
+            <template #default="{ row }">
+              <SdStatus :status="row.state" />
+            </template>
+          </el-table-column>
+          <el-table-column prop="uptime" label="Uptime" width="160" />
+        </el-table>
+      </div>
     </SdCard>
   </div>
 </template>

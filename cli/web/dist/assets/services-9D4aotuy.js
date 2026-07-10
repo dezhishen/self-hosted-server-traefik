@@ -1,0 +1,1 @@
+import{c as r}from"./index-BM9Hk6FM.js";function i(e){return r.get("/services",{params:{query:e}})}function n(e){return r.get(`/services/${e}`)}function c(e){return r.delete(`/services/${e}`)}function u(e){return r.post(`/services/${e}/restart`)}function a(e,s){return r.post(`/services/${e}/logs`,{tail:s})}export{a,n as g,i as l,u as r,c as u};

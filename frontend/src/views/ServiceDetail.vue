@@ -78,10 +78,10 @@ onMounted(fetchService)
       <h2 class="m-0">{{ serviceName }}</h2>
       <SdStatus :status="serviceStatus" />
     </div>
-    <div class="flex gap-2">
-      <el-button type="primary" @click="handleRestart">Restart</el-button>
-      <el-button type="danger" @click="handleUninstall">Uninstall</el-button>
-      <el-button @click="router.push('/services')">Back</el-button>
+    <div class="flex gap-2 flex-wrap">
+      <el-button type="primary" size="small" @click="handleRestart">Restart</el-button>
+      <el-button type="danger" size="small" @click="handleUninstall">Uninstall</el-button>
+      <el-button size="small" @click="router.push('/services')">Back</el-button>
     </div>
   </div>
 
@@ -100,8 +100,8 @@ onMounted(fetchService)
           </el-descriptions>
         </SdCard>
 
-        <el-row :gutter="20" class="mt-4">
-          <el-col :span="12">
+        <el-row :gutter="[20, 16]" class="mt-4">
+          <el-col :xs="24" :md="12">
             <SdCard>
               <template #header>
                 <span class="font-semibold">Ports</span>
@@ -114,7 +114,7 @@ onMounted(fetchService)
               <el-empty v-else description="No ports" :image-size="60" />
             </SdCard>
           </el-col>
-          <el-col :span="12">
+          <el-col :xs="24" :md="12">
             <SdCard>
               <template #header>
                 <span class="font-semibold">Volumes</span>

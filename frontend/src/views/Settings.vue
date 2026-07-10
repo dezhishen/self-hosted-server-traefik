@@ -59,7 +59,7 @@ onMounted(fetchConfig)
 
   <div v-loading="loading">
     <el-row :gutter="20">
-      <el-col :span="16">
+      <el-col :xs="24" :md="16">
         <SdCard>
           <template #header>
             <span class="font-semibold">Configuration</span>

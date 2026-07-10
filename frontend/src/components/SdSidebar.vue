@@ -7,8 +7,17 @@ import {
   Grid,
   Link,
   Tickets,
-  Fold
+  Fold,
+  Expand
 } from '@element-plus/icons-vue'
+
+defineProps<{
+  mobileOpen: boolean
+}>()
+
+const emit = defineEmits<{
+  close: []
+}>()
 
 const route = useRoute()
 const router = useRouter()
@@ -26,6 +35,7 @@ const menuItems = [
 const activeIndex = computed(() => route.path)
 
 function handleSelect(path: string) {
+  emit('close')
   router.push(path)
 }
 
@@ -36,15 +46,26 @@ function toggleCollapse() {
 function onRemoteChange(name: string) {
   remoteStore.select(name)
 }
-
-// Remotes are fetched in SdLayout.vue
 </script>
 
 <template>
-  <div
-    class="flex flex-col"
-    :class="isCollapsed ? 'w-[64px]' : 'w-[220px]'"
-    style="background-color: var(--sidebar-bg); min-height: 100vh; transition: width 0.3s;"
+  <Teleport to="body">
+    <transition name="sidebar-backdrop">
+      <div
+        v-if="mobileOpen"
+        class="sidebar-overlay md:hidden"
+        @click="emit('close')"
+      />
+    </transition>
+  </Teleport>
+
+  <aside
+    :class="[
+      isCollapsed ? 'w-[64px]' : 'w-[220px]',
+      mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
+    ]"
+    class="sidebar-aside"
+    style="background-color: var(--sidebar-bg); min-height: 100vh; transition: width 0.3s, transform 0.3s;"
   >
     <div class="sidebar-logo">
       <img src="@/assets/logo.svg" alt="Logo" />
@@ -55,16 +76,9 @@ function onRemoteChange(name: string) {
       <el-select
         :model-value="remoteStore.current"
         :placeholder="remoteStore.loading ? 'Loading...' : 'Select Remote'"
-        class="w-full"
-        size="small"
-        @change="onRemoteChange"
+        class="w-full" size="small" @change="onRemoteChange"
       >
-        <el-option
-          v-for="r in remoteStore.remotes"
-          :key="r.name"
-          :label="r.name"
-          :value="r.name"
-        >
+        <el-option v-for="r in remoteStore.remotes" :key="r.name" :label="r.name" :value="r.name">
           <span>{{ r.name }}</span>
           <span v-if="r.default" class="ml-1 text-yellow-500 text-xs">(default)</span>
         </el-option>
@@ -87,17 +101,14 @@ function onRemoteChange(name: string) {
       </el-menu-item>
     </el-menu>
 
-    <div class="p-3 border-t border-white/10 flex justify-center">
+    <div class="p-3 border-t border-white/10 hidden md:flex justify-center">
       <el-button
-        :icon="Fold"
-        size="small"
-        text
-        bg
-        style="color: #bfcbd9;"
-        @click="toggleCollapse"
+        :icon="isCollapsed ? Expand : Fold"
+        size="small" text bg
+        style="color: #bfcbd9;" @click="toggleCollapse"
       >
         <template v-if="!isCollapsed">Collapse</template>
       </el-button>
     </div>
-  </div>
+  </aside>
 </template>

@@ -56,17 +56,17 @@ onMounted(fetchServices)
 </script>
 
 <template>
-  <div class="page-header flex items-center justify-between">
+  <div class="page-header flex items-center justify-between flex-wrap gap-2">
     <h2>Services</h2>
-    <el-button type="primary" :icon="Plus">Install Service</el-button>
+    <el-button type="primary" :icon="Plus" size="small">Install Service</el-button>
   </div>
 
-  <div class="mb-4 flex gap-3">
+  <div class="mb-4 flex flex-wrap gap-3">
     <el-input
       v-model="keyword"
       placeholder="Search services..."
       clearable
-      class="max-w-sm"
+      class="max-w-sm flex-1 min-w-[200px]"
       @keyup.enter="handleSearch"
     >
       <template #prefix>
@@ -76,7 +76,8 @@ onMounted(fetchServices)
     <el-button :icon="Refresh" @click="fetchServices">Refresh</el-button>
   </div>
 
-  <el-table :data="services" stripe border v-loading="loading" style="width: 100%">
+  <div class="table-responsive">
+    <el-table :data="services" stripe border v-loading="loading" style="width: 100%; min-width: 650px;">
     <el-table-column prop="name" label="Name" min-width="160">
       <template #default="{ row }">
         <el-link type="primary" @click="viewDetail(row.name)">{{ row.name }}</el-link>
@@ -89,7 +90,7 @@ onMounted(fetchServices)
         <SdStatus :status="row.tags?.length ? 'running' : 'stopped'" />
       </template>
     </el-table-column>
-    <el-table-column label="Actions" width="260" fixed="right">
+    <el-table-column label="Actions" width="260">
       <template #default="{ row }">
         <div class="flex gap-2">
           <el-button size="small" type="primary" plain @click="viewDetail(row.name)">Detail</el-button>
@@ -99,4 +100,5 @@ onMounted(fetchServices)
       </template>
     </el-table-column>
   </el-table>
+  </div>
 </template>

@@ -76,7 +76,8 @@ onMounted(fetchSubscriptions)
     <el-button type="primary" :icon="Plus" @click="openAddDialog">Add Subscription</el-button>
   </div>
 
-  <el-table :data="subscriptions" stripe border v-loading="loading" style="width: 100%">
+  <div class="table-responsive">
+    <el-table :data="subscriptions" stripe border v-loading="loading" style="width: 100%; min-width: 600px;">
     <el-table-column prop="name" label="Name" min-width="160" />
     <el-table-column prop="url" label="URL" min-width="300" show-overflow-tooltip />
     <el-table-column prop="enabled" label="Enabled" width="100">
@@ -93,7 +94,7 @@ onMounted(fetchSubscriptions)
         </el-tag>
       </template>
     </el-table-column>
-    <el-table-column label="Actions" width="200" fixed="right">
+    <el-table-column label="Actions" width="200">
       <template #default="{ row }">
         <div class="flex gap-2">
           <el-button size="small" type="primary" plain :icon="Refresh" @click="handleSync(row.name)">
@@ -106,6 +107,7 @@ onMounted(fetchSubscriptions)
       </template>
     </el-table-column>
   </el-table>
+  </div>
 
   <SdDialog
     title="Add Subscription"
