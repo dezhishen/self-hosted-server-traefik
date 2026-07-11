@@ -82,7 +82,7 @@ onMounted(fetchCandidates)
 
   <template v-if="step === 'list'">
     <div class="table-responsive">
-      <el-table :data="candidates" stripe border v-loading="loading" style="width: 100%; min-width: 700px;">
+      <el-table :data="candidates" stripe border size="small" v-loading="loading" style="width: 100%; min-width: 700px;">
         <el-table-column prop="container.name" :label="t('migration.container_name')" min-width="180" />
         <el-table-column prop="container.image" :label="t('migration.image')" min-width="200" show-overflow-tooltip />
         <el-table-column prop="container.state" :label="t('services.status')" width="110">

@@ -11,6 +11,7 @@ withDefaults(defineProps<{
   data: any[]
   columns: Column[]
   loading?: boolean
+  size?: 'large' | 'default' | 'small'
   pagination?: {
     current: number
     pageSize: number
@@ -21,6 +22,7 @@ withDefaults(defineProps<{
   maxHeight?: string | number
 }>(), {
   loading: false,
+  size: 'small',
   stripe: true,
   border: true
 })
@@ -38,6 +40,7 @@ const emit = defineEmits<{
       :stripe="stripe"
       :border="border"
       :loading="loading"
+      :size="size"
       :max-height="maxHeight"
       style="width: 100%"
       empty-text="No data available"

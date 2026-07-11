@@ -81,7 +81,7 @@ onMounted(fetchSubscriptions)
   </div>
 
   <div class="table-responsive">
-    <el-table :data="subscriptions" stripe border v-loading="loading" style="width: 100%; min-width: 600px;">
+    <el-table :data="subscriptions" stripe border size="small" v-loading="loading" style="width: 100%; min-width: 600px;">
     <el-table-column prop="name" :label="t('subscriptions.name')" min-width="160" />
     <el-table-column prop="url" :label="t('subscriptions.url')" min-width="300" show-overflow-tooltip />
     <el-table-column prop="enabled" :label="t('common.enabled') || 'Enabled'" width="100">

@@ -62,7 +62,7 @@ onMounted(fetchServices)
 <template>
   <div class="page-header flex items-center justify-between flex-wrap gap-2">
     <h2>{{ t('services.title') }}</h2>
-    <el-button type="primary" :icon="Plus" size="small">{{ t('services.install') }}</el-button>
+    <el-button type="primary" :icon="Plus">{{ t('services.install') }}</el-button>
   </div>
 
   <div class="mb-4 flex flex-wrap gap-3">
@@ -81,7 +81,7 @@ onMounted(fetchServices)
   </div>
 
   <div class="table-responsive">
-    <el-table :data="services" stripe border v-loading="loading" style="width: 100%; min-width: 650px;">
+    <el-table :data="services" stripe border size="small" v-loading="loading" style="width: 100%; min-width: 650px;">
     <el-table-column prop="name" label="Name" min-width="160">
       <template #default="{ row }">
         <el-link type="primary" @click="viewDetail(row.name)">{{ row.name }}</el-link>
