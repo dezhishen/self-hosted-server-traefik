@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { getService, uninstallService, restartService, getServiceLogs } from '@/api/services'
 import type { ServiceDetail } from '@/api/services'
 import SdStatus from '@/components/SdStatus.vue'
 import SdCard from '@/components/SdCard.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const serviceName = route.params.name as string
@@ -50,7 +52,7 @@ function handleTabChange(tab: string) {
 async function handleRestart() {
   try {
     await restartService(serviceName)
-    ElMessage.success('Service restarted')
+    ElMessage.success(t('common.success'))
   } catch {
   }
 }
@@ -58,12 +60,12 @@ async function handleRestart() {
 async function handleUninstall() {
   try {
     await ElMessageBox.confirm(
-      `Are you sure you want to uninstall "${serviceName}"?`,
-      'Confirm Uninstall',
-      { confirmButtonText: 'Uninstall', cancelButtonText: 'Cancel', type: 'warning' }
+      t('services.uninstall') + ` "${serviceName}"?`,
+      t('common.confirm'),
+      { confirmButtonText: t('services.uninstall'), cancelButtonText: t('common.close'), type: 'warning' }
     )
     await uninstallService(serviceName)
-    ElMessage.success('Service uninstalled')
+    ElMessage.success(t('common.success'))
     router.push('/services')
   } catch {
   }
@@ -79,23 +81,23 @@ onMounted(fetchService)
       <SdStatus :status="serviceStatus" />
     </div>
     <div class="flex gap-2 flex-wrap">
-      <el-button type="primary" size="small" @click="handleRestart">Restart</el-button>
-      <el-button type="danger" size="small" @click="handleUninstall">Uninstall</el-button>
-      <el-button size="small" @click="router.push('/services')">Back</el-button>
+      <el-button type="primary" size="small" @click="handleRestart">{{ t('services.restart') }}</el-button>
+      <el-button type="danger" size="small" @click="handleUninstall">{{ t('services.uninstall') }}</el-button>
+      <el-button size="small" @click="router.push('/services')">{{ t('common.back') }}</el-button>
     </div>
   </div>
 
   <div v-loading="loading">
     <el-tabs v-model="activeTab" @tab-change="handleTabChange">
-      <el-tab-pane label="Info" name="info">
+      <el-tab-pane :label="t('services.detail')" name="info">
         <SdCard>
           <template #header>
-            <span class="font-semibold">Service Information</span>
+            <span class="font-semibold">{{ t('services.detail') }}</span>
           </template>
           <el-descriptions :column="1" border>
-            <el-descriptions-item label="Name">{{ service?.name || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="Description">{{ service?.description || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="Category">{{ service?.category || '-' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('common.detail') || 'Name'">{{ service?.name || '-' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('common.desc')">{{ service?.description || '-' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('common.category')">{{ service?.category || '-' }}</el-descriptions-item>
             <el-descriptions-item label="Image">{{ service?.image || '-' }}</el-descriptions-item>
           </el-descriptions>
         </SdCard>
@@ -111,7 +113,7 @@ onMounted(fetchService)
                   {{ port.host_port }}:{{ port.container_port }}/{{ port.protocol || 'tcp' }}
                 </el-tag>
               </div>
-              <el-empty v-else description="No ports" :image-size="60" />
+              <el-empty v-else :description="t('common.no_data')" :image-size="60" />
             </SdCard>
           </el-col>
           <el-col :xs="24" :md="12">
@@ -124,7 +126,7 @@ onMounted(fetchService)
                   {{ vol.source }}:{{ vol.target }}
                 </div>
               </div>
-              <el-empty v-else description="No volumes" :image-size="60" />
+              <el-empty v-else :description="t('common.no_data')" :image-size="60" />
             </SdCard>
           </el-col>
         </el-row>
@@ -144,33 +146,33 @@ onMounted(fetchService)
               </el-descriptions-item>
             </el-descriptions>
           </div>
-          <el-empty v-else description="No environment variables" :image-size="60" />
+          <el-empty v-else :description="t('common.no_data')" :image-size="60" />
         </SdCard>
       </el-tab-pane>
 
-      <el-tab-pane label="Status" name="status">
+      <el-tab-pane :label="t('services.status')" name="status">
         <SdCard>
           <template #header>
-            <span class="font-semibold">Container Status</span>
+            <span class="font-semibold">{{ t('services.status') }}</span>
           </template>
           <el-descriptions :column="2" border>
-            <el-descriptions-item label="Status">
+            <el-descriptions-item :label="t('services.status')">
               <SdStatus :status="serviceStatus" />
             </el-descriptions-item>
           </el-descriptions>
         </SdCard>
       </el-tab-pane>
 
-      <el-tab-pane label="Logs" name="logs">
+      <el-tab-pane :label="t('services.logs')" name="logs">
         <SdCard>
           <template #header>
             <div class="flex items-center justify-between">
-              <span class="font-semibold">Service Logs</span>
-              <el-button size="small" @click="fetchLogs">Refresh</el-button>
+              <span class="font-semibold">{{ t('services.logs') }}</span>
+              <el-button size="small" @click="fetchLogs">{{ t('common.refresh') }}</el-button>
             </div>
           </template>
           <div v-loading="logLoading" class="log-output">
-            {{ logs || 'No logs available' }}
+            {{ logs || t('common.no_data') }}
           </div>
         </SdCard>
       </el-tab-pane>

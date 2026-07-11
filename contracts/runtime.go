@@ -108,6 +108,7 @@ type ContainerInfo struct {
 	Status    string            `yaml:"status" json:"status"`
 	State     string            `yaml:"state" json:"state"`
 	CreatedAt string            `yaml:"created_at" json:"created_at"`
+	Env       map[string]string `yaml:"env,omitempty" json:"env,omitempty"`
 	Ports     []PortMapping     `yaml:"ports,omitempty" json:"ports,omitempty"`
 	Networks  map[string]string `yaml:"networks,omitempty" json:"networks,omitempty"`
 	Labels    map[string]string `yaml:"labels,omitempty" json:"labels,omitempty"`

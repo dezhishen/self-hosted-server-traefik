@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -14,33 +15,49 @@ import (
 )
 
 type Server struct {
-	app *core.App
+	app      *core.App
+	sessions *sessionManager
 }
 
 func New(app *core.App) *Server {
-	return &Server{app: app}
+	return &Server{
+		app:      app,
+		sessions: newSessionManager(),
+	}
 }
 
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
+
+	// Auth (public)
+	mux.HandleFunc("/api/auth/login", s.handleAuthLogin)
+	mux.HandleFunc("/api/auth/logout", s.handleAuthLogout)
+
+	// Public endpoints
 	mux.HandleFunc("/api/health", s.handleHealth)
+	mux.HandleFunc("/api/endpoints", s.handleEndpoints)
+
+	// Protected: config
 	mux.HandleFunc("/api/config", s.handleConfig)
 
-	// Endpoint-scoped endpoints
+	// Protected: endpoint-scoped
 	mux.HandleFunc("/api/services", s.withEndpoint(s.handleServices))
 	mux.HandleFunc("/api/services/", s.withEndpoint(s.handleServiceByID))
 	mux.HandleFunc("/api/containers", s.withEndpoint(s.handleContainers))
+	mux.HandleFunc("/api/migrate/analyze", s.withEndpoint(s.handleMigrateAnalyze))
+	mux.HandleFunc("/api/migrate/execute", s.withEndpoint(s.handleMigrateExecute))
 
-	// Global endpoints
-	mux.HandleFunc("/api/endpoints", s.handleEndpoints)
+	// Protected: SSH
 	mux.HandleFunc("/api/ssh/keygen", s.handleSSHKeygen)
 	mux.HandleFunc("/api/ssh/import", s.handleSSHImport)
 	mux.HandleFunc("/api/ssh/keys", s.handleSSHKeys)
+
+	// Protected: password change + subscriptions
 	mux.HandleFunc("/api/config/password", s.handlePassword)
 	mux.HandleFunc("/api/subscriptions", s.handleSubscriptions)
 	mux.HandleFunc("/api/subscriptions/", s.handleSubscriptionByID)
 
-	return withLogging(s.app.Logger, mux)
+	return withLogging(s.app.Logger, s.withAuth(mux))
 }
 
 func withLogging(log *zap.Logger, next http.Handler) http.Handler {
@@ -63,6 +80,88 @@ func (s *Server) withEndpoint(next func(http.ResponseWriter, *http.Request, *end
 		}
 		next(w, r, epCtx)
 	}
+}
+
+// withAuth is an authentication middleware. It checks for a valid Bearer token
+// on protected routes. Public routes (auth, health, endpoints) pass through.
+func (s *Server) withAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if isPublicRoute(r.URL.Path) {
+			next.ServeHTTP(w, r)
+			return
+		}
+		token, ok := extractBearerToken(r)
+		if !ok {
+			jsonErr(w, 401, "missing or invalid authorization header")
+			return
+		}
+		username, ok := s.sessions.ValidateSession(token)
+		if !ok {
+			jsonErr(w, 401, "unauthorized")
+			return
+		}
+		// Store username in request context for downstream handlers
+		ctx := context.WithValue(r.Context(), ctxAuthUserKey, username)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// POST /api/auth/login
+// Body: {"username":"admin","password":"..."}
+func (s *Server) handleAuthLogin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		jsonErr(w, 405, "method not allowed")
+		return
+	}
+
+	var req struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		jsonErr(w, 400, "invalid request body")
+		return
+	}
+	if req.Username == "" || req.Password == "" {
+		jsonErr(w, 400, "username and password are required")
+		return
+	}
+
+	// Check if a password has been configured
+	if s.app.Config.Auth == nil || s.app.Config.Auth.PasswordHash == "" {
+		jsonErr(w, 403, "no password configured; use 'selfhosted passwd' to set one")
+		return
+	}
+
+	// Verify password against stored bcrypt hash
+	if err := bcrypt.CompareHashAndPassword([]byte(s.app.Config.Auth.PasswordHash), []byte(req.Password)); err != nil {
+		jsonErr(w, 401, "invalid credentials")
+		return
+	}
+
+	token, err := s.sessions.CreateSession(req.Username)
+	if err != nil {
+		jsonErr(w, 500, "failed to create session")
+		return
+	}
+
+	s.app.Logger.Info("login successful", zap.String("username", req.Username))
+	jsonResp(w, map[string]string{
+		"token":    token,
+		"username": req.Username,
+	})
+}
+
+// POST /api/auth/logout
+func (s *Server) handleAuthLogout(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		jsonErr(w, 405, "method not allowed")
+		return
+	}
+	if token, ok := extractBearerToken(r); ok {
+		s.sessions.RevokeSession(token)
+	}
+	jsonResp(w, map[string]string{"status": "ok"})
 }
 
 func jsonResp(w http.ResponseWriter, data interface{}) {
@@ -445,6 +544,39 @@ func (s *Server) handleSubscriptionByID(w http.ResponseWriter, r *http.Request) 
 	default:
 		jsonErr(w, 405, "method not allowed")
 	}
+}
+
+// GET /api/migrate/analyze
+func (s *Server) handleMigrateAnalyze(w http.ResponseWriter, r *http.Request, ep *endpoint.Context) {
+	if r.Method != http.MethodGet {
+		jsonErr(w, 405, "method not allowed")
+		return
+	}
+	candidates, err := ep.MigrateService.Analyze(ep.Name)
+	if err != nil {
+		jsonErr(w, 500, err.Error())
+		return
+	}
+	jsonResp(w, candidates)
+}
+
+// POST /api/migrate/execute
+func (s *Server) handleMigrateExecute(w http.ResponseWriter, r *http.Request, ep *endpoint.Context) {
+	if r.Method != http.MethodPost {
+		jsonErr(w, 405, "method not allowed")
+		return
+	}
+	var req contracts.MigrationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		jsonErr(w, 400, "invalid request body")
+		return
+	}
+	newID, err := ep.MigrateService.Execute(&req)
+	if err != nil {
+		jsonErr(w, 500, err.Error())
+		return
+	}
+	jsonResp(w, map[string]string{"container_id": newID})
 }
 
 func (s *Server) Start(addr string) error {

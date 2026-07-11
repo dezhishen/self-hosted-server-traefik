@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { getConfig, updateConfig, sshKeygen, sshKeyImport, changePassword } from '@/api/config'
 import type { AppConfig, TLSConfig, SSHKeygenResult } from '@/api/config'
 import SdCard from '@/components/SdCard.vue'
 import { ElMessage } from 'element-plus'
+
+const { t } = useI18n()
 
 const config = ref<AppConfig | null>(null)
 const loading = ref(false)
@@ -69,9 +72,9 @@ async function handleSave() {
   saving.value = true
   try {
     await updateConfig(config.value)
-    ElMessage.success('Config saved')
+    ElMessage.success(t('common.success'))
   } catch {
-    ElMessage.error('Failed to save config')
+    ElMessage.error(t('common.error'))
   } finally {
     saving.value = false
   }
@@ -83,17 +86,17 @@ async function handlePasswordSave() {
     return
   }
   if (newPassword.value !== confirmPassword.value) {
-    ElMessage.warning('Passwords do not match')
+    ElMessage.warning(t('settings.password_mismatch'))
     return
   }
   passwordSaving.value = true
   try {
     await changePassword(newPassword.value)
-    ElMessage.success('Password updated')
+    ElMessage.success(t('settings.password_updated'))
     newPassword.value = ''
     confirmPassword.value = ''
   } catch {
-    ElMessage.error('Failed to update password')
+    ElMessage.error(t('common.error'))
   } finally {
     passwordSaving.value = false
   }
@@ -200,8 +203,8 @@ onMounted(fetchConfig)
 
 <template>
   <div class="page-header flex items-center justify-between">
-    <h2>Settings</h2>
-    <el-button type="primary" :loading="saving" @click="handleSave">Save Config</el-button>
+    <h2>{{ t('settings.title') }}</h2>
+    <el-button type="primary" :loading="saving" @click="handleSave">{{ t('settings.save') }}</el-button>
   </div>
 
   <div v-loading="loading">

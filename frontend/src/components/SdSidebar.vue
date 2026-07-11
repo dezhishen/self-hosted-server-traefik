@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useCurrentRemote } from '@/stores/currentRemote'
+import { useThemeStore } from '@/stores/theme'
 import {
   Monitor,
   Grid,
-  Link,
-  Tickets,
   Fold,
   Expand
 } from '@element-plus/icons-vue'
@@ -22,14 +22,14 @@ const emit = defineEmits<{
 const route = useRoute()
 const router = useRouter()
 const remoteStore = useCurrentRemote()
+const themeStore = useThemeStore()
+const { t } = useI18n()
 
 const isCollapsed = ref(false)
 
 const menuItems = [
-  { path: '/', icon: Monitor, label: 'Dashboard' },
-  { path: '/services', icon: Grid, label: 'Services' },
-  { path: '/subscriptions', icon: Tickets, label: 'Subscriptions' },
-  { path: '/settings', icon: Link, label: 'Settings' }
+  { path: '/', icon: Monitor, label: 'nav.dashboard' },
+  { path: '/services', icon: Grid, label: 'nav.services' }
 ]
 
 const activeIndex = computed(() => route.path)
@@ -41,10 +41,6 @@ function handleSelect(path: string) {
 
 function toggleCollapse() {
   isCollapsed.value = !isCollapsed.value
-}
-
-function onRemoteChange(name: string) {
-  remoteStore.select(name)
 }
 </script>
 
@@ -67,48 +63,51 @@ function onRemoteChange(name: string) {
     class="sidebar-aside"
     style="background-color: var(--sidebar-bg); min-height: 100vh; transition: width 0.3s, transform 0.3s;"
   >
-    <div class="sidebar-logo">
+    <div class="sidebar-logo" :class="{ 'justify-center': isCollapsed }">
       <img src="@/assets/logo.svg" alt="Logo" />
-      <span v-show="!isCollapsed">SelfHosted</span>
+      <span v-show="!isCollapsed" class="flex-1 ml-2">SelfHosted</span>
+      <!-- Collapse toggle, visible on desktop -->
+      <el-button
+        v-show="!isCollapsed"
+        :icon="Fold"
+        size="small" text
+        style="color: var(--sidebar-text);"
+        class="hidden md:inline-flex"
+        @click="toggleCollapse"
+      />
+      <el-button
+        v-show="isCollapsed"
+        :icon="Expand"
+        size="small" text
+        style="color: var(--sidebar-text);"
+        class="hidden md:inline-flex"
+        @click="toggleCollapse"
+      />
     </div>
 
-    <div v-if="!isCollapsed && remoteStore.remotes.length > 0" class="px-3 mb-2">
-      <el-select
-        :model-value="remoteStore.current"
-        :placeholder="remoteStore.loading ? 'Loading...' : 'Select Remote'"
-        class="w-full" size="small" @change="onRemoteChange"
-      >
-        <el-option v-for="r in remoteStore.remotes" :key="r.name" :label="r.name" :value="r.name">
-          <span>{{ r.name }}</span>
-          <span v-if="r.default" class="ml-1 text-yellow-500 text-xs">(default)</span>
-        </el-option>
-      </el-select>
+    <!-- Current endpoint indicator (read-only) -->
+    <div
+      v-show="!isCollapsed && remoteStore.current"
+      class="px-3 mb-2 text-xs truncate"
+      style="color: var(--sidebar-text); opacity: 0.7;"
+    >
+      {{ remoteStore.current }}
     </div>
 
     <el-menu
       :default-active="activeIndex"
       :collapse="isCollapsed"
       :collapse-transition="false"
-      background-color="#1d1e1f"
-      text-color="#bfcbd9"
-      active-text-color="#409eff"
+      :background-color="themeStore.isDark ? '#0d0d1a' : '#1d1e1f'"
+      text-color="var(--sidebar-text)"
+      active-text-color="var(--sidebar-active-bg)"
       style="border-right: none; flex: 1;"
       @select="handleSelect"
     >
       <el-menu-item v-for="item in menuItems" :key="item.path" :index="item.path">
         <el-icon><component :is="item.icon" /></el-icon>
-        <template #title>{{ item.label }}</template>
+        <template #title>{{ t(item.label) }}</template>
       </el-menu-item>
     </el-menu>
-
-    <div class="p-3 border-t border-white/10 hidden md:flex justify-center">
-      <el-button
-        :icon="isCollapsed ? Expand : Fold"
-        size="small" text bg
-        style="color: #bfcbd9;" @click="toggleCollapse"
-      >
-        <template v-if="!isCollapsed">Collapse</template>
-      </el-button>
-    </div>
   </aside>
 </template>

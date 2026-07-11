@@ -5,6 +5,7 @@ type ServiceDefinition struct {
 	Name         string              `yaml:"name" json:"name"`
 	Description  string              `yaml:"description,omitempty" json:"description,omitempty"`
 	Image        string              `yaml:"image,omitempty" json:"image,omitempty"`
+	Images       []string            `yaml:"images,omitempty" json:"images,omitempty"`
 	Params       []*ParamDef         `yaml:"params,omitempty" json:"params,omitempty"`
 	Init         *InitConfig         `yaml:"init,omitempty" json:"init,omitempty"`
 	Container    *ContainerConfig    `yaml:"container,omitempty" json:"container,omitempty"`

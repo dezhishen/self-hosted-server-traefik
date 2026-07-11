@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useCurrentRemote } from '@/stores/currentRemote'
 import { Connection } from '@element-plus/icons-vue'
 
+const { t } = useI18n()
 const remoteStore = useCurrentRemote()
 const selected = ref('')
 const busy = ref(true)
@@ -29,25 +31,25 @@ function confirm() {
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 w-full max-w-md mx-4">
       <div class="text-center mb-6">
         <el-icon :size="48" color="#409eff"><Connection /></el-icon>
-        <h2 class="text-xl font-semibold mt-3 dark:text-white">Select Endpoint</h2>
+        <h2 class="text-xl font-semibold mt-3 dark:text-white">{{ t('remote.select') }}</h2>
         <p class="text-sm text-gray-500 mt-1 dark:text-gray-400">
-          Choose a container runtime endpoint to manage
+          {{ t('app.desc') }}
         </p>
       </div>
 
       <div v-if="busy" class="text-center py-8">
         <el-icon class="is-loading" :size="32"><Connection /></el-icon>
-        <p class="mt-2 text-sm text-gray-400">Loading endpoints…</p>
+        <p class="mt-2 text-sm text-gray-400">{{ t('remote.loading') }}</p>
       </div>
 
       <div v-else-if="remoteStore.remotes.length === 0" class="text-center py-4">
-        <p class="text-gray-500 dark:text-gray-400">No endpoints available.</p>
+        <p class="text-gray-500 dark:text-gray-400">{{ t('common.no_data') }}</p>
       </div>
 
       <template v-else>
         <el-select
           v-model="selected"
-          placeholder="Select an endpoint"
+          :placeholder="t('remote.select')"
           class="w-full"
           size="large"
         >
@@ -59,7 +61,7 @@ function confirm() {
           >
             <div class="flex items-center justify-between">
               <span>{{ r.name }}</span>
-              <span v-if="r.default" class="text-xs text-yellow-500 ml-2">(default)</span>
+              <span v-if="r.default" class="text-xs text-yellow-500 ml-2">({{ t('remote.default') }})</span>
             </div>
           </el-option>
         </el-select>
@@ -72,7 +74,7 @@ function confirm() {
             :disabled="!selected"
             @click="confirm"
           >
-            Confirm
+            {{ t('common.confirm') }}
           </el-button>
         </div>
       </template>

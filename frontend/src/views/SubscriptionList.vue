@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { listSubscriptions, addSubscription, removeSubscription, syncSubscription } from '@/api/subscriptions'
 import type { Subscription } from '@/api/subscriptions'
 import SdDialog from '@/components/SdDialog.vue'
 import { Plus, Delete, Refresh } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
+const { t } = useI18n()
 const subscriptions = ref<Subscription[]>([])
 const loading = ref(false)
 const dialogVisible = ref(false)
@@ -37,7 +39,7 @@ async function handleAdd() {
   saving.value = true
   try {
     await addSubscription(newSub.value)
-    ElMessage.success('Subscription added')
+    ElMessage.success(t('common.success'))
     dialogVisible.value = false
     fetchSubscriptions()
   } finally {
@@ -48,12 +50,12 @@ async function handleAdd() {
 async function handleRemove(name: string) {
   try {
     await ElMessageBox.confirm(
-      `Remove subscription "${name}"?`,
-      'Confirm Remove',
-      { confirmButtonText: 'Remove', cancelButtonText: 'Cancel', type: 'warning' }
+      t('subscriptions.remove') + ` "${name}"?`,
+      t('common.confirm'),
+      { confirmButtonText: t('common.delete'), cancelButtonText: t('common.close'), type: 'warning' }
     )
     await removeSubscription(name)
-    ElMessage.success('Subscription removed')
+    ElMessage.success(t('common.success'))
     fetchSubscriptions()
   } catch {
   }
@@ -62,7 +64,7 @@ async function handleRemove(name: string) {
 async function handleSync(name: string) {
   try {
     await syncSubscription(name)
-    ElMessage.success('Sync initiated')
+    ElMessage.success(t('common.success'))
   } catch {
   }
 }
@@ -72,36 +74,36 @@ onMounted(fetchSubscriptions)
 
 <template>
   <div class="page-header flex items-center justify-between">
-    <h2>Subscriptions</h2>
-    <el-button type="primary" :icon="Plus" @click="openAddDialog">Add Subscription</el-button>
+    <h2>{{ t('subscriptions.title') }}</h2>
+    <el-button type="primary" :icon="Plus" @click="openAddDialog">{{ t('subscriptions.add') }}</el-button>
   </div>
 
   <div class="table-responsive">
     <el-table :data="subscriptions" stripe border v-loading="loading" style="width: 100%; min-width: 600px;">
-    <el-table-column prop="name" label="Name" min-width="160" />
-    <el-table-column prop="url" label="URL" min-width="300" show-overflow-tooltip />
-    <el-table-column prop="enabled" label="Enabled" width="100">
+    <el-table-column prop="name" :label="t('subscriptions.name')" min-width="160" />
+    <el-table-column prop="url" :label="t('subscriptions.url')" min-width="300" show-overflow-tooltip />
+    <el-table-column prop="enabled" :label="t('common.enabled') || 'Enabled'" width="100">
       <template #default="{ row }">
         <el-tag :type="row.enabled ? 'success' : 'info'" size="small">
-          {{ row.enabled ? 'Yes' : 'No' }}
+          {{ row.enabled ? (t('common.yes') || 'Yes') : (t('common.no') || 'No') }}
         </el-tag>
       </template>
     </el-table-column>
     <el-table-column prop="auto_update" label="Auto Update" width="120">
       <template #default="{ row }">
         <el-tag :type="row.auto_update ? 'success' : 'info'" size="small">
-          {{ row.auto_update ? 'Yes' : 'No' }}
+          {{ row.auto_update ? (t('common.yes') || 'Yes') : (t('common.no') || 'No') }}
         </el-tag>
       </template>
     </el-table-column>
-    <el-table-column label="Actions" width="200">
+    <el-table-column :label="t('common.actions') || 'Actions'" width="200">
       <template #default="{ row }">
         <div class="flex gap-2">
           <el-button size="small" type="primary" plain :icon="Refresh" @click="handleSync(row.name)">
-            Sync
+            {{ t('subscriptions.sync') }}
           </el-button>
           <el-button size="small" type="danger" plain :icon="Delete" @click="handleRemove(row.name)">
-            Remove
+            {{ t('subscriptions.remove') }}
           </el-button>
         </div>
       </template>
@@ -110,20 +112,20 @@ onMounted(fetchSubscriptions)
   </div>
 
   <SdDialog
-    title="Add Subscription"
+    :title="t('subscriptions.add')"
     :visible="dialogVisible"
     :confirm-loading="saving"
     @update:visible="dialogVisible = $event"
     @confirm="handleAdd"
   >
     <el-form label-position="top">
-      <el-form-item label="Name">
-        <el-input v-model="newSub.name" placeholder="Subscription name" />
+      <el-form-item :label="t('subscriptions.name')">
+        <el-input v-model="newSub.name" :placeholder="t('subscriptions.name')" />
       </el-form-item>
-      <el-form-item label="URL">
+      <el-form-item :label="t('subscriptions.url')">
         <el-input v-model="newSub.url" placeholder="https://example.com/repo" />
       </el-form-item>
-      <el-form-item label="Enabled">
+      <el-form-item :label="t('common.enabled') || 'Enabled'">
         <el-switch v-model="newSub.enabled!" />
       </el-form-item>
       <el-form-item label="Auto Update">

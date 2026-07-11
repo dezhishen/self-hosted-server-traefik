@@ -3,12 +3,37 @@
 @tailwind utilities;
 
 :root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f0f2f5;
+  --bg-card: #ffffff;
+  --text-primary: #303133;
+  --text-secondary: #606266;
+  --text-placeholder: #c0c4cc;
+  --border-color: #dcdfe6;
   --sidebar-bg: #1d1e1f;
   --sidebar-text: #bfcbd9;
   --sidebar-active-bg: #409eff;
   --sidebar-width: 220px;
   --header-height: 60px;
   --content-bg: #f0f2f5;
+}
+
+html.dark {
+  --bg-primary: #1a1a2e;
+  --bg-secondary: #16213e;
+  --bg-card: #1e2a4a;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --text-placeholder: #666666;
+  --border-color: #3a3a5c;
+  --content-bg: #0f0f23;
+  --sidebar-bg: #0d0d1a;
+  --sidebar-text: #a0aec0;
+  --sidebar-active-bg: #409eff;
+}
+
+*, *::before, *::after {
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
 }
 
 .el-menu-vertical-demo:not(.el-menu--collapse) {
@@ -19,8 +44,15 @@
   height: 60px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  padding: 0 12px;
+  gap: 4px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-logo.justify-center {
+  justify-content: center;
+  padding: 0;
 }
 
 .sidebar-logo img {
@@ -42,7 +74,7 @@
 .page-header h2 {
   font-size: 20px;
   font-weight: 600;
-  color: #303133;
+  color: var(--text-primary);
   margin: 0;
 }
 

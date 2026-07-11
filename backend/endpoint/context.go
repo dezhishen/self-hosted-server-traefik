@@ -16,6 +16,7 @@ type Context struct {
 
 	// Endpoint-scoped services
 	ServiceManager contracts.ServiceManager
+	MigrateService contracts.MigrateService
 	ParamStore     contracts.ParamStore
 	Logger         *zap.Logger
 }
@@ -44,11 +45,20 @@ func NewContext(opts ContextOpts) *Context {
 		Name:           opts.Name,
 	})
 
+	migrateSvc := NewMigrateService(
+		opts.Runtime,
+		opts.ServiceLoader,
+		svcMgr,
+		opts.Logger,
+		opts.Name,
+	)
+
 	return &Context{
 		Name:           opts.Name,
 		Config:         opts.Config,
 		Runtime:        opts.Runtime,
 		ServiceManager: svcMgr,
+		MigrateService: migrateSvc,
 		ParamStore:     paramStore,
 		Logger:         opts.Logger,
 	}
