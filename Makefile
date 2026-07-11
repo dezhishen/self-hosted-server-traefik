@@ -54,7 +54,7 @@ build-darwin-arm64:
 test-go:
 	@$(GO) test -v -race -count=1 ./contracts/... ./sdk/... ./cli/...
 
-test-e2e:
+test-e2e: build-backend
 	@cd frontend && $(PNPM) exec playwright test
 
 test: test-go
