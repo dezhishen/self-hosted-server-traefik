@@ -26,7 +26,6 @@ build/
 *.log
 logs/
 args/
-config/
 
 # Personal config files (never commit)
 .selfhosted.yaml

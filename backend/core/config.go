@@ -6,8 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/spf13/viper"
+
 	"github.com/dezhishen/self-hosted-server-traefik/contracts"
-	"gopkg.in/yaml.v3"
 )
 
 type ConfigManager struct {
@@ -88,26 +89,52 @@ func (m *ConfigManager) Save(cfg *contracts.AppConfig) error {
 	return m.loader.Save(cfg, m.path)
 }
 
-// SaveEndpoints saves only the endpoints.yaml file. Never touches system.yaml.
+// SaveEndpoints saves only the endpoints.yaml file using viper. Never touches system.yaml.
 func (m *ConfigManager) SaveEndpoints(eps map[string]*contracts.EndpointConfig) error {
-	epPath := filepath.Join(m.path, "config", "endpoints.yaml")
-	collection := contracts.EndpointCollection{Endpoints: eps}
-	data, err := yaml.Marshal(collection)
-	if err != nil {
-		return fmt.Errorf("marshal endpoints: %w", err)
+	cfgDir := filepath.Join(m.path, "config")
+	if err := os.MkdirAll(cfgDir, 0755); err != nil {
+		return fmt.Errorf("create config dir: %w", err)
 	}
-	return os.WriteFile(epPath, data, 0644)
+
+	v := viper.New()
+	v.AddConfigPath(cfgDir)
+	v.SetConfigName("endpoints")
+	v.SetConfigType("yaml")
+	v.Set("endpoints", eps)
+
+	// SafeWriteConfig only works if file doesn't exist; use WriteConfig to overwrite
+	if err := v.SafeWriteConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileAlreadyExistsError); ok {
+			return v.WriteConfig()
+		}
+		return fmt.Errorf("write endpoints.yaml: %w", err)
+	}
+	return nil
 }
 
-// SaveSystem saves only the system.yaml file.
+// SaveSystem saves only the system.yaml file using viper.
 func (m *ConfigManager) SaveSystem(baseDataDir string, auth *contracts.AuthConfig) error {
-	sysPath := filepath.Join(m.path, "config", "system.yaml")
-	sys := contracts.SystemConfig{BaseDataDir: baseDataDir, Auth: auth}
-	data, err := yaml.Marshal(sys)
-	if err != nil {
-		return fmt.Errorf("marshal system config: %w", err)
+	cfgDir := filepath.Join(m.path, "config")
+	if err := os.MkdirAll(cfgDir, 0755); err != nil {
+		return fmt.Errorf("create config dir: %w", err)
 	}
-	return os.WriteFile(sysPath, data, 0644)
+
+	v := viper.New()
+	v.AddConfigPath(cfgDir)
+	v.SetConfigName("system")
+	v.SetConfigType("yaml")
+	v.Set("base_data_dir", baseDataDir)
+	if auth != nil {
+		v.Set("auth", auth)
+	}
+
+	if err := v.SafeWriteConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileAlreadyExistsError); ok {
+			return v.WriteConfig()
+		}
+		return fmt.Errorf("write system.yaml: %w", err)
+	}
+	return nil
 }
 
 // SavePut handles PUT /api/config safely.
@@ -149,16 +176,20 @@ func (m *ConfigManager) SavePut(cfg *contracts.AppConfig) error {
 	return nil
 }
 
-// loadSystemFromDisk reads the current system.yaml from disk.
+// loadSystemFromDisk reads the current system.yaml from disk using viper.
 // Returns empty SystemConfig if file doesn't exist or can't be read.
 func (m *ConfigManager) loadSystemFromDisk() *contracts.SystemConfig {
-	sysPath := filepath.Join(m.path, "config", "system.yaml")
-	data, err := os.ReadFile(sysPath)
-	if err != nil {
+	cfgDir := filepath.Join(m.path, "config")
+	v := viper.New()
+	v.AddConfigPath(cfgDir)
+	v.SetConfigName("system")
+	v.SetConfigType("yaml")
+
+	if err := v.ReadInConfig(); err != nil {
 		return &contracts.SystemConfig{}
 	}
 	var sys contracts.SystemConfig
-	if err := yaml.Unmarshal(data, &sys); err != nil {
+	if err := v.Unmarshal(&sys); err != nil {
 		return &contracts.SystemConfig{}
 	}
 	return &sys
