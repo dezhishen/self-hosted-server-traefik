@@ -236,7 +236,7 @@ onMounted(fetchConfig)
                   </el-button>
                 </div>
               </div>
-              <el-form :model="ep" label-width="110px" size="small">
+              <el-form :model="ep" label-width="110px" size="small" label-position="left">
                 <el-form-item label="Type">
                   <el-select v-model="ep.connection.type" @change="initTLS(ep as any)">
                     <el-option label="unix" value="unix" />
