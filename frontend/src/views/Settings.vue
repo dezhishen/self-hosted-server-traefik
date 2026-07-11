@@ -202,9 +202,9 @@ onMounted(fetchConfig)
 </script>
 
 <template>
-  <div class="page-header flex items-center justify-between">
+  <div class="page-header flex items-center justify-between flex-wrap gap-2">
     <h2>{{ t('settings.title') }}</h2>
-    <el-button type="primary" :loading="saving" @click="handleSave">{{ t('settings.save') }}</el-button>
+    <el-button type="primary" size="small" :loading="saving" @click="handleSave">{{ t('settings.save') }}</el-button>
   </div>
 
   <div v-loading="loading">
@@ -227,9 +227,9 @@ onMounted(fetchConfig)
             <el-divider>Endpoints</el-divider>
 
             <div v-for="(ep, name) in config.endpoints" :key="name" class="mb-4 p-4 border rounded">
-              <div class="flex items-center justify-between mb-2">
+              <div class="flex items-start sm:items-center justify-between mb-2 flex-col sm:flex-row gap-2">
                 <strong>{{ name }}</strong>
-                <div class="flex gap-2">
+                <div class="flex gap-2 flex-wrap">
                   <el-tag v-if="ep.default" type="warning" size="small">default</el-tag>
                   <el-button size="small" type="danger" plain @click="removeEndpoint(name)">
                     Remove
@@ -264,9 +264,9 @@ onMounted(fetchConfig)
                   </el-form-item>
 
                   <!-- SSH Key Management: generate or import -->
-                  <el-form-item label="SSH Key">
+                    <el-form-item label="SSH Key">
                     <div class="flex flex-col gap-2 w-full">
-                      <div v-if="getEPKeyInfo(name)" class="flex items-center gap-2">
+                      <div v-if="getEPKeyInfo(name)" class="flex items-center gap-2 flex-wrap">
                         <el-tag type="info" size="small">configured</el-tag>
                         <span class="text-xs text-gray-500">
                           Private key is stored server-side
@@ -275,11 +275,11 @@ onMounted(fetchConfig)
                       <div v-else class="text-xs text-gray-500">
                         No SSH key configured. Generate a new key pair or import an existing one.
                       </div>
-                      <div class="flex gap-2">
-                        <el-button size="small" @click="openKeygenForEndpoint(name)">
+                      <div class="flex gap-2 flex-wrap w-full sm:flex-nowrap">
+                        <el-button size="small" class="flex-1 sm:flex-none" @click="openKeygenForEndpoint(name)">
                           {{ getEPKeyInfo(name) ? 'Regenerate' : 'Generate SSH Key' }}
                         </el-button>
-                        <el-button size="small" plain @click="openImportForEndpoint(name)">
+                        <el-button size="small" plain class="flex-1 sm:flex-none" @click="openImportForEndpoint(name)">
                           Import Key
                         </el-button>
                       </div>
