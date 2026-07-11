@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useCurrentRemote } from '@/stores/currentRemote'
 import { getRuntimeInfo, listContainers } from '@/api/runtime'
 import type { RuntimeInfo, Container } from '@/api/runtime'
 import SdCard from '@/components/SdCard.vue'
@@ -8,12 +9,17 @@ import SdStatus from '@/components/SdStatus.vue'
 import { Monitor, Grid, Setting, Connection } from '@element-plus/icons-vue'
 
 const router = useRouter()
+const remoteStore = useCurrentRemote()
 
 const runtime = ref<RuntimeInfo | null>(null)
 const containers = ref<Container[]>([])
 const loading = ref(false)
 
 async function fetchData() {
+  // Don't fetch until the remote store has a selected endpoint.
+  // This avoids a race where the Dashboard mounts before fetchRemotes()
+  // completes, causing requests without the X-Remote-Name header.
+  if (!remoteStore.initialized || !remoteStore.current) return
   loading.value = true
   try {
     const [rtRes, ctRes] = await Promise.all([
@@ -35,9 +41,20 @@ function updateCounts() {
   stoppedCount.value = containers.value.filter(c => c.state !== 'running').length
 }
 
+// Fetch on mount if already initialized.
 onMounted(() => {
-  fetchData().then(() => updateCounts())
+  if (remoteStore.initialized && remoteStore.current) {
+    fetchData().then(() => updateCounts())
+  }
 })
+
+// Re-fetch when the remote becomes ready (handles the race condition).
+watch(
+  () => remoteStore.initialized && !!remoteStore.current,
+  (ready) => {
+    if (ready) fetchData().then(() => updateCounts())
+  }
+)
 </script>
 
 <template>

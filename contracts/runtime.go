@@ -46,12 +46,15 @@ type TLSConfig struct {
 }
 
 type ConnectionConfig struct {
-	Type       ConnectionType `yaml:"type" json:"type"`
-	Endpoint   string         `yaml:"endpoint" json:"endpoint"`
-	Engine     EngineType     `yaml:"engine,omitempty" json:"engine,omitempty"`
-	TLS        *TLSConfig     `yaml:"tls,omitempty" json:"tls,omitempty"`
-	SSHKeyPath string         `yaml:"ssh_key_path,omitempty" json:"ssh_key_path,omitempty"`
-	SSHUser    string         `yaml:"ssh_user,omitempty" json:"ssh_user,omitempty"`
+	Type              ConnectionType `yaml:"type" json:"type"`
+	Endpoint          string         `yaml:"endpoint" json:"endpoint"`
+	Engine            EngineType     `yaml:"engine,omitempty" json:"engine,omitempty"`
+	TLS               *TLSConfig     `yaml:"tls,omitempty" json:"tls,omitempty"`
+	SSHUser           string         `yaml:"ssh_user,omitempty" json:"ssh_user,omitempty"`
+	SSHPrivateKey     string         `yaml:"ssh_private_key,omitempty" json:"-"`         // never exposed via JSON
+	SSHKeyFingerprint string         `yaml:"-" json:"ssh_key_fingerprint,omitempty"`      // computed, read-only
+	SSHKeyType        string         `yaml:"-" json:"ssh_key_type,omitempty"`             // computed, read-only
+	SSHPublicKey      string         `yaml:"-" json:"ssh_public_key,omitempty"`           // computed, read-only
 }
 
 type PortMapping struct {

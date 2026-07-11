@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import client from '@/api/client'
+import { ref, computed, watch } from 'vue'
+import client, { setCurrentRemote } from '@/api/client'
 
 export interface RemoteHost {
   name: string
@@ -17,6 +17,13 @@ export const useCurrentRemote = defineStore('currentRemote', () => {
   const remotes = ref<RemoteHost[]>([])
   const loading = ref(false)
   const initialized = ref(false)
+
+  // Sync the module-level _currentRemote whenever the store's current value changes.
+  // This ensures the axios interceptor always has the latest value without
+  // relying on window.__pinia or circular imports.
+  watch(current, (val) => {
+    if (val) setCurrentRemote(val)
+  })
 
   async function fetchRemotes() {
     loading.value = true

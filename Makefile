@@ -8,7 +8,7 @@ GOARCH       := amd64
 LDFLAGS      := -s -w -X main.version=$(shell git describe --tags --always 2>/dev/null || echo dev) -X main.commit=$(shell git rev-parse --short HEAD 2>/dev/null || echo none) -X main.date=$(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 DIST_DIR     := cli/web/dist
 DEV_DIR      := .dev
-DEV_CONFIG   := $(PWD)/.selfhosted.dev.yaml
+DEV_CONFIG   := $(CURDIR)/.selfhosted.dev
 DEV_PID_FILE := $(DEV_DIR)/selfhosted.pid
 BK_PID_FILE  := $(DEV_DIR)/backend.pid
 FE_PID_FILE  := $(DEV_DIR)/frontend.pid
@@ -74,32 +74,41 @@ clean:
 ## —— Dev (hot-reload) ——
 
 killdev:
+	@# Kill by PID files
 	@for f in $(DEV_PID_FILE) $(BK_PID_FILE) $(FE_PID_FILE); do \
 		if [ -f $$f ]; then \
 			PID=$$(cat $$f); \
-			if kill -0 $$PID 2>/dev/null; then \
-				echo "→ Killing PID $$PID..."; \
-				kill $$PID 2>/dev/null; \
-			fi; \
+			kill $$PID 2>/dev/null && echo "→ Killed PID $$PID from $$(basename $$f)" || true; \
 			rm -f $$f; \
 		fi; \
 	done
-	@sleep 1
+	@# Kill leftover go-run processes (both the shim and compiled binary)
+	@for pid in $$(ps aux | grep -E 'go.*run.*backend.*cmd|go-build.*/cmd' | grep -v grep | awk '{print $$2}'); do \
+		kill -9 $$pid 2>/dev/null && echo "→ Killed go-run PID $$pid" || true; \
+	done
+	@# Kill leftover vite processes
+	@for pid in $$(ps aux | grep '[n]ode.*vite' | awk '{print $$2}'); do \
+		kill $$pid 2>/dev/null && echo "→ Killed vite PID $$pid" || true; \
+	done
+	@sleep 2
 
 dev: killdev
 	@mkdir -p $(DEV_DIR)
-	@echo "→ Starting backend (go run) on :18080..."
-	@echo "→ Using config: $(DEV_CONFIG)"
-	@GOROOT=$(GOROOT) GOPATH=$(GOPATH) CGO_ENABLED=0 nohup $(GO) run -C $(PWD)/backend ./cmd/... -c $(DEV_CONFIG) --addr :18080 > $(DEV_DIR)/backend.log 2>&1 & echo $$! > $(BK_PID_FILE)
-	@sleep 3
 	@echo "→ Starting frontend (vite) on :5173..."
-	@nohup npx --prefix frontend vite --host 0.0.0.0 --port 5173 > $(PWD)/$(DEV_DIR)/frontend.log 2>&1 & echo $$! > $(FE_PID_FILE)
-	@sleep 2
-	@echo ""
-	@echo "→ Backend:  http://localhost:18080/api/health"
-	@echo "→ Frontend: http://localhost:5173"
-	@echo ""
-	@echo "Use 'make killdev' to stop"
+	@rm -f $(DEV_DIR)/frontend.log
+	@cd frontend && nohup npx vite --host 0.0.0.0 --port 5173 > $(CURDIR)/$(DEV_DIR)/frontend.log 2>&1 & echo $$! > $(CURDIR)/$(FE_PID_FILE)
+	@sleep 3
+	@FE_PORT=$$(grep -oP 'Local:\s+http://localhost:\K\d+' $(DEV_DIR)/frontend.log 2>/dev/null || echo "5173"); \
+	IP=$$(hostname -I 2>/dev/null | awk '{print $$1}'); \
+	[ -z "$$IP" ] && IP="localhost"; \
+	echo "→ Frontend:  http://$$IP:$$FE_PORT"; \
+	echo "→ Starting backend on :18080..."; \
+	echo "→ Backend:   http://$$IP:18080/api/health"; \
+	echo "→ Press Ctrl+C to stop both"; \
+	echo ""; \
+	cleanup() { echo "→ Stopping frontend (PID $$(cat $(FE_PID_FILE) 2>/dev/null))..."; kill -9 $$(cat $(FE_PID_FILE) 2>/dev/null) 2>/dev/null; rm -f $(FE_PID_FILE) $(BK_PID_FILE); }; \
+	trap cleanup EXIT; \
+	$(GO) run -C $(CURDIR)/backend ./cmd/... -c $(DEV_CONFIG) --addr :18080
 
 makedev: killdev frontend
 	@mkdir -p $(DEV_DIR)

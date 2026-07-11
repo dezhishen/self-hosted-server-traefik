@@ -5,6 +5,15 @@ type AuthConfig struct {
 	PasswordHash string `yaml:"password_hash" json:"-"`
 }
 
+type SystemConfig struct {
+	BaseDataDir string      `yaml:"base_data_dir,omitempty" json:"base_data_dir,omitempty"`
+	Auth        *AuthConfig `yaml:"auth,omitempty" json:"auth,omitempty"`
+}
+
+type EndpointCollection struct {
+	Endpoints map[string]*EndpointConfig `yaml:"endpoints" json:"endpoints"`
+}
+
 type AppConfig struct {
 	BaseDataDir   string                     `yaml:"base_data_dir,omitempty" json:"base_data_dir,omitempty"`
 	Auth          *AuthConfig                `yaml:"auth,omitempty" json:"auth,omitempty"`

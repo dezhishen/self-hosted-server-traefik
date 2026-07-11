@@ -10,7 +10,7 @@ import (
 )
 
 // CreateRuntime creates a ContainerRuntime based on the connection config.
-func CreateRuntime(cfg contracts.ConnectionConfig) (contracts.ContainerRuntime, error) {
+func CreateRuntime(cfg contracts.ConnectionConfig, baseDataDir string) (contracts.ContainerRuntime, error) {
 	// Auto-detect: try docker first, then podman
 	engine := cfg.Engine
 	if engine == "" || engine == contracts.EngineTypeAuto {

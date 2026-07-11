@@ -28,7 +28,11 @@ func (r *Runtime) podman(args ...string) (string, error) {
 		cmd.Env = append(cmd.Env, "PODMAN_HOST=unix://"+r.cfg.Endpoint)
 	}
 	if r.cfg.Endpoint != "" && r.cfg.Type == contracts.ConnectionTypeSSH {
-		cmd.Env = append(cmd.Env, "PODMAN_HOST=ssh://"+r.cfg.SSHUser+"@"+r.cfg.Endpoint)
+		host := r.cfg.Endpoint
+		if r.cfg.SSHUser != "" {
+			host = r.cfg.SSHUser + "@" + host
+		}
+		cmd.Env = append(cmd.Env, "PODMAN_HOST=ssh://"+host)
 	}
 	out, err := cmd.CombinedOutput()
 	if err != nil {

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"go.uber.org/zap"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/dezhishen/self-hosted-server-traefik/backend/core"
 	"github.com/dezhishen/self-hosted-server-traefik/backend/endpoint"
@@ -32,6 +33,10 @@ func (s *Server) Handler() http.Handler {
 
 	// Global endpoints
 	mux.HandleFunc("/api/endpoints", s.handleEndpoints)
+	mux.HandleFunc("/api/ssh/keygen", s.handleSSHKeygen)
+	mux.HandleFunc("/api/ssh/import", s.handleSSHImport)
+	mux.HandleFunc("/api/ssh/keys", s.handleSSHKeys)
+	mux.HandleFunc("/api/config/password", s.handlePassword)
 	mux.HandleFunc("/api/subscriptions", s.handleSubscriptions)
 	mux.HandleFunc("/api/subscriptions/", s.handleSubscriptionByID)
 
@@ -93,22 +98,96 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
+		// Compute SSH key metadata for endpoints with private keys.
+		// These fields (fingerprint, type) are derived from the private key
+		// and NOT directly settable via JSON.
+		for _, ep := range s.app.Config.Endpoints {
+			if ep.Connection != nil && ep.Connection.SSHPrivateKey != "" {
+				computeSSHKeyMeta(ep.Connection)
+			}
+		}
 		jsonResp(w, s.app.Config)
+
 	case http.MethodPut:
-		var cfg contracts.AppConfig
-		if err := json.NewDecoder(r.Body).Decode(&cfg); err != nil {
+		var incoming contracts.AppConfig
+		if err := json.NewDecoder(r.Body).Decode(&incoming); err != nil {
 			jsonErr(w, 400, "invalid request body: "+err.Error())
 			return
 		}
-		if err := s.app.ConfigMgr.Save(&cfg); err != nil {
+
+		// Preserve SSH private keys from the current config.
+		// The frontend no longer receives or sends ssh_private_key,
+		// so we merge the incoming endpoints with the server-side private keys.
+		for name, ep := range incoming.Endpoints {
+			if ep.Connection == nil {
+				continue
+			}
+			// Find if this endpoint already exists with a private key
+			if existing, ok := s.app.Config.Endpoints[name]; ok {
+				if existing.Connection != nil && existing.Connection.SSHPrivateKey != "" {
+					ep.Connection.SSHPrivateKey = existing.Connection.SSHPrivateKey
+				}
+			}
+		}
+
+		if err := s.app.ConfigMgr.SavePut(&incoming); err != nil {
 			jsonErr(w, 500, err.Error())
 			return
 		}
-		s.app.Config = &cfg
+
+		// Update in-memory config and rebuild endpoint contexts
+		s.app.Config.Endpoints = incoming.Endpoints
+		if incoming.Auth != nil && incoming.Auth.Username != "" {
+			s.app.Config.Auth.Username = incoming.Auth.Username
+		}
+		s.app.RefreshEndpoints()
+
 		jsonResp(w, map[string]string{"status": "ok"})
+
 	default:
 		jsonErr(w, 405, "method not allowed")
 	}
+}
+
+// POST /api/config/password
+// Body: { "password": "new-password" }
+func (s *Server) handlePassword(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		jsonErr(w, 405, "method not allowed")
+		return
+	}
+
+	var req struct {
+		Password string `json:"password"`
+	}
+	if err := decodeJSON(r, &req); err != nil {
+		jsonErr(w, 400, "invalid request body: "+err.Error())
+		return
+	}
+	if req.Password == "" {
+		jsonErr(w, 400, "password is required")
+		return
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		jsonErr(w, 500, "failed to hash password: "+err.Error())
+		return
+	}
+
+	// Update in-memory and persist
+	if s.app.Config.Auth == nil {
+		s.app.Config.Auth = &contracts.AuthConfig{}
+	}
+	s.app.Config.Auth.PasswordHash = string(hash)
+
+	if err := s.app.ConfigMgr.SaveSystem(s.app.Config.BaseDataDir, s.app.Config.Auth); err != nil {
+		jsonErr(w, 500, "failed to save password: "+err.Error())
+		return
+	}
+
+	s.app.Logger.Info("password updated via web UI")
+	jsonResp(w, map[string]string{"status": "ok"})
 }
 
 // GET /api/endpoints

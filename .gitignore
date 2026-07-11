@@ -35,7 +35,7 @@ selfhosted.yaml
 *.local.yml
 dev.yaml
 .dev.yaml
-.selfhosted.dev.yaml
+.selfhosted.dev/
 
 # Frontend
 node_modules/

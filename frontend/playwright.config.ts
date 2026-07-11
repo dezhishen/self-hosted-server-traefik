@@ -1,8 +1,12 @@
 import { defineConfig } from '@playwright/test'
 import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 const BACKEND_BIN = process.env.BACKEND_BIN || path.resolve(__dirname, '../bin/selfhosted-backend')
-const DEV_CONFIG = process.env.DEV_CONFIG || path.resolve(__dirname, '../.selfhosted.dev.yaml')
+const DEV_CONFIG = process.env.DEV_CONFIG || path.resolve(__dirname, '../.selfhosted.dev')
 
 export default defineConfig({
   testDir: './e2e',

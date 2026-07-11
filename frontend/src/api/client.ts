@@ -9,11 +9,18 @@ const client = axios.create({
   }
 })
 
+// Module-level cache for the current remote name.
+// Set by the Pinia store via setCurrentRemote() to avoid circular imports.
+let _currentRemote = ''
+
+export function setCurrentRemote(name: string) {
+  _currentRemote = name
+}
+
 client.interceptors.request.use(
   (config) => {
-    const store = (window as any).__pinia?.state?.value?.currentRemote
-    if (store?.current) {
-      config.headers['X-Remote-Name'] = store.current
+    if (_currentRemote) {
+      config.headers['X-Remote-Name'] = _currentRemote
     }
     return config
   },

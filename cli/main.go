@@ -313,7 +313,7 @@ func findBackendBinary() string {
 func passwdCmd(configPath string, args []string) int {
 	if configPath == "" {
 		home, _ := os.UserHomeDir()
-		configPath = filepath.Join(home, ".selfhosted.yaml")
+		configPath = filepath.Join(home, ".config", "selfhosted")
 	}
 
 	password := ""
@@ -334,42 +334,76 @@ func passwdCmd(configPath string, args []string) int {
 		return 1
 	}
 
-	data, err := os.ReadFile(configPath)
+	// Determine if configPath is a directory (new format) or file (old format)
+	sysPath := configPath
+	info, err := os.Stat(configPath)
+	if err == nil && info.IsDir() {
+		sysPath = filepath.Join(configPath, "system.yaml")
+	}
+
+	data, err := os.ReadFile(sysPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error reading config %s: %v\n", configPath, err)
+		fmt.Fprintf(os.Stderr, "Error reading config %s: %v\n", sysPath, err)
 		return 1
 	}
 
-	var cfg contracts.AppConfig
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		fmt.Fprintf(os.Stderr, "Error parsing config: %v\n", err)
-		return 1
+	if sysPath != configPath {
+		// New directory format: read system.yaml as SystemConfig
+		var sys contracts.SystemConfig
+		if err := yaml.Unmarshal(data, &sys); err != nil {
+			fmt.Fprintf(os.Stderr, "Error parsing system.yaml: %v\n", err)
+			return 1
+		}
+		username := "admin"
+		if sys.Auth != nil && sys.Auth.Username != "" {
+			username = sys.Auth.Username
+		}
+		sys.Auth = &contracts.AuthConfig{
+			Username:     username,
+			PasswordHash: string(hash),
+		}
+		out, err := yaml.Marshal(&sys)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error marshaling system.yaml: %v\n", err)
+			return 1
+		}
+		if err := os.WriteFile(sysPath, out, 0644); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing system.yaml: %v\n", err)
+			return 1
+		}
+		fmt.Printf("Password updated.\n")
+		fmt.Printf("  Username: %s\n", username)
+		fmt.Printf("  Password: %s\n", password)
+		fmt.Printf("  Config:   %s\n", sysPath)
+	} else {
+		// Old single-file format
+		var cfg contracts.AppConfig
+		if err := yaml.Unmarshal(data, &cfg); err != nil {
+			fmt.Fprintf(os.Stderr, "Error parsing config: %v\n", err)
+			return 1
+		}
+		username := "admin"
+		if cfg.Auth != nil && cfg.Auth.Username != "" {
+			username = cfg.Auth.Username
+		}
+		cfg.Auth = &contracts.AuthConfig{
+			Username:     username,
+			PasswordHash: string(hash),
+		}
+		out, err := yaml.Marshal(&cfg)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error marshaling config: %v\n", err)
+			return 1
+		}
+		if err := os.WriteFile(configPath, out, 0644); err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing config: %v\n", err)
+			return 1
+		}
+		fmt.Printf("Password updated.\n")
+		fmt.Printf("  Username: %s\n", username)
+		fmt.Printf("  Password: %s\n", password)
+		fmt.Printf("  Config:   %s\n", configPath)
 	}
-
-	username := "admin"
-	if cfg.Auth != nil && cfg.Auth.Username != "" {
-		username = cfg.Auth.Username
-	}
-
-	cfg.Auth = &contracts.AuthConfig{
-		Username:     username,
-		PasswordHash: string(hash),
-	}
-
-	out, err := yaml.Marshal(&cfg)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error marshaling config: %v\n", err)
-		return 1
-	}
-	if err := os.WriteFile(configPath, out, 0644); err != nil {
-		fmt.Fprintf(os.Stderr, "Error writing config: %v\n", err)
-		return 1
-	}
-
-	fmt.Printf("Password updated.\n")
-	fmt.Printf("  Username: %s\n", username)
-	fmt.Printf("  Password: %s\n", password)
-	fmt.Printf("  Config:   %s\n", configPath)
 	return 0
 }
 
@@ -380,7 +414,7 @@ Usage:
   selfhosted [flags] <command> [args]
 
 Flags:
-  -c, --config <path>     Config file path
+  -c, --config <dir>      Config directory path (contains system.yaml + endpoints.yaml)
   --host <connection>     Remote runtime connection
 
 Commands:
