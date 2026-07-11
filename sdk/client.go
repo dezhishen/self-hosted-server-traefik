@@ -3,9 +3,13 @@ package sdk
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/dezhishen/self-hosted-server-traefik/contracts"
 )
+
+// Compile-time checks:
+var _ io.Closer = (*Client)(nil) // Close() error
 
 type Client struct {
 	Runtime   contracts.ContainerRuntime

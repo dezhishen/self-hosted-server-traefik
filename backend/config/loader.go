@@ -11,6 +11,9 @@ import (
 	"github.com/dezhishen/self-hosted-server-traefik/contracts"
 )
 
+// Compile-time check: *Loader implements contracts.AppConfigLoader.
+var _ contracts.AppConfigLoader = (*Loader)(nil)
+
 // Loader implements contracts.AppConfigLoader using viper.
 // Config is stored in a directory as system.yaml + endpoints.yaml.
 type Loader struct {

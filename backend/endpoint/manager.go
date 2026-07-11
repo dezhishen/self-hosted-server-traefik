@@ -8,6 +8,9 @@ import (
 	"github.com/dezhishen/self-hosted-server-traefik/contracts"
 )
 
+// Compile-time check: *serviceManager implements contracts.ServiceManager.
+var _ contracts.ServiceManager = (*serviceManager)(nil)
+
 // ServiceManagerOpts configures an endpoint-scoped ServiceManager.
 type ServiceManagerOpts struct {
 	Runtime        contracts.ContainerRuntime

@@ -10,6 +10,9 @@ import (
 	"github.com/dezhishen/self-hosted-server-traefik/contracts"
 )
 
+// Compile-time check: *ArgsStore implements contracts.ParamStore.
+var _ contracts.ParamStore = (*ArgsStore)(nil)
+
 type ArgsStore struct {
 	mu       sync.RWMutex
 	basePath string

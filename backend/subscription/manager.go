@@ -16,6 +16,9 @@ import (
 	"github.com/dezhishen/self-hosted-server-traefik/contracts"
 )
 
+// Compile-time check: *Manager implements contracts.SubscriptionManager.
+var _ contracts.SubscriptionManager = (*Manager)(nil)
+
 type Manager struct {
 	store contracts.SubscriptionStore
 	dir   string

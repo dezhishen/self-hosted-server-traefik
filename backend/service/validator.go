@@ -6,6 +6,9 @@ import (
 	"github.com/dezhishen/self-hosted-server-traefik/contracts"
 )
 
+// Compile-time check: *Validator implements contracts.ServiceValidator.
+var _ contracts.ServiceValidator = (*Validator)(nil)
+
 type Validator struct{}
 
 func NewValidator() *Validator {

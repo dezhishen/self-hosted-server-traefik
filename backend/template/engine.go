@@ -13,6 +13,9 @@ import (
 	"github.com/dezhishen/self-hosted-server-traefik/contracts"
 )
 
+// Compile-time check: *Engine implements contracts.TemplateEngine.
+var _ contracts.TemplateEngine = (*Engine)(nil)
+
 type Engine struct {
 	funcs template.FuncMap
 }

@@ -18,6 +18,9 @@ import (
 	"github.com/dezhishen/self-hosted-server-traefik/contracts"
 )
 
+// Compile-time check: *Runtime implements contracts.ContainerRuntime.
+var _ contracts.ContainerRuntime = (*Runtime)(nil)
+
 // DefaultSocketPath is the default Podman Docker-compatible socket path.
 const DefaultSocketPath = "/run/podman/podman.sock"
 

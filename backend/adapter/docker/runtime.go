@@ -22,6 +22,9 @@ import (
 	"github.com/dezhishen/self-hosted-server-traefik/contracts"
 )
 
+// Compile-time check: *Runtime implements contracts.ContainerRuntime.
+var _ contracts.ContainerRuntime = (*Runtime)(nil)
+
 // Runtime implements contracts.ContainerRuntime using the Docker Go SDK.
 // It connects directly to the Docker daemon API without requiring the docker CLI.
 type Runtime struct {

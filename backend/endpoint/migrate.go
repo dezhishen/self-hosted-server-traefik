@@ -11,6 +11,9 @@ import (
 	"github.com/dezhishen/self-hosted-server-traefik/contracts"
 )
 
+// Compile-time check: *migrateService implements contracts.MigrateService.
+var _ contracts.MigrateService = (*migrateService)(nil)
+
 type migrateService struct {
 	runtime       contracts.ContainerRuntime
 	serviceLoader contracts.ServiceLoader

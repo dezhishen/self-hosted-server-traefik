@@ -10,6 +10,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Compile-time check: *Loader implements contracts.ServiceLoader.
+var _ contracts.ServiceLoader = (*Loader)(nil)
+
 type Loader struct {
 	paths []string
 }
@@ -47,6 +50,12 @@ func (l *Loader) Load(name string) (*contracts.ServiceDefinition, error) {
 
 func (l *Loader) Discover(paths []string) ([]*contracts.ServiceDefinition, error) {
 	return l.LoadAll()
+}
+
+// AddPath adds a directory path to the loader's search paths at runtime.
+// Used to register subscription template directories after they are synced.
+func (l *Loader) AddPath(path string) {
+	l.paths = append(l.paths, path)
 }
 
 func (l *Loader) loadDir(dir string, seen map[string]bool) ([]*contracts.ServiceDefinition, error) {

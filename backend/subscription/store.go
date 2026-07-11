@@ -9,6 +9,9 @@ import (
 	"github.com/dezhishen/self-hosted-server-traefik/contracts"
 )
 
+// Compile-time check: *FileStore implements contracts.SubscriptionStore.
+var _ contracts.SubscriptionStore = (*FileStore)(nil)
+
 type FileStore struct {
 	mu   sync.RWMutex
 	path string
