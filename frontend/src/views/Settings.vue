@@ -388,7 +388,7 @@ onMounted(fetchConfig)
   <el-dialog
     v-model="keygenDialogVisible"
     :title="keygenStep === 'form' ? 'Generate SSH Key' : 'SSH Key Generated'"
-    width="600px"
+    :width="'min(600px, 92vw)'"
     :close-on-click-modal="false"
     @close="closeKeygen"
   >
@@ -457,7 +457,7 @@ onMounted(fetchConfig)
   <el-dialog
     v-model="importDialogVisible"
     title="Import SSH Private Key"
-    width="600px"
+    :width="'min(600px, 92vw)'"
     :close-on-click-modal="false"
   >
     <p class="text-sm text-gray-500 mb-3">

@@ -7,7 +7,7 @@ withDefaults(defineProps<{
   cancelText?: string
   confirmLoading?: boolean
 }>(), {
-  width: '600px',
+  width: 'min(600px, 92vw)',
   confirmText: 'Confirm',
   cancelText: 'Cancel',
   confirmLoading: false
