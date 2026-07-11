@@ -42,10 +42,13 @@ endpoints:
   #     ssh_key_path: /home/user/.ssh/id_rsa
 
 # Service template subscriptions
-# Subscribed YAML files are synced to templates/<name>/ and
-# discovered automatically alongside local templates (templates/services/).
+# Each subscription points to an index.yaml containing a flat list of template URLs.
+# Synced templates are stored in templates/<name>/ and discovered automatically.
 subscriptions:
   # - name: community
-  #   url: https://github.com/user/repo
+  #   url: https://raw.githubusercontent.com/dezhishen/self-hosted-server-traefik/main/templates/index.yaml
   #   enabled: true
-  #   auto_update: false
+  #
+  # - name: my-templates
+  #   url: file:///home/user/my-templates/index.yaml
+  #   enabled: true

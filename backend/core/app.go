@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"go.uber.org/zap"
@@ -127,13 +128,27 @@ func NewApp(configPath string) (*App, error) {
 	// 5. Create shared services
 	tmpl := template.NewEngine()
 
-	subPaths := []string{"templates/services"}
-	svcLoader := service.NewLoader(subPaths)
+	// Loader uses the templates/ directory which contains index.yaml
+	svcLoader := service.NewLoader([]string{"templates"})
 	svcValidator := service.NewValidator()
 
 	// 5b. Create subscription manager
 	subStore := subscription.NewFileStore(filepath.Join(cfg.BaseDataDir, "config", "subscriptions.json"))
 	subMgr := subscription.NewManager(subStore, cfg.BaseDataDir, logger)
+
+	// Seed default subscriptions and register their template directories
+	if err := subMgr.SeedDefaults(); err != nil {
+		logger.Warn("failed to seed default subscriptions", zap.Error(err))
+	}
+	// Add synced subscription template directories to the service loader
+	// Each subscription caches its index.yaml and templates under {baseDir}/templates/{name}/
+	subs, _ := subMgr.List()
+	for _, sub := range subs {
+		subTmplDir := filepath.Join(cfg.BaseDataDir, "templates", sub.Name)
+		if _, err := os.Stat(filepath.Join(subTmplDir, "index.yaml")); err == nil {
+			svcLoader.AddPath(subTmplDir)
+		}
+	}
 
 	_ = tmpLogger
 

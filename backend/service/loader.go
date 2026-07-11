@@ -58,7 +58,44 @@ func (l *Loader) AddPath(path string) {
 	l.paths = append(l.paths, path)
 }
 
+// loadDir loads templates from a directory, preferring index.yaml if present.
+// Falls back to directory scan (*.yaml) if no index.yaml exists.
 func (l *Loader) loadDir(dir string, seen map[string]bool) ([]*contracts.ServiceDefinition, error) {
+	// Prefer index.yaml
+	indexPath := filepath.Join(dir, "index.yaml")
+	if _, err := os.Stat(indexPath); err == nil {
+		return l.loadIndex(indexPath, dir, seen)
+	}
+
+	// Fallback: directory scan
+	return l.scanDir(dir, seen)
+}
+
+// loadIndex reads an index.yaml and loads all listed template files.
+func (l *Loader) loadIndex(indexPath, baseDir string, seen map[string]bool) ([]*contracts.ServiceDefinition, error) {
+	idx, err := loadLocalIndex(indexPath)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []*contracts.ServiceDefinition
+	for _, entry := range *idx {
+		svcPath := filepath.Join(baseDir, entry)
+		svc, err := l.loadFile(svcPath)
+		if err != nil {
+			continue
+		}
+		if seen[svc.Name] {
+			continue
+		}
+		seen[svc.Name] = true
+		result = append(result, svc)
+	}
+	return result, nil
+}
+
+// scanDir loads all *.yaml/*.yml files from a directory (original behavior).
+func (l *Loader) scanDir(dir string, seen map[string]bool) ([]*contracts.ServiceDefinition, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
@@ -101,4 +138,20 @@ func (l *Loader) loadFile(path string) (*contracts.ServiceDefinition, error) {
 		return nil, fmt.Errorf("service %s has no name", path)
 	}
 	return &svc, nil
+}
+
+// loadLocalIndex reads and parses a local index.yaml file.
+func loadLocalIndex(path string) (*contracts.TemplateIndex, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var idx contracts.TemplateIndex
+	if err := yaml.Unmarshal(data, &idx); err != nil {
+		return nil, fmt.Errorf("parse %s: %w", path, err)
+	}
+	if idx == nil {
+		idx = contracts.TemplateIndex{}
+	}
+	return &idx, nil
 }
