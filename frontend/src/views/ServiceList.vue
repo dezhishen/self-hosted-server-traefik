@@ -37,6 +37,7 @@ async function handleRestart(name: string) {
     await restartService(name)
     ElMessage.success(t('common.success'))
   } catch {
+    // 错误由全局 errorHandler 注册链处理
   }
 }
 
@@ -51,6 +52,7 @@ async function handleUninstall(name: string) {
     ElMessage.success(t('common.success'))
     fetchServices()
   } catch {
+    // 用户取消确认框 或 错误由全局 errorHandler 处理
   }
 }
 

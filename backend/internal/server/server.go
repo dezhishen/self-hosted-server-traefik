@@ -14,6 +14,18 @@ import (
 	"github.com/dezhishen/self-hosted-server-traefik/contracts"
 )
 
+// ============================================================
+// Handler 类型定义 — 所有 handler 返回 *APIError，由 handle 统一转换
+// ============================================================
+
+// apiHandler 是标准 handler，返回 *APIError。
+// 成功时返回 nil，由 handle() 适配为 http.HandlerFunc。
+type apiHandler func(http.ResponseWriter, *http.Request) *APIError
+
+// apiHandlerWithEndpoint 是需要 endpoint 上下文的 handler。
+type apiHandlerWithEndpoint func(http.ResponseWriter, *http.Request, *endpoint.Context) *APIError
+
+// Server 是 HTTP API 服务器的核心结构。
 type Server struct {
 	app      *core.App
 	sessions *sessionManager
@@ -26,38 +38,92 @@ func New(app *core.App) *Server {
 	}
 }
 
+// ============================================================
+// 拦截器适配器 — handle 系列函数将 apiHandler 转为 http.HandlerFunc
+// 职责：仅在 apiHandler 返回非 nil 时写入 JSON 错误响应
+// ============================================================
+
+// handle 是核心拦截器。所有 apiHandler 都通过它适配为标准 HandlerFunc。
+func (s *Server) handle(h apiHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := h(w, r); err != nil {
+			s.writeError(w, err)
+		}
+	}
+}
+
+// handleWithEndpoint 是带 endpoint 解析的拦截器。
+// 内置端点查找，找不到直接返回 JSON 错误，不进入业务 handler。
+func (s *Server) handleWithEndpoint(h apiHandlerWithEndpoint) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		epName := r.Header.Get("X-Remote-Name")
+		if epName == "" {
+			epName = s.app.DefaultEndpoint
+		}
+		epCtx, ok := s.app.GetEndpoint(epName)
+		if !ok {
+			s.writeError(w, NotFoundError(ErrEndpointNotFound, "endpoint not found: "+epName).
+				WithDetail("endpoint", epName))
+			return
+		}
+		if err := h(w, r, epCtx); err != nil {
+			s.writeError(w, err)
+		}
+	}
+}
+
+// ============================================================
+// 中间件 — 返回 apiHandler，由 handle() 统一捕获错误
+// ============================================================
+
+// withAuth 是认证中间件。返回 *APIError，由 handle() 统一处理。
+// 公开路由（auth/health/endpoints）透传。
+func (s *Server) withAuth(next apiHandler) apiHandler {
+	return func(w http.ResponseWriter, r *http.Request) *APIError {
+		if isPublicRoute(r.URL.Path) {
+			return next(w, r)
+		}
+		token, ok := extractBearerToken(r)
+		if !ok {
+			return AuthError(ErrUnauthorized, "missing or invalid authorization header")
+		}
+		username, ok := s.sessions.ValidateSession(token)
+		if !ok {
+			return AuthError(ErrUnauthorized, "invalid or expired session")
+		}
+		ctx := context.WithValue(r.Context(), ctxAuthUserKey, username)
+		return next(w, r.WithContext(ctx))
+	}
+}
+
+// ============================================================
+// 路由注册
+// ============================================================
+
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 
-	// Auth (public)
-	mux.HandleFunc("/api/auth/login", s.handleAuthLogin)
-	mux.HandleFunc("/api/auth/logout", s.handleAuthLogout)
+	// ===== 公开路由 =====
+	mux.HandleFunc("/api/auth/login", s.handle(s.handleAuthLogin))
+	mux.HandleFunc("/api/auth/logout", s.handle(s.handleAuthLogout))
+	mux.HandleFunc("/api/health", s.handle(s.handleHealth))
+	mux.HandleFunc("/api/endpoints", s.handle(s.handleEndpoints))
 
-	// Public endpoints
-	mux.HandleFunc("/api/health", s.handleHealth)
-	mux.HandleFunc("/api/endpoints", s.handleEndpoints)
+	// ===== 需认证路由 =====
+	mux.HandleFunc("/api/config", s.handle(s.withAuth(s.handleConfig)))
+	mux.HandleFunc("/api/config/password", s.handle(s.withAuth(s.handlePassword)))
+	mux.HandleFunc("/api/services", s.handleWithEndpoint(s.handleServices))
+	mux.HandleFunc("/api/services/", s.handleWithEndpoint(s.handleServiceByID))
+	mux.HandleFunc("/api/containers", s.handleWithEndpoint(s.handleContainers))
+	mux.HandleFunc("/api/migrate/analyze", s.handleWithEndpoint(s.handleMigrateAnalyze))
+	mux.HandleFunc("/api/migrate/execute", s.handleWithEndpoint(s.handleMigrateExecute))
+	mux.HandleFunc("/api/ssh/keygen", s.handle(s.withAuth(s.handleSSHKeygen)))
+	mux.HandleFunc("/api/ssh/import", s.handle(s.withAuth(s.handleSSHImport)))
+	mux.HandleFunc("/api/ssh/keys", s.handle(s.withAuth(s.handleSSHKeys)))
+	mux.HandleFunc("/api/subscriptions", s.handle(s.withAuth(s.handleSubscriptions)))
+	mux.HandleFunc("/api/subscriptions/", s.handle(s.withAuth(s.handleSubscriptionByID)))
 
-	// Protected: config
-	mux.HandleFunc("/api/config", s.handleConfig)
-
-	// Protected: endpoint-scoped
-	mux.HandleFunc("/api/services", s.withEndpoint(s.handleServices))
-	mux.HandleFunc("/api/services/", s.withEndpoint(s.handleServiceByID))
-	mux.HandleFunc("/api/containers", s.withEndpoint(s.handleContainers))
-	mux.HandleFunc("/api/migrate/analyze", s.withEndpoint(s.handleMigrateAnalyze))
-	mux.HandleFunc("/api/migrate/execute", s.withEndpoint(s.handleMigrateExecute))
-
-	// Protected: SSH
-	mux.HandleFunc("/api/ssh/keygen", s.handleSSHKeygen)
-	mux.HandleFunc("/api/ssh/import", s.handleSSHImport)
-	mux.HandleFunc("/api/ssh/keys", s.handleSSHKeys)
-
-	// Protected: password change + subscriptions
-	mux.HandleFunc("/api/config/password", s.handlePassword)
-	mux.HandleFunc("/api/subscriptions", s.handleSubscriptions)
-	mux.HandleFunc("/api/subscriptions/", s.handleSubscriptionByID)
-
-	return withLogging(s.app.Logger, s.withAuth(mux))
+	return withLogging(s.app.Logger, mux)
 }
 
 func withLogging(log *zap.Logger, next http.Handler) http.Handler {
@@ -67,51 +133,14 @@ func withLogging(log *zap.Logger, next http.Handler) http.Handler {
 	})
 }
 
-func (s *Server) withEndpoint(next func(http.ResponseWriter, *http.Request, *endpoint.Context)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		epName := r.Header.Get("X-Remote-Name")
-		if epName == "" {
-			epName = s.app.DefaultEndpoint
-		}
-		epCtx, ok := s.app.GetEndpoint(epName)
-		if !ok {
-			jsonErr(w, 404, "endpoint not found: "+epName)
-			return
-		}
-		next(w, r, epCtx)
-	}
-}
-
-// withAuth is an authentication middleware. It checks for a valid Bearer token
-// on protected routes. Public routes (auth, health, endpoints) pass through.
-func (s *Server) withAuth(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if isPublicRoute(r.URL.Path) {
-			next.ServeHTTP(w, r)
-			return
-		}
-		token, ok := extractBearerToken(r)
-		if !ok {
-			jsonErr(w, 401, "missing or invalid authorization header")
-			return
-		}
-		username, ok := s.sessions.ValidateSession(token)
-		if !ok {
-			jsonErr(w, 401, "unauthorized")
-			return
-		}
-		// Store username in request context for downstream handlers
-		ctx := context.WithValue(r.Context(), ctxAuthUserKey, username)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
+// ============================================================
+// Handler — Auth
+// ============================================================
 
 // POST /api/auth/login
-// Body: {"username":"admin","password":"..."}
-func (s *Server) handleAuthLogin(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleAuthLogin(w http.ResponseWriter, r *http.Request) *APIError {
 	if r.Method != http.MethodPost {
-		jsonErr(w, 405, "method not allowed")
-		return
+		return MethodNotAllowed()
 	}
 
 	var req struct {
@@ -119,30 +148,25 @@ func (s *Server) handleAuthLogin(w http.ResponseWriter, r *http.Request) {
 		Password string `json:"password"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		jsonErr(w, 400, "invalid request body")
-		return
+		return ValidationError(ErrInvalidJSON, "invalid request body").
+			WithCause(err)
 	}
 	if req.Username == "" || req.Password == "" {
-		jsonErr(w, 400, "username and password are required")
-		return
+		return ValidationError(ErrMissingField, "username and password are required")
 	}
 
-	// Check if a password has been configured
 	if s.app.Config.Auth == nil || s.app.Config.Auth.PasswordHash == "" {
-		jsonErr(w, 403, "no password configured; use 'selfhosted passwd' to set one")
-		return
+		return AuthError(ErrNoPasswordSet, "no password configured; use 'selfhosted passwd' to set one")
 	}
 
-	// Verify password against stored bcrypt hash
 	if err := bcrypt.CompareHashAndPassword([]byte(s.app.Config.Auth.PasswordHash), []byte(req.Password)); err != nil {
-		jsonErr(w, 401, "invalid credentials")
-		return
+		return AuthError(ErrUnauthorized, "invalid credentials")
 	}
 
 	token, err := s.sessions.CreateSession(req.Username)
 	if err != nil {
-		jsonErr(w, 500, "failed to create session")
-		return
+		return InternalError(ErrSessionCreate, "failed to create session").
+			WithCause(err)
 	}
 
 	s.app.Logger.Info("login successful", zap.String("username", req.Username))
@@ -150,33 +174,36 @@ func (s *Server) handleAuthLogin(w http.ResponseWriter, r *http.Request) {
 		"token":    token,
 		"username": req.Username,
 	})
+	return nil
 }
 
 // POST /api/auth/logout
-func (s *Server) handleAuthLogout(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleAuthLogout(w http.ResponseWriter, r *http.Request) *APIError {
 	if r.Method != http.MethodPost {
-		jsonErr(w, 405, "method not allowed")
-		return
+		return MethodNotAllowed()
 	}
 	if token, ok := extractBearerToken(r); ok {
 		s.sessions.RevokeSession(token)
 	}
 	jsonResp(w, map[string]string{"status": "ok"})
+	return nil
 }
+
+// ============================================================
+// jsonResp — 保持原样，用于成功响应
+// ============================================================
 
 func jsonResp(w http.ResponseWriter, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(data)
 }
 
-func jsonErr(w http.ResponseWriter, status int, msg string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(map[string]string{"error": msg})
-}
+// ============================================================
+// Handler — Health
+// ============================================================
 
 // GET /api/health
-func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) *APIError {
 	engine := ""
 	epCount := len(s.app.Endpoints)
 	if epCtx, ok := s.app.GetEndpoint(s.app.DefaultEndpoint); ok {
@@ -191,37 +218,37 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 		"endpoints": epCount,
 		"engine":    engine,
 	})
+	return nil
 }
 
-// GET/PUT /api/config
-func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
+// ============================================================
+// Handler — Config
+// ============================================================
+
+// GET /api/config
+// PUT /api/config
+func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) *APIError {
 	switch r.Method {
 	case http.MethodGet:
-		// Compute SSH key metadata for endpoints with private keys.
-		// These fields (fingerprint, type) are derived from the private key
-		// and NOT directly settable via JSON.
 		for _, ep := range s.app.Config.Endpoints {
 			if ep.Connection != nil && ep.Connection.SSHPrivateKey != "" {
 				computeSSHKeyMeta(ep.Connection)
 			}
 		}
 		jsonResp(w, s.app.Config)
+		return nil
 
 	case http.MethodPut:
 		var incoming contracts.AppConfig
 		if err := json.NewDecoder(r.Body).Decode(&incoming); err != nil {
-			jsonErr(w, 400, "invalid request body: "+err.Error())
-			return
+			return ValidationError(ErrInvalidJSON, "invalid request body").
+				WithCause(err)
 		}
 
-		// Preserve SSH private keys from the current config.
-		// The frontend no longer receives or sends ssh_private_key,
-		// so we merge the incoming endpoints with the server-side private keys.
 		for name, ep := range incoming.Endpoints {
 			if ep.Connection == nil {
 				continue
 			}
-			// Find if this endpoint already exists with a private key
 			if existing, ok := s.app.Config.Endpoints[name]; ok {
 				if existing.Connection != nil && existing.Connection.SSHPrivateKey != "" {
 					ep.Connection.SSHPrivateKey = existing.Connection.SSHPrivateKey
@@ -230,11 +257,10 @@ func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := s.app.ConfigMgr.SavePut(&incoming); err != nil {
-			jsonErr(w, 500, err.Error())
-			return
+			return InternalError(ErrConfigSave, "failed to save config").
+				WithCause(err)
 		}
 
-		// Update in-memory config and rebuild endpoint contexts
 		s.app.Config.Endpoints = incoming.Endpoints
 		if incoming.Auth != nil && incoming.Auth.Username != "" {
 			s.app.Config.Auth.Username = incoming.Auth.Username
@@ -242,65 +268,72 @@ func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
 		s.app.RefreshEndpoints()
 
 		jsonResp(w, map[string]string{"status": "ok"})
+		return nil
 
 	default:
-		jsonErr(w, 405, "method not allowed")
+		return MethodNotAllowed()
 	}
 }
 
 // POST /api/config/password
-// Body: { "password": "new-password" }
-func (s *Server) handlePassword(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handlePassword(w http.ResponseWriter, r *http.Request) *APIError {
 	if r.Method != http.MethodPost {
-		jsonErr(w, 405, "method not allowed")
-		return
+		return MethodNotAllowed()
 	}
 
 	var req struct {
 		Password string `json:"password"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
-		jsonErr(w, 400, "invalid request body: "+err.Error())
-		return
+		return ValidationError(ErrInvalidJSON, "invalid request body").
+			WithCause(err)
 	}
 	if req.Password == "" {
-		jsonErr(w, 400, "password is required")
-		return
+		return ValidationError(ErrMissingField, "password is required")
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		jsonErr(w, 500, "failed to hash password: "+err.Error())
-		return
+		return InternalError(ErrPasswordHash, "failed to hash password").
+			WithCause(err)
 	}
 
-	// Update in-memory and persist
 	if s.app.Config.Auth == nil {
 		s.app.Config.Auth = &contracts.AuthConfig{}
 	}
 	s.app.Config.Auth.PasswordHash = string(hash)
 
 	if err := s.app.ConfigMgr.SaveSystem(s.app.Config.BaseDataDir, s.app.Config.Auth); err != nil {
-		jsonErr(w, 500, "failed to save password: "+err.Error())
-		return
+		return InternalError(ErrConfigSave, "failed to save password").
+			WithCause(err)
 	}
 
 	s.app.Logger.Info("password updated via web UI")
 	jsonResp(w, map[string]string{"status": "ok"})
+	return nil
 }
 
+// ============================================================
+// Handler — Endpoints
+// ============================================================
+
 // GET /api/endpoints
-func (s *Server) handleEndpoints(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleEndpoints(w http.ResponseWriter, r *http.Request) *APIError {
 	eps := make([]*contracts.EndpointConfig, 0, len(s.app.Config.Endpoints))
 	for _, ep := range s.app.Config.Endpoints {
 		eps = append(eps, ep)
 	}
 	jsonResp(w, eps)
+	return nil
 }
 
-// GET /api/services?category=...&query=...
+// ============================================================
+// Handler — Services
+// ============================================================
+
+// GET /api/services
 // POST /api/services (install)
-func (s *Server) handleServices(w http.ResponseWriter, r *http.Request, ep *endpoint.Context) {
+func (s *Server) handleServices(w http.ResponseWriter, r *http.Request, ep *endpoint.Context) *APIError {
 	switch r.Method {
 	case http.MethodGet:
 		category := r.URL.Query().Get("category")
@@ -316,10 +349,11 @@ func (s *Server) handleServices(w http.ResponseWriter, r *http.Request, ep *endp
 			services, err = ep.ServiceManager.List()
 		}
 		if err != nil {
-			jsonErr(w, 500, err.Error())
-			return
+			return InternalError(ErrInternal, "failed to list services").
+				WithCause(err)
 		}
 		jsonResp(w, services)
+		return nil
 
 	case http.MethodPost:
 		var req struct {
@@ -327,28 +361,28 @@ func (s *Server) handleServices(w http.ResponseWriter, r *http.Request, ep *endp
 			Params []*contracts.ParamValue `json:"params"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			jsonErr(w, 400, "invalid request body")
-			return
+			return ValidationError(ErrInvalidJSON, "invalid request body")
 		}
+
 		id, err := ep.ServiceManager.Install(req.Name, req.Params, ep.Name)
 		if err != nil {
-			jsonErr(w, 500, err.Error())
-			return
+			return InfrastructureError(ErrDockerOperation, err.Error()).
+				WithCause(err).
+				WithDetail("service", req.Name)
 		}
 		jsonResp(w, map[string]string{"container_id": id})
+		return nil
 
 	default:
-		jsonErr(w, 405, "method not allowed")
+		return MethodNotAllowed()
 	}
 }
 
 // GET /api/services/{name}
 // DELETE /api/services/{name}
-// POST /api/services/{name}/status
-// POST /api/services/{name}/restart
-// POST /api/services/{name}/logs
-// POST /api/services/{name}/render
-func (s *Server) handleServiceByID(w http.ResponseWriter, r *http.Request, ep *endpoint.Context) {
+// POST /api/services/{name}/status|restart|logs|render|params
+// PUT /api/services/{name}/params
+func (s *Server) handleServiceByID(w http.ResponseWriter, r *http.Request, ep *endpoint.Context) *APIError {
 	path := strings.TrimPrefix(r.URL.Path, "/api/services/")
 	parts := strings.SplitN(path, "/", 2)
 	name := parts[0]
@@ -361,37 +395,43 @@ func (s *Server) handleServiceByID(w http.ResponseWriter, r *http.Request, ep *e
 	case r.Method == http.MethodGet && action == "":
 		svc, err := ep.ServiceManager.Get(name)
 		if err != nil {
-			jsonErr(w, 404, err.Error())
-			return
+			return NotFoundError(ErrServiceNotFound, err.Error()).
+				WithDetail("service", name)
 		}
-		// Also get status
 		status, _ := ep.ServiceManager.Status(name)
 		jsonResp(w, map[string]interface{}{
 			"definition": svc,
 			"status":     status,
 		})
+		return nil
 
 	case r.Method == http.MethodDelete && action == "":
 		if err := ep.ServiceManager.Uninstall(name); err != nil {
-			jsonErr(w, 500, err.Error())
-			return
+			return InfrastructureError(ErrDockerOperation, err.Error()).
+				WithCause(err).
+				WithDetail("service", name)
 		}
 		jsonResp(w, map[string]string{"status": "ok"})
+		return nil
 
 	case r.Method == http.MethodPost && action == "status":
 		status, err := ep.ServiceManager.Status(name)
 		if err != nil {
-			jsonErr(w, 500, err.Error())
-			return
+			return InternalError(ErrInternal, "failed to get status").
+				WithCause(err).
+				WithDetail("service", name)
 		}
 		jsonResp(w, status)
+		return nil
 
 	case r.Method == http.MethodPost && action == "restart":
 		if err := ep.ServiceManager.Restart(name); err != nil {
-			jsonErr(w, 500, err.Error())
-			return
+			return InfrastructureError(ErrDockerOperation, err.Error()).
+				WithCause(err).
+				WithDetail("service", name)
 		}
 		jsonResp(w, map[string]string{"status": "ok"})
+		return nil
 
 	case r.Method == http.MethodPost && action == "logs":
 		tail := 100
@@ -403,115 +443,132 @@ func (s *Server) handleServiceByID(w http.ResponseWriter, r *http.Request, ep *e
 		}
 		containers, err := ep.Runtime.ContainerList(true)
 		if err != nil {
-			jsonErr(w, 500, err.Error())
-			return
+			return InfrastructureError(ErrDockerOperation, err.Error()).
+				WithCause(err)
 		}
 		for _, c := range containers {
 			if c.Labels[contracts.ManagedServiceLabel] == name {
 				logs, err := ep.Runtime.ContainerLogs(c.ID, tail)
 				if err != nil {
-					jsonErr(w, 500, err.Error())
-					return
+					return InfrastructureError(ErrDockerOperation, err.Error()).
+						WithCause(err)
 				}
 				jsonResp(w, map[string]string{"logs": logs})
-				return
+				return nil
 			}
 		}
-		jsonErr(w, 404, "service not installed")
+		return NotFoundError(ErrServiceNotFound, "service not installed").
+			WithDetail("service", name)
 
 	case r.Method == http.MethodPost && action == "render":
 		var req struct {
 			Params []*contracts.ParamValue `json:"params"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			jsonErr(w, 400, "invalid request")
-			return
+			return ValidationError(ErrInvalidJSON, "invalid request")
 		}
 		cfg, err := ep.ServiceManager.RenderConfig(name, req.Params)
 		if err != nil {
-			jsonErr(w, 500, err.Error())
-			return
+			return InternalError(ErrInternal, err.Error()).
+				WithCause(err).
+				WithDetail("service", name)
 		}
 		jsonResp(w, cfg)
+		return nil
 
 	case r.Method == http.MethodPost && action == "params":
 		params, err := ep.ParamStore.GetAll()
 		if err != nil {
-			jsonErr(w, 500, err.Error())
-			return
+			return InternalError(ErrInternal, "failed to get params").
+				WithCause(err).
+				WithDetail("service", name)
 		}
 		jsonResp(w, params)
+		return nil
 
 	case r.Method == http.MethodPut && action == "params":
 		var pv contracts.ParamValue
 		if err := json.NewDecoder(r.Body).Decode(&pv); err != nil {
-			jsonErr(w, 400, "invalid request")
-			return
+			return ValidationError(ErrInvalidJSON, "invalid request")
 		}
 		if err := ep.ParamStore.Set(&pv); err != nil {
-			jsonErr(w, 500, err.Error())
-			return
+			return InternalError(ErrInternal, err.Error()).
+				WithCause(err)
 		}
 		jsonResp(w, map[string]string{"status": "ok"})
+		return nil
 
 	default:
-		jsonErr(w, 404, "not found")
+		return NotFoundError(ErrServiceNotFound, "not found")
 	}
 }
 
+// ============================================================
+// Handler — Containers
+// ============================================================
+
 // GET /api/containers?all=true
-func (s *Server) handleContainers(w http.ResponseWriter, r *http.Request, ep *endpoint.Context) {
+func (s *Server) handleContainers(w http.ResponseWriter, r *http.Request, ep *endpoint.Context) *APIError {
 	if r.Method != http.MethodGet {
-		jsonErr(w, 405, "method not allowed")
-		return
+		return MethodNotAllowed()
 	}
 	all := r.URL.Query().Get("all") == "true"
 	containers, err := ep.Runtime.ContainerList(all)
 	if err != nil {
-		jsonErr(w, 500, err.Error())
-		return
+		return InfrastructureError(ErrDockerOperation, "failed to list containers").
+			WithCause(err)
 	}
 	jsonResp(w, containers)
+	return nil
 }
+
+// ============================================================
+// Handler — Subscriptions
+// ============================================================
 
 // GET /api/subscriptions
 // POST /api/subscriptions
-func (s *Server) handleSubscriptions(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleSubscriptions(w http.ResponseWriter, r *http.Request) *APIError {
 	subMgr := s.app.SubscriptionManager()
 	if subMgr == nil {
-		jsonErr(w, 500, "subscription manager not available")
-		return
+		return InternalError(ErrInternal, "subscription manager not available")
 	}
 	switch r.Method {
 	case http.MethodGet:
 		subs, err := subMgr.List()
 		if err != nil {
-			jsonErr(w, 500, err.Error())
-			return
+			return InternalError(ErrInternal, "failed to list subscriptions").
+				WithCause(err)
 		}
 		jsonResp(w, subs)
+		return nil
+
 	case http.MethodPost:
 		var req struct {
 			Name string `json:"name"`
 			URL  string `json:"url"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			jsonErr(w, 400, "invalid request")
-			return
+			return ValidationError(ErrInvalidJSON, "invalid request")
+		}
+		if req.Name == "" || req.URL == "" {
+			return ValidationError(ErrMissingField, "name and url are required")
 		}
 		if err := subMgr.Add(&contracts.Subscription{Name: req.Name, URL: req.URL, Enabled: true}); err != nil {
-			jsonErr(w, 500, err.Error())
-			return
+			return InternalError(ErrInternal, err.Error()).
+				WithCause(err)
 		}
 		jsonResp(w, map[string]string{"status": "ok"})
+		return nil
+
 	default:
-		jsonErr(w, 405, "method not allowed")
+		return MethodNotAllowed()
 	}
 }
 
 // POST /api/subscriptions/{name}/sync
 // DELETE /api/subscriptions/{name}
-func (s *Server) handleSubscriptionByID(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleSubscriptionByID(w http.ResponseWriter, r *http.Request) *APIError {
 	name := strings.TrimPrefix(r.URL.Path, "/api/subscriptions/")
 	parts := strings.SplitN(name, "/", 2)
 	name = parts[0]
@@ -522,66 +579,70 @@ func (s *Server) handleSubscriptionByID(w http.ResponseWriter, r *http.Request) 
 
 	subMgr := s.app.SubscriptionManager()
 	if subMgr == nil {
-		jsonErr(w, 500, "subscription manager not available")
-		return
+		return InternalError(ErrInternal, "subscription manager not available")
 	}
 
 	switch {
 	case r.Method == http.MethodPost && action == "sync":
 		if err := subMgr.Sync(name); err != nil {
-			jsonErr(w, 500, err.Error())
-			return
+			return InfrastructureError(ErrSubscriptionSync, err.Error()).
+				WithCause(err).
+				WithDetail("subscription", name)
 		}
 		jsonResp(w, map[string]string{"status": "synced"})
+		return nil
 
 	case r.Method == http.MethodDelete:
 		if err := subMgr.Remove(name); err != nil {
-			jsonErr(w, 500, err.Error())
-			return
+			return InternalError(ErrInternal, err.Error()).
+				WithCause(err).
+				WithDetail("subscription", name)
 		}
 		jsonResp(w, map[string]string{"status": "ok"})
+		return nil
 
 	default:
-		jsonErr(w, 405, "method not allowed")
+		return MethodNotAllowed()
 	}
 }
 
+// ============================================================
+// Handler — Migration
+// ============================================================
+
 // GET /api/migrate/analyze
-func (s *Server) handleMigrateAnalyze(w http.ResponseWriter, r *http.Request, ep *endpoint.Context) {
+func (s *Server) handleMigrateAnalyze(w http.ResponseWriter, r *http.Request, ep *endpoint.Context) *APIError {
 	if r.Method != http.MethodGet {
-		jsonErr(w, 405, "method not allowed")
-		return
+		return MethodNotAllowed()
 	}
 	candidates, err := ep.MigrateService.Analyze(ep.Name)
 	if err != nil {
-		jsonErr(w, 500, err.Error())
-		return
+		return InternalError(ErrInternal, err.Error()).
+			WithCause(err)
 	}
 	jsonResp(w, candidates)
+	return nil
 }
 
 // POST /api/migrate/execute
-func (s *Server) handleMigrateExecute(w http.ResponseWriter, r *http.Request, ep *endpoint.Context) {
+func (s *Server) handleMigrateExecute(w http.ResponseWriter, r *http.Request, ep *endpoint.Context) *APIError {
 	if r.Method != http.MethodPost {
-		jsonErr(w, 405, "method not allowed")
-		return
+		return MethodNotAllowed()
 	}
 	var req contracts.MigrationRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		jsonErr(w, 400, "invalid request body")
-		return
+		return ValidationError(ErrInvalidJSON, "invalid request body")
 	}
 	newID, err := ep.MigrateService.Execute(&req)
 	if err != nil {
-		jsonErr(w, 500, err.Error())
-		return
+		return InternalError(ErrInternal, err.Error()).
+			WithCause(err)
 	}
 	jsonResp(w, map[string]string{"container_id": newID})
+	return nil
 }
 
 func (s *Server) Start(addr string) error {
 	s.app.Logger.Info("starting backend API server", zap.String("addr", addr))
 	return http.ListenAndServe(addr, s.Handler())
 }
-
-

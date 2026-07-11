@@ -18,12 +18,9 @@ import (
 )
 
 type keygenRequest struct {
-	// Which endpoint to associate the key with.
 	EndpointName string `json:"endpoint_name"`
-	// Display name for the key (informational only).
-	Name string `json:"name"`
-	// Key type: ed25519 (default), rsa-2048, rsa-4096, ecdsa-p256, ecdsa-p384.
-	Type string `json:"type"`
+	Name         string `json:"name"`
+	Type         string `json:"type"`
 }
 
 type keygenResponse struct {
@@ -42,34 +39,28 @@ type sshKeyInfo struct {
 }
 
 // POST /api/ssh/keygen
-// Body: { "endpoint_name": "default", "name": "my-key", "type": "ed25519" }
-// Generates an SSH key pair, stores the private key in the endpoint's connection
-// config (server-side only), and returns public key info to the caller.
-// The private key is NEVER exposed via JSON to the frontend.
-func (s *Server) handleSSHKeygen(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleSSHKeygen(w http.ResponseWriter, r *http.Request) *APIError {
 	if r.Method != http.MethodPost {
-		jsonErr(w, 405, "method not allowed")
-		return
+		return MethodNotAllowed()
 	}
 
 	var req keygenRequest
 	if err := decodeJSON(r, &req); err != nil {
-		jsonErr(w, 400, "invalid request body: "+err.Error())
-		return
+		return ValidationError(ErrInvalidJSON, "invalid request body").
+			WithDetail("parse_error", err.Error())
 	}
 	if req.EndpointName == "" {
-		jsonErr(w, 400, "endpoint_name is required")
-		return
+		return ValidationError(ErrMissingField, "endpoint_name is required").
+			WithDetail("field", "endpoint_name")
 	}
 	if req.Type == "" {
 		req.Type = "ed25519"
 	}
 
-	// Validate endpoint exists
 	epCfg, ok := s.app.Config.Endpoints[req.EndpointName]
 	if !ok {
-		jsonErr(w, 404, "endpoint not found: "+req.EndpointName)
-		return
+		return NotFoundError(ErrEndpointNotFound, "endpoint not found: "+req.EndpointName).
+			WithDetail("endpoint", req.EndpointName)
 	}
 	if epCfg.Connection == nil {
 		epCfg.Connection = &contracts.ConnectionConfig{}
@@ -77,35 +68,32 @@ func (s *Server) handleSSHKeygen(w http.ResponseWriter, r *http.Request) {
 
 	privKey, pubKey, err := generateSSHKeyPair(req.Type)
 	if err != nil {
-		jsonErr(w, 400, err.Error())
-		return
+		return ValidationError(ErrInvalidValue, err.Error()).
+			WithDetail("field", "type").
+			WithDetail("value", req.Type)
 	}
 
-	// Marshal private key to PEM — store server-side only
 	privBytes, err := x509.MarshalPKCS8PrivateKey(privKey)
 	if err != nil {
-		jsonErr(w, 500, "failed to marshal private key: "+err.Error())
-		return
+		return InternalError(ErrInternal, "failed to marshal private key").
+			WithCause(err)
 	}
 	privPEM := pem.EncodeToMemory(&pem.Block{
 		Type:  "PRIVATE KEY",
 		Bytes: privBytes,
 	})
 
-	// Store private key in endpoint config (never serialized to JSON)
 	epCfg.Connection.SSHPrivateKey = string(privPEM)
 	pubSSH := string(ssh.MarshalAuthorizedKey(pubKey))
 	epCfg.Connection.SSHPublicKey = pubSSH
 	epCfg.Connection.SSHKeyFingerprint = ssh.FingerprintSHA256(pubKey)
 	epCfg.Connection.SSHKeyType = req.Type
 
-	// Persist to disk
 	if err := s.app.ConfigMgr.SaveEndpoints(s.app.Config.Endpoints); err != nil {
-		jsonErr(w, 500, "failed to save config: "+err.Error())
-		return
+		return InternalError(ErrConfigSave, "failed to save config").
+			WithCause(err)
 	}
 
-	// Refresh endpoint contexts to pick up the new SSH key
 	s.app.RefreshEndpoints()
 
 	s.app.Logger.Info("ssh key pair generated and stored server-side",
@@ -122,6 +110,7 @@ func (s *Server) handleSSHKeygen(w http.ResponseWriter, r *http.Request) {
 		Fingerprint: epCfg.Connection.SSHKeyFingerprint,
 		Type:        req.Type,
 	})
+	return nil
 }
 
 type sshImportRequest struct {
@@ -130,60 +119,51 @@ type sshImportRequest struct {
 }
 
 // POST /api/ssh/import
-// Body: { "endpoint_name": "default", "private_key": "-----BEGIN PRIVATE KEY-----..." }
-// Imports an existing SSH private key, stores it server-side, validates it,
-// and returns public key info. The private key is NEVER exposed via JSON.
-func (s *Server) handleSSHImport(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleSSHImport(w http.ResponseWriter, r *http.Request) *APIError {
 	if r.Method != http.MethodPost {
-		jsonErr(w, 405, "method not allowed")
-		return
+		return MethodNotAllowed()
 	}
 
 	var req sshImportRequest
 	if err := decodeJSON(r, &req); err != nil {
-		jsonErr(w, 400, "invalid request body: "+err.Error())
-		return
+		return ValidationError(ErrInvalidJSON, "invalid request body").
+			WithDetail("parse_error", err.Error())
 	}
 	if req.EndpointName == "" {
-		jsonErr(w, 400, "endpoint_name is required")
-		return
+		return ValidationError(ErrMissingField, "endpoint_name is required").
+			WithDetail("field", "endpoint_name")
 	}
 	if req.PrivateKey == "" {
-		jsonErr(w, 400, "private_key is required")
-		return
+		return ValidationError(ErrMissingField, "private_key is required").
+			WithDetail("field", "private_key")
 	}
 
-	// Validate the private key by extracting the public key
 	pubKey, err := sshExtractPublicKey(req.PrivateKey)
 	if err != nil {
-		jsonErr(w, 400, "invalid private key: "+err.Error())
-		return
+		return ValidationError(ErrInvalidValue, "invalid private key").
+			WithCause(err)
 	}
 
-	// Ensure endpoint exists
 	epCfg, ok := s.app.Config.Endpoints[req.EndpointName]
 	if !ok {
-		jsonErr(w, 404, "endpoint not found: "+req.EndpointName)
-		return
+		return NotFoundError(ErrEndpointNotFound, "endpoint not found: "+req.EndpointName).
+			WithDetail("endpoint", req.EndpointName)
 	}
 	if epCfg.Connection == nil {
 		epCfg.Connection = &contracts.ConnectionConfig{}
 	}
 
-	// Store private key in endpoint config
 	epCfg.Connection.SSHPrivateKey = req.PrivateKey
 	pubSSH := string(ssh.MarshalAuthorizedKey(pubKey))
 	epCfg.Connection.SSHPublicKey = pubSSH
 	epCfg.Connection.SSHKeyFingerprint = ssh.FingerprintSHA256(pubKey)
 	epCfg.Connection.SSHKeyType = sshKeyTypeName(pubKey.Type())
 
-	// Persist to disk
 	if err := s.app.ConfigMgr.SaveEndpoints(s.app.Config.Endpoints); err != nil {
-		jsonErr(w, 500, "failed to save config: "+err.Error())
-		return
+		return InternalError(ErrConfigSave, "failed to save config").
+			WithCause(err)
 	}
 
-	// Refresh endpoint contexts
 	s.app.RefreshEndpoints()
 
 	s.app.Logger.Info("ssh private key imported",
@@ -194,16 +174,15 @@ func (s *Server) handleSSHImport(w http.ResponseWriter, r *http.Request) {
 
 	jsonResp(w, keygenResponse{
 		Name:        req.EndpointName,
-		KeyName:     "", // imported, no name
+		KeyName:     "",
 		PublicKey:   pubSSH,
 		Fingerprint: epCfg.Connection.SSHKeyFingerprint,
 		Type:        epCfg.Connection.SSHKeyType,
 	})
+	return nil
 }
 
-// computeSSHKeyMeta derives the SSH key fingerprint, type, and public key from
-// the private key stored in a connection config.
-// Sets the read-only fields SSHKeyFingerprint, SSHKeyType, and SSHPublicKey.
+// computeSSHKeyMeta 从连接配置中的私钥派生 SSH 密钥元信息。
 func computeSSHKeyMeta(conn *contracts.ConnectionConfig) {
 	if conn.SSHPrivateKey == "" {
 		conn.SSHKeyFingerprint = ""
@@ -224,11 +203,9 @@ func computeSSHKeyMeta(conn *contracts.ConnectionConfig) {
 }
 
 // GET /api/ssh/keys
-// Returns list of SSH keys by scanning endpoints config for inline SSH keys.
-func (s *Server) handleSSHKeys(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleSSHKeys(w http.ResponseWriter, r *http.Request) *APIError {
 	if r.Method != http.MethodGet {
-		jsonErr(w, 405, "method not allowed")
-		return
+		return MethodNotAllowed()
 	}
 
 	var keys []sshKeyInfo
@@ -243,10 +220,8 @@ func (s *Server) handleSSHKeys(w http.ResponseWriter, r *http.Request) {
 		}
 		seen[name] = true
 
-		// Parse public key from the private key to get fingerprint
 		pubKey, err := sshExtractPublicKey(ep.Connection.SSHPrivateKey)
 		if err != nil {
-			// Just show what we can
 			keys = append(keys, sshKeyInfo{
 				Name: name,
 				Type: "unknown",
@@ -266,9 +241,10 @@ func (s *Server) handleSSHKeys(w http.ResponseWriter, r *http.Request) {
 		keys = []sshKeyInfo{}
 	}
 	jsonResp(w, keys)
+	return nil
 }
 
-// sshExtractPublicKey parses a PEM-encoded private key and returns its SSH public key.
+// ssh 密钥解析与生成（保持不变）
 func sshExtractPublicKey(pemData string) (ssh.PublicKey, error) {
 	parsed, err := ssh.ParseRawPrivateKey([]byte(pemData))
 	if err != nil {

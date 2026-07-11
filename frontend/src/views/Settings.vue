@@ -74,7 +74,7 @@ async function handleSave() {
     await updateConfig(config.value)
     ElMessage.success(t('common.success'))
   } catch {
-    ElMessage.error(t('common.error'))
+    // 错误由全局 errorHandler 注册链处理
   } finally {
     saving.value = false
   }
@@ -96,7 +96,7 @@ async function handlePasswordSave() {
     newPassword.value = ''
     confirmPassword.value = ''
   } catch {
-    ElMessage.error(t('common.error'))
+    // 错误由全局 errorHandler 注册链处理
   } finally {
     passwordSaving.value = false
   }
@@ -156,7 +156,7 @@ async function handleKeygen() {
     keygenResult.value = res.data
     keygenStep.value = 'result'
   } catch {
-    ElMessage.error('Failed to generate SSH key')
+    // 错误由全局 errorHandler 注册链处理
   } finally {
     keygenLoading.value = false
   }
@@ -192,7 +192,7 @@ async function handleImport() {
     importDialogVisible.value = false
     ElMessage.success('Private key imported')
   } catch {
-    ElMessage.error('Failed to import private key')
+    // 错误由全局 errorHandler 注册链处理
   } finally {
     importLoading.value = false
   }

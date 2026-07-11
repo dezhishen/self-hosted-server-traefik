@@ -42,6 +42,8 @@ async function handleAdd() {
     ElMessage.success(t('common.success'))
     dialogVisible.value = false
     fetchSubscriptions()
+  } catch {
+    // 错误由全局 errorHandler 注册链处理
   } finally {
     saving.value = false
   }

@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { ElMessage } from 'element-plus'
+import { errorHandler, extractAppError } from './errors'
 
 const client = axios.create({
   baseURL: '/api',
@@ -9,20 +9,22 @@ const client = axios.create({
   }
 })
 
-// Module-level cache for the current remote name.
-// Set by the Pinia store via setCurrentRemote() to avoid circular imports.
+// Module-level caches
 let _currentRemote = ''
+let _authToken: string | null = null
 
 export function setCurrentRemote(name: string) {
   _currentRemote = name
 }
 
-// Module-level cache for the auth token.
-// Set by the Pinia store via setAuthToken() to avoid circular imports.
-let _authToken: string | null = null
-
 export function setAuthToken(token: string | null) {
   _authToken = token
+}
+
+function clearAuth() {
+  setAuthToken(null)
+  localStorage.removeItem('selfhosted_auth_token')
+  localStorage.removeItem('selfhosted_auth_username')
 }
 
 client.interceptors.request.use(
@@ -41,20 +43,29 @@ client.interceptors.request.use(
 client.interceptors.response.use(
   (response) => response,
   (error) => {
+    const appError = extractAppError(error)
+
+    // 401 → 清除登录态，跳转登录
     if (error.response?.status === 401) {
-      // Token expired or invalid — clear auth state.
-      // Import dynamically to avoid circular dependency.
-      setAuthToken(null)
-      localStorage.removeItem('selfhosted_auth_token')
-      localStorage.removeItem('selfhosted_auth_username')
-      // Redirect to login if not already there
-      if (window.location.pathname !== '/login') {
+      clearAuth()
+      // Use Vue Router if available, fallback to window.location
+      try {
+        // Dynamic import to avoid circular dependency
+        const router = (window as any).__vue_router
+        if (router) {
+          router.push('/login')
+        } else {
+          window.location.href = '/login'
+        }
+      } catch {
         window.location.href = '/login'
       }
+      return Promise.reject(appError)
     }
-    const message = error.response?.data?.error || error.message || 'Request failed'
-    ElMessage.error(message)
-    return Promise.reject(error)
+
+    // 其他错误 → 走注册链处理（由视图决定如何展示）
+    errorHandler.handle(appError)
+    return Promise.reject(appError)
   }
 )
 
