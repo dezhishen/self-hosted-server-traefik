@@ -1,30 +1,30 @@
 package contracts
 
 type AuthConfig struct {
-	Username     string `yaml:"username" json:"username"`
-	PasswordHash string `yaml:"password_hash" json:"-"`
+	Username     string `yaml:"username" json:"username" mapstructure:"username"`
+	PasswordHash string `yaml:"password_hash" json:"-" mapstructure:"password_hash"`
 }
 
 type SystemConfig struct {
-	BaseDataDir string      `yaml:"base_data_dir,omitempty" json:"base_data_dir,omitempty"`
-	Auth        *AuthConfig `yaml:"auth,omitempty" json:"auth,omitempty"`
+	BaseDataDir string      `yaml:"base_data_dir,omitempty" json:"base_data_dir,omitempty" mapstructure:"base_data_dir"`
+	Auth        *AuthConfig `yaml:"auth,omitempty" json:"auth,omitempty" mapstructure:"auth"`
 }
 
 type EndpointCollection struct {
-	Endpoints map[string]*EndpointConfig `yaml:"endpoints" json:"endpoints"`
+	Endpoints map[string]*EndpointConfig `yaml:"endpoints" json:"endpoints" mapstructure:"endpoints"`
 }
 
 type AppConfig struct {
-	BaseDataDir   string                     `yaml:"base_data_dir,omitempty" json:"base_data_dir,omitempty"`
-	Auth          *AuthConfig                `yaml:"auth,omitempty" json:"auth,omitempty"`
-	Endpoints     map[string]*EndpointConfig  `yaml:"endpoints" json:"endpoints"`
-	Subscriptions []Subscription            `yaml:"subscriptions,omitempty" json:"subscriptions,omitempty"`
+	BaseDataDir   string                     `yaml:"base_data_dir,omitempty" json:"base_data_dir,omitempty" mapstructure:"base_data_dir"`
+	Auth          *AuthConfig                `yaml:"auth,omitempty" json:"auth,omitempty" mapstructure:"auth"`
+	Endpoints     map[string]*EndpointConfig  `yaml:"endpoints" json:"endpoints" mapstructure:"endpoints"`
+	Subscriptions []Subscription            `yaml:"subscriptions,omitempty" json:"subscriptions,omitempty" mapstructure:"subscriptions"`
 }
 
 type EndpointConfig struct {
-	Name       string            `yaml:"name" json:"name"`
-	Connection *ConnectionConfig `yaml:"connection" json:"connection"`
-	Default    bool              `yaml:"default" json:"default"`
+	Name       string            `yaml:"name" json:"name" mapstructure:"name"`
+	Connection *ConnectionConfig `yaml:"connection" json:"connection" mapstructure:"connection"`
+	Default    bool              `yaml:"default" json:"default" mapstructure:"default"`
 }
 
 type ConfigStore interface {
