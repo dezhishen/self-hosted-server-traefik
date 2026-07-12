@@ -5,8 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"go.uber.org/zap"
-
+	"github.com/dezhishen/self-hosted-server-traefik/backend/logger"
 	"github.com/dezhishen/self-hosted-server-traefik/contracts"
 )
 
@@ -16,14 +15,14 @@ var _ contracts.SubscriptionManager = (*Manager)(nil)
 type Manager struct {
 	store contracts.SubscriptionStore
 	dir   string
-	log   *zap.Logger
+	l     logger.Logger
 }
 
-func NewManager(store contracts.SubscriptionStore, baseDir string, log *zap.Logger) *Manager {
+func NewManager(store contracts.SubscriptionStore, baseDir string, l logger.Logger) *Manager {
 	return &Manager{
 		store: store,
 		dir:   filepath.Join(baseDir, "templates"),
-		log:   log,
+		l:     l,
 	}
 }
 
@@ -104,7 +103,7 @@ func (m *Manager) SeedDefaults() error {
 	if err := m.store.Save(DefaultSubscriptions); err != nil {
 		return err
 	}
-	m.log.Info("seeded default subscriptions", zap.Int("count", len(DefaultSubscriptions)))
+	m.l.Info("seeded default subscriptions", logger.Int("count", len(DefaultSubscriptions)))
 	return nil
 }
 
@@ -115,7 +114,7 @@ func (m *Manager) Sync(name string) error {
 		return err
 	}
 
-	m.log.Info("syncing subscription", zap.String("name", name), zap.String("url", sub.URL))
+	m.l.Info("syncing subscription", logger.String("name", name), logger.String("url", sub.URL))
 
 	// 1. Fetch raw index.yaml content
 	rawData, err := readURL(sub.URL)
@@ -129,7 +128,7 @@ func (m *Manager) Sync(name string) error {
 		return fmt.Errorf("parse index for %s: %w", name, err)
 	}
 
-	m.log.Info("index fetched", zap.String("name", name), zap.Int("templates", len(*idx)))
+	m.l.Info("index fetched", logger.String("name", name), logger.Int("templates", len(*idx)))
 
 	// 3. Create target directory
 	targetDir := filepath.Join(m.dir, name)
@@ -140,7 +139,7 @@ func (m *Manager) Sync(name string) error {
 	// 4. Cache the raw index.yaml
 	cachePath := filepath.Join(targetDir, "index.yaml")
 	if err := os.WriteFile(cachePath, rawData, 0644); err != nil {
-		m.log.Warn("failed to cache index", zap.String("name", name), zap.Error(err))
+		m.l.Warn("failed to cache index", logger.String("name", name), logger.Error(err))
 	}
 
 	// 5. Download each template
@@ -149,32 +148,32 @@ func (m *Manager) Sync(name string) error {
 		templateURL := ResolveEntry(sub.URL, entry)
 		destPath := filepath.Join(targetDir, entry)
 
-		m.log.Debug("downloading template",
-			zap.String("name", name),
-			zap.String("url", templateURL),
-			zap.String("dest", destPath),
+		m.l.Info("downloading template",
+			logger.String("name", name),
+			logger.String("url", templateURL),
+			logger.String("dest", destPath),
 		)
 
 		if err := DownloadTemplate(templateURL, destPath); err != nil {
-			m.log.Warn("failed to download template",
-				zap.String("name", name),
-				zap.String("template", entry),
-				zap.Error(err),
+			m.l.Warn("failed to download template",
+				logger.String("name", name),
+				logger.String("template", entry),
+				logger.Error(err),
 			)
 			failed++
 		}
 	}
 
 	if failed > 0 {
-		m.log.Warn("subscription sync completed with errors",
-			zap.String("name", name),
-			zap.Int("failed", failed),
-			zap.Int("total", len(*idx)),
+		m.l.Warn("subscription sync completed with errors",
+			logger.String("name", name),
+			logger.Int("failed", failed),
+			logger.Int("total", len(*idx)),
 		)
 		return fmt.Errorf("synced %s: %d/%d templates failed", name, failed, len(*idx))
 	}
 
-	m.log.Info("subscription synced", zap.String("name", name), zap.Int("templates", len(*idx)))
+	m.l.Info("subscription synced", logger.String("name", name), logger.Int("templates", len(*idx)))
 	return nil
 }
 
@@ -186,7 +185,7 @@ func (m *Manager) SyncAll() error {
 	for _, sub := range subs {
 		if sub.Enabled {
 			if err := m.Sync(sub.Name); err != nil {
-				m.log.Error("sync subscription", zap.String("name", sub.Name), zap.Error(err))
+				m.l.Error("sync subscription", logger.String("name", sub.Name), logger.Error(err))
 			}
 		}
 	}

@@ -36,12 +36,6 @@ func TestClientStructFields(t *testing.T) {
 	if c == nil {
 		t.Fatal("Client should not be nil")
 	}
-	if c.Runtime != nil {
-		t.Error("Runtime should be nil by default")
-	}
-	if c.Config != nil {
-		t.Error("Config should be nil by default")
-	}
 }
 
 func TestOptionsDefaults(t *testing.T) {

@@ -6,8 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"go.uber.org/zap"
-
+	"github.com/dezhishen/self-hosted-server-traefik/backend/logger"
 	"github.com/dezhishen/self-hosted-server-traefik/contracts"
 )
 
@@ -18,7 +17,7 @@ type migrateService struct {
 	runtime       contracts.ContainerRuntime
 	serviceLoader contracts.ServiceLoader
 	serviceMgr    contracts.ServiceManager
-	logger        *zap.Logger
+	log           logger.Logger
 	name          string
 }
 
@@ -26,14 +25,14 @@ func NewMigrateService(
 	runtime contracts.ContainerRuntime,
 	serviceLoader contracts.ServiceLoader,
 	serviceMgr contracts.ServiceManager,
-	logger *zap.Logger,
+	log logger.Logger,
 	name string,
 ) contracts.MigrateService {
 	return &migrateService{
 		runtime:       runtime,
 		serviceLoader: serviceLoader,
 		serviceMgr:    serviceMgr,
-		logger:        logger,
+		log:           log,
 		name:          name,
 	}
 }
@@ -141,17 +140,17 @@ func (m *migrateService) Execute(req *contracts.MigrationRequest) (string, error
 
 	if req.RemoveOld {
 		if err := m.runtime.ContainerStop(req.ContainerID); err != nil {
-			m.logger.Warn("stop old container", zap.String("id", req.ContainerID), zap.Error(err))
+			m.log.Warn("stop old container", logger.String("id", req.ContainerID), logger.Error(err))
 		}
 		if err := m.runtime.ContainerRemove(req.ContainerID, true); err != nil {
-			m.logger.Warn("remove old container", zap.String("id", req.ContainerID), zap.Error(err))
+			m.log.Warn("remove old container", logger.String("id", req.ContainerID), logger.Error(err))
 		}
 	}
 
-	m.logger.Info("migration complete",
-		zap.String("service", req.ServiceName),
-		zap.String("old_id", req.ContainerID),
-		zap.String("new_id", newID),
+	m.log.Info("migration complete",
+		logger.String("service", req.ServiceName),
+		logger.String("old_id", req.ContainerID),
+		logger.String("new_id", newID),
 	)
 	return newID, nil
 }

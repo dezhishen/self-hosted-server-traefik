@@ -3,8 +3,7 @@ package endpoint
 import (
 	"fmt"
 
-	"go.uber.org/zap"
-
+	"github.com/dezhishen/self-hosted-server-traefik/backend/logger"
 	"github.com/dezhishen/self-hosted-server-traefik/contracts"
 )
 
@@ -17,7 +16,7 @@ type ServiceManagerOpts struct {
 	ParamStore     contracts.ParamStore
 	ServiceLoader  contracts.ServiceLoader
 	TemplateEngine contracts.TemplateEngine
-	Logger         *zap.Logger
+	Logger         logger.Logger
 	Name           string
 }
 
@@ -26,7 +25,7 @@ type serviceManager struct {
 	paramStore     contracts.ParamStore
 	serviceLoader  contracts.ServiceLoader
 	templateEngine contracts.TemplateEngine
-	logger         *zap.Logger
+	log            logger.Logger
 	name           string
 }
 
@@ -37,7 +36,7 @@ func NewServiceManager(opts ServiceManagerOpts) contracts.ServiceManager {
 		paramStore:     opts.ParamStore,
 		serviceLoader:  opts.ServiceLoader,
 		templateEngine: opts.TemplateEngine,
-		logger:         opts.Logger,
+		log:            opts.Logger,
 		name:           opts.Name,
 	}
 }
@@ -104,7 +103,7 @@ func (m *serviceManager) Install(name string, params []*contracts.ParamValue, re
 	}
 
 	// Pull image
-	m.logger.Info("pulling image", zap.String("image", runParams.Image))
+	m.log.Info("pulling image", logger.String("image", runParams.Image))
 	if err := m.runtime.PullImage(runParams.Image); err != nil {
 		return "", fmt.Errorf("pull image: %w", err)
 	}
@@ -116,7 +115,7 @@ func (m *serviceManager) Install(name string, params []*contracts.ParamValue, re
 			Driver: contracts.NetworkDriverBridge,
 		})
 		if err != nil {
-			m.logger.Warn("network may already exist", zap.String("network", runParams.NetworkMode), zap.Error(err))
+			m.log.Warn("network may already exist", logger.String("network", runParams.NetworkMode), logger.Error(err))
 		}
 	}
 
@@ -126,10 +125,10 @@ func (m *serviceManager) Install(name string, params []*contracts.ParamValue, re
 		return "", fmt.Errorf("run container: %w", err)
 	}
 
-	m.logger.Info("container started",
-		zap.String("service", name),
-		zap.String("container_id", containerID),
-		zap.String("endpoint", m.name),
+	m.log.Info("container started",
+		logger.String("service", name),
+		logger.String("container_id", containerID),
+		logger.String("endpoint", m.name),
 	)
 
 	// Execute post-install hooks
@@ -149,12 +148,12 @@ func (m *serviceManager) Uninstall(name string) error {
 	for _, c := range containers {
 		if c.Labels[contracts.ManagedServiceLabel] == name {
 			if err := m.runtime.ContainerStop(c.ID); err != nil {
-				m.logger.Warn("stop container", zap.String("id", c.ID), zap.Error(err))
+				m.log.Warn("stop container", logger.String("id", c.ID), logger.Error(err))
 			}
 			if err := m.runtime.ContainerRemove(c.ID, true); err != nil {
 				return fmt.Errorf("remove container: %w", err)
 			}
-			m.logger.Info("container removed", zap.String("service", name), zap.String("id", c.ID))
+			m.log.Info("container removed", logger.String("service", name), logger.String("id", c.ID))
 		}
 	}
 	return nil
@@ -191,7 +190,7 @@ func (m *serviceManager) Restart(name string) error {
 			if err := m.runtime.ContainerStop(c.ID); err != nil {
 				return fmt.Errorf("stop: %w", err)
 			}
-			m.logger.Info("container restarted", zap.String("service", name), zap.String("id", c.ID))
+			m.log.Info("container restarted", logger.String("service", name), logger.String("id", c.ID))
 			return nil
 		}
 	}
@@ -321,9 +320,9 @@ func (m *serviceManager) buildRunParams(svc *contracts.ServiceDefinition, params
 }
 
 func (m *serviceManager) executeHook(hook *contracts.PostInstallHook) {
-	m.logger.Info("post-install hook", zap.String("type", hook.Type))
+	m.log.Info("post-install hook", logger.String("type", hook.Type))
 	if hook.Message != "" {
-		m.logger.Warn(hook.Message)
+		m.log.Warn(hook.Message)
 	}
 }
 

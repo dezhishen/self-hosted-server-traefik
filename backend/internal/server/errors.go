@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"go.uber.org/zap"
+	"github.com/dezhishen/self-hosted-server-traefik/backend/logger"
 )
 
 // ============================================================
@@ -173,10 +173,10 @@ func MethodNotAllowed() *APIError {
 func (s *Server) writeError(w http.ResponseWriter, apiErr *APIError) {
 	if apiErr.Cause != nil {
 		s.app.Logger.Warn("api error",
-			zap.String("code", string(apiErr.Code)),
-			zap.String("category", string(apiErr.Category)),
-			zap.Int("http_status", apiErr.HTTPCode),
-			zap.Error(apiErr.Cause),
+			logger.String("code", string(apiErr.Code)),
+			logger.String("category", string(apiErr.Category)),
+			logger.Int("http_status", apiErr.HTTPCode),
+			logger.Error(apiErr.Cause),
 		)
 	}
 	w.Header().Set("Content-Type", "application/json")

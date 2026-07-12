@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
-	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/dezhishen/self-hosted-server-traefik/backend/core"
 	"github.com/dezhishen/self-hosted-server-traefik/backend/endpoint"
+	"github.com/dezhishen/self-hosted-server-traefik/backend/logger"
 	"github.com/dezhishen/self-hosted-server-traefik/contracts"
 )
 
@@ -29,12 +30,14 @@ type apiHandlerWithEndpoint func(http.ResponseWriter, *http.Request, *endpoint.C
 type Server struct {
 	app      *core.App
 	sessions *sessionManager
+	apiKeys  *apiKeyManager
 }
 
 func New(app *core.App) *Server {
 	return &Server{
 		app:      app,
 		sessions: newSessionManager(),
+		apiKeys:  newAPIKeyManager(app.Config.BaseDataDir, app.Logger),
 	}
 }
 
@@ -77,22 +80,33 @@ func (s *Server) handleWithEndpoint(h apiHandlerWithEndpoint) http.HandlerFunc {
 // ============================================================
 
 // withAuth 是认证中间件。返回 *APIError，由 handle() 统一处理。
-// 公开路由（auth/health/endpoints）透传。
+// 公开路由（login/logout/health/endpoints）透传。
+// 其他路由：优先校验 Bearer session token，失败则尝试校验 API key。
 func (s *Server) withAuth(next apiHandler) apiHandler {
 	return func(w http.ResponseWriter, r *http.Request) *APIError {
 		if isPublicRoute(r.URL.Path) {
 			return next(w, r)
 		}
+
 		token, ok := extractBearerToken(r)
 		if !ok {
 			return AuthError(ErrUnauthorized, "missing or invalid authorization header")
 		}
-		username, ok := s.sessions.ValidateSession(token)
-		if !ok {
-			return AuthError(ErrUnauthorized, "invalid or expired session")
+
+		// Try session token first
+		if username, ok := s.sessions.ValidateSession(token); ok {
+			ctx := context.WithValue(r.Context(), ctxAuthUserKey, username)
+			return next(w, r.WithContext(ctx))
 		}
-		ctx := context.WithValue(r.Context(), ctxAuthUserKey, username)
-		return next(w, r.WithContext(ctx))
+
+		// Fallback to API key
+		if scope, ok := s.apiKeys.Validate(token); ok {
+			ctx := context.WithValue(r.Context(), ctxAuthUserKey, "apikey-"+scope)
+			ctx = context.WithValue(ctx, ctxAuthKeyScope, scope)
+			return next(w, r.WithContext(ctx))
+		}
+
+		return AuthError(ErrUnauthorized, "invalid or expired token")
 	}
 }
 
@@ -124,12 +138,16 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/subscriptions", s.handle(s.withAuth(s.handleSubscriptions)))
 	mux.HandleFunc("/api/subscriptions/", s.handle(s.withAuth(s.handleSubscriptionByID)))
 
+	// ===== API Key 管理 (仅 session auth) =====
+	mux.HandleFunc("/api/apikeys", s.handle(s.withAuth(s.handleAPIKeys)))
+	mux.HandleFunc("/api/apikeys/", s.handle(s.withAuth(s.handleAPIKeysByID)))
+
 	return withLogging(s.app.Logger, mux)
 }
 
-func withLogging(log *zap.Logger, next http.Handler) http.Handler {
+func withLogging(log logger.Logger, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Info("request", zap.String("method", r.Method), zap.String("path", r.URL.Path), zap.String("remote", r.Header.Get("X-Remote-Name")))
+		log.Info("request", logger.String("method", r.Method), logger.String("path", r.URL.Path), logger.String("remote", r.Header.Get("X-Remote-Name")))
 		next.ServeHTTP(w, r)
 	})
 }
@@ -170,7 +188,7 @@ func (s *Server) handleAuthLogin(w http.ResponseWriter, r *http.Request) *APIErr
 			WithCause(err)
 	}
 
-	s.app.Logger.Info("login successful", zap.String("username", req.Username))
+	s.app.Logger.Info("login successful", logger.String("username", req.Username))
 	jsonResp(w, map[string]string{
 		"token":    token,
 		"username": req.Username,
@@ -197,6 +215,85 @@ func (s *Server) handleAuthLogout(w http.ResponseWriter, r *http.Request) *APIEr
 func jsonResp(w http.ResponseWriter, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(data)
+}
+
+// ============================================================
+// Handler — API Keys
+// ============================================================
+
+// POST /api/apikeys  — create a new API key (body: {"scope":"...","description":"..."})
+// GET  /api/apikeys  — list all API keys
+func (s *Server) handleAPIKeys(w http.ResponseWriter, r *http.Request) *APIError {
+	switch r.Method {
+	case http.MethodPost:
+		var req struct {
+			Scope       string `json:"scope"`
+			Description string `json:"description"`
+		}
+		if err := decodeJSON(r, &req); err != nil {
+			return ValidationError(ErrInvalidJSON, "invalid request body").
+				WithCause(err)
+		}
+		if req.Scope == "" {
+			req.Scope = "cli"
+		}
+		entry, err := s.apiKeys.Create(req.Scope, req.Description)
+		if err != nil {
+			return InternalError(ErrInternal, "failed to create API key").
+				WithCause(err)
+		}
+		s.app.Logger.Info("API key created",
+			logger.String("scope", req.Scope),
+			logger.String("description", req.Description),
+		)
+		jsonResp(w, entry)
+
+	case http.MethodGet:
+		keys := s.apiKeys.List()
+		// mask key values for listing - only show first 8 chars
+		type maskedKey struct {
+			KeyPrefix   string `json:"key_prefix"`
+			Scope       string `json:"scope"`
+			Description string `json:"description"`
+			CreatedAt   string `json:"created_at"`
+		}
+		result := make([]maskedKey, 0, len(keys))
+		for _, k := range keys {
+			prefix := k.Key
+			if len(prefix) > 16 {
+				prefix = prefix[:16] + "..."
+			}
+			result = append(result, maskedKey{
+				KeyPrefix:   prefix,
+				Scope:       k.Scope,
+				Description: k.Description,
+				CreatedAt:   k.CreatedAt.Format(time.RFC3339),
+			})
+		}
+		jsonResp(w, result)
+
+	default:
+		return MethodNotAllowed()
+	}
+	return nil
+}
+
+// DELETE /api/apikeys/{key} — revoke an API key
+func (s *Server) handleAPIKeysByID(w http.ResponseWriter, r *http.Request) *APIError {
+	if r.Method != http.MethodDelete {
+		return MethodNotAllowed()
+	}
+	// Extract key from path: /api/apikeys/{key}
+	key := strings.TrimPrefix(r.URL.Path, "/api/apikeys/")
+	if key == "" {
+		return ValidationError(ErrMissingField, "API key is required")
+	}
+	if !s.apiKeys.Revoke(key) {
+		return NotFoundError(ErrInternal, "API key not found")
+	}
+	s.app.Logger.Info("API key revoked")
+	jsonResp(w, map[string]string{"status": "ok"})
+	return nil
 }
 
 // ============================================================
@@ -644,6 +741,6 @@ func (s *Server) handleMigrateExecute(w http.ResponseWriter, r *http.Request, ep
 }
 
 func (s *Server) Start(addr string) error {
-	s.app.Logger.Info("starting backend API server", zap.String("addr", addr))
+	s.app.Logger.Info("starting backend API server", logger.String("addr", addr))
 	return http.ListenAndServe(addr, s.Handler())
 }

@@ -164,6 +164,9 @@ function handleUserCommand(command: string) {
                     <el-dropdown-item :icon="Tickets" command="/subscriptions">
                       {{ t('nav.subscriptions') }}
                     </el-dropdown-item>
+                    <el-dropdown-item :icon="Connection" command="/endpoints">
+                      {{ t('nav.endpoints') }}
+                    </el-dropdown-item>
                     <el-dropdown-item divided :icon="SwitchButton" command="logout">
                       {{ t('nav.logout') }}
                     </el-dropdown-item>

@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -12,7 +13,7 @@ import (
 	"github.com/dezhishen/self-hosted-server-traefik/contracts"
 	"github.com/dezhishen/self-hosted-server-traefik/backend/config"
 	"github.com/dezhishen/self-hosted-server-traefik/backend/core"
-	"go.uber.org/zap"
+	"github.com/dezhishen/self-hosted-server-traefik/backend/logger"
 )
 
 func newTestApp(t *testing.T) *core.App {
@@ -32,9 +33,24 @@ func newTestApp(t *testing.T) *core.App {
 			BaseDataDir: dir,
 		},
 		ConfigMgr: cfgMgr,
-		Logger:    zap.NewNop(),
+		Logger:    logger.NewNop(),
 	}
 	return app
+}
+
+// newAuthRequest creates an HTTP request with a valid session token for testing auth-protected routes.
+func newAuthRequest(t *testing.T, srv *Server, method, path string, body io.Reader) *http.Request {
+	t.Helper()
+	token, err := srv.sessions.CreateSession("test")
+	if err != nil {
+		t.Fatalf("failed to create session: %v", err)
+	}
+	req := httptest.NewRequest(method, path, body)
+	req.Header.Set("Authorization", "Bearer "+token)
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	return req
 }
 
 func seedEndpoint(app *core.App, name string) {
@@ -58,8 +74,7 @@ func TestSSHKeygen_Success(t *testing.T) {
 	handler := srv.Handler()
 
 	body := `{"endpoint_name":"default","name":"test-key","type":"ed25519"}`
-	req := httptest.NewRequest(http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
+	req := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 
@@ -107,8 +122,7 @@ func TestSSHKeygen_RSA2048(t *testing.T) {
 	handler := srv.Handler()
 
 	body := `{"endpoint_name":"default","name":"rsa-key","type":"rsa-2048"}`
-	req := httptest.NewRequest(http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
+	req := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 
@@ -146,8 +160,7 @@ func TestSSHKeygen_ECDSAP256(t *testing.T) {
 	handler := srv.Handler()
 
 	body := `{"endpoint_name":"default","name":"ecdsa-key","type":"ecdsa-p256"}`
-	req := httptest.NewRequest(http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
+	req := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 
@@ -177,8 +190,7 @@ func TestSSHKeygen_MissingEndpointName(t *testing.T) {
 	handler := srv.Handler()
 
 	body := `{"name":"test","type":"ed25519"}`
-	req := httptest.NewRequest(http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
+	req := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 
@@ -186,11 +198,13 @@ func TestSSHKeygen_MissingEndpointName(t *testing.T) {
 		t.Fatalf("expected 400, got %d: %s", w.Code, w.Body.String())
 	}
 
-	var errResp map[string]string
+	var errResp struct {
+		Error *APIError `json:"error"`
+	}
 	if err := json.Unmarshal(w.Body.Bytes(), &errResp); err != nil {
 		t.Fatalf("failed to unmarshal error: %v", err)
 	}
-	if errResp["error"] == "" {
+	if errResp.Error == nil || errResp.Error.Message == "" {
 		t.Error("expected error message")
 	}
 }
@@ -202,8 +216,7 @@ func TestSSHKeygen_EndpointNotFound(t *testing.T) {
 	handler := srv.Handler()
 
 	body := `{"endpoint_name":"nonexistent","type":"ed25519"}`
-	req := httptest.NewRequest(http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
+	req := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 
@@ -219,8 +232,7 @@ func TestSSHKeygen_InvalidType(t *testing.T) {
 	handler := srv.Handler()
 
 	body := `{"endpoint_name":"default","name":"test","type":"dsa-1024"}`
-	req := httptest.NewRequest(http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
+	req := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 
@@ -234,7 +246,7 @@ func TestSSHKeygen_MethodNotAllowed(t *testing.T) {
 	srv := New(app)
 	handler := srv.Handler()
 
-	req := httptest.NewRequest(http.MethodGet, "/api/ssh/keygen", nil)
+	req := newAuthRequest(t, srv, http.MethodGet, "/api/ssh/keygen", nil)
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 
@@ -250,8 +262,7 @@ func TestSSHKeygen_DefaultType(t *testing.T) {
 	handler := srv.Handler()
 
 	body := `{"endpoint_name":"default","name":"default-key","type":""}`
-	req := httptest.NewRequest(http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
+	req := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 
@@ -276,8 +287,7 @@ func TestSSHKeygen_RSA4096(t *testing.T) {
 	handler := srv.Handler()
 
 	body := `{"endpoint_name":"default","name":"rsa4096-key","type":"rsa-4096"}`
-	req := httptest.NewRequest(http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
+	req := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 
@@ -307,8 +317,7 @@ func TestSSHKeys_ListFromConfig(t *testing.T) {
 	handler := srv.Handler()
 
 	body := `{"endpoint_name":"myserver","name":"mykey","type":"ed25519"}`
-	genReq := httptest.NewRequest(http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
-	genReq.Header.Set("Content-Type", "application/json")
+	genReq := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
 	genW := httptest.NewRecorder()
 	handler.ServeHTTP(genW, genReq)
 	if genW.Code != http.StatusOK {
@@ -321,7 +330,7 @@ func TestSSHKeys_ListFromConfig(t *testing.T) {
 	}
 
 	// List keys
-	req := httptest.NewRequest(http.MethodGet, "/api/ssh/keys", nil)
+	req := newAuthRequest(t, srv, http.MethodGet, "/api/ssh/keys", nil)
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 
@@ -351,7 +360,7 @@ func TestSSHKeys_EmptyList(t *testing.T) {
 	srv := New(app)
 	handler := srv.Handler()
 
-	req := httptest.NewRequest(http.MethodGet, "/api/ssh/keys", nil)
+	req := newAuthRequest(t, srv, http.MethodGet, "/api/ssh/keys", nil)
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 
@@ -377,8 +386,7 @@ func TestSSHImport_Success(t *testing.T) {
 
 	// First generate a key to use as import source
 	genBody := `{"endpoint_name":"default","name":"source","type":"ed25519"}`
-	genReq := httptest.NewRequest(http.MethodPost, "/api/ssh/keygen", strings.NewReader(genBody))
-	genReq.Header.Set("Content-Type", "application/json")
+	genReq := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/keygen", strings.NewReader(genBody))
 	genW := httptest.NewRecorder()
 	handler.ServeHTTP(genW, genReq)
 	if genW.Code != http.StatusOK {
@@ -389,8 +397,7 @@ func TestSSHImport_Success(t *testing.T) {
 
 	// Now import that key via the import endpoint
 	importBody := `{"endpoint_name":"default","private_key":"` + strings.ReplaceAll(privKey, "\n", "\\n") + `"}`
-	importReq := httptest.NewRequest(http.MethodPost, "/api/ssh/import", strings.NewReader(importBody))
-	importReq.Header.Set("Content-Type", "application/json")
+	importReq := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/import", strings.NewReader(importBody))
 	importW := httptest.NewRecorder()
 	handler.ServeHTTP(importW, importReq)
 
@@ -418,8 +425,7 @@ func TestSSHImport_InvalidKey(t *testing.T) {
 	handler := srv.Handler()
 
 	body := `{"endpoint_name":"default","private_key":"not-a-real-key"}`
-	req := httptest.NewRequest(http.MethodPost, "/api/ssh/import", strings.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
+	req := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/import", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 

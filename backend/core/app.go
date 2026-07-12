@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"go.uber.org/zap"
+	"github.com/dezhishen/self-hosted-server-traefik/backend/logger"
 
 	"github.com/dezhishen/self-hosted-server-traefik/contracts"
 	"github.com/dezhishen/self-hosted-server-traefik/backend/config"
@@ -18,7 +18,7 @@ import (
 type App struct {
 	Config    *contracts.AppConfig
 	ConfigMgr *ConfigManager
-	Logger    *zap.Logger
+	Logger    logger.Logger
 
 	// Default endpoint name
 	DefaultEndpoint string
@@ -70,19 +70,19 @@ func (a *App) RefreshEndpoints() {
 			defaultEp = name
 		}
 		if epCfg.Connection == nil {
-			a.Logger.Warn("endpoint has no connection config, skipping", zap.String("name", name))
+			a.Logger.Warn("endpoint has no connection config, skipping", logger.String("name", name))
 			continue
 		}
 		ctx, err := a.initEndpointContext(name, epCfg)
 		if err != nil {
-			a.Logger.Warn("failed to refresh endpoint context", zap.String("name", name), zap.Error(err))
+			a.Logger.Warn("failed to refresh endpoint context", logger.String("name", name), logger.Error(err))
 			continue
 		}
 		newEndpoints[name] = ctx
 
 		a.Logger.Info("endpoint refreshed",
-			zap.String("name", name),
-			zap.Any("connection", epCfg.Connection),
+			logger.String("name", name),
+			logger.Any("connection", epCfg.Connection),
 		)
 	}
 
@@ -103,7 +103,7 @@ func (a *App) RefreshEndpoints() {
 
 func NewApp(configPath string) (*App, error) {
 	// 1. Init logger (temporary dir until config is loaded)
-	tmpLogger := zap.NewNop()
+	tmpLogger := logger.NewNop()
 
 	// 2. Load config
 	cfgMgr := NewConfigManager(config.NewLoader(), configPath)
@@ -113,16 +113,16 @@ func NewApp(configPath string) (*App, error) {
 	}
 
 	// 3. Init logger with real base dir
-	logger := InitLogger(cfg.BaseDataDir)
+	log := InitLogger(cfg.BaseDataDir)
 
 	// 4. Ensure directory structure
 	if err := EnsureDirs(cfg.BaseDataDir); err != nil {
-		logger.Warn("failed to create directories", zap.Error(err))
+		log.Warn("failed to create directories", logger.Error(err))
 	}
 
-	logger.Info("config loaded",
-		zap.String("base_data_dir", cfg.BaseDataDir),
-		zap.Int("endpoints", len(cfg.Endpoints)),
+	log.Info("config loaded",
+		logger.String("base_data_dir", cfg.BaseDataDir),
+		logger.Int("endpoints", len(cfg.Endpoints)),
 	)
 
 	// 5. Create shared services
@@ -134,11 +134,11 @@ func NewApp(configPath string) (*App, error) {
 
 	// 5b. Create subscription manager
 	subStore := subscription.NewFileStore(filepath.Join(cfg.BaseDataDir, "config", "subscriptions.json"))
-	subMgr := subscription.NewManager(subStore, cfg.BaseDataDir, logger)
+	subMgr := subscription.NewManager(subStore, cfg.BaseDataDir, log)
 
 	// Seed default subscriptions and register their template directories
 	if err := subMgr.SeedDefaults(); err != nil {
-		logger.Warn("failed to seed default subscriptions", zap.Error(err))
+		log.Warn("failed to seed default subscriptions", logger.Error(err))
 	}
 	// Add synced subscription template directories to the service loader
 	// Each subscription caches its index.yaml and templates under {baseDir}/templates/{name}/
@@ -156,7 +156,7 @@ func NewApp(configPath string) (*App, error) {
 	app := &App{
 		Config:           cfg,
 		ConfigMgr:        cfgMgr,
-		Logger:           logger,
+		Logger:           log,
 		TemplateEngine:   tmpl,
 		ServiceLoader:    svcLoader,
 		ServiceValidator: svcValidator,
@@ -171,27 +171,27 @@ func NewApp(configPath string) (*App, error) {
 			defaultEp = name
 		}
 		if epCfg.Connection == nil {
-			logger.Warn("endpoint has no connection config, skipping", zap.String("name", name))
+			log.Warn("endpoint has no connection config, skipping", logger.String("name", name))
 			continue
 		}
 		ctx, err := app.initEndpointContext(name, epCfg)
 		if err != nil {
-			logger.Warn("failed to create runtime for endpoint",
-				zap.String("name", name),
-				zap.Error(err),
+			log.Warn("failed to create runtime for endpoint",
+				logger.String("name", name),
+				logger.Error(err),
 			)
 			continue
 		}
 		app.Endpoints[name] = ctx
 
-		logger.Info("endpoint initialized",
-			zap.String("name", name),
-			zap.Any("connection", epCfg.Connection),
+		log.Info("endpoint initialized",
+			logger.String("name", name),
+			logger.Any("connection", epCfg.Connection),
 		)
 	}
 
 	if len(app.Endpoints) == 0 {
-		logger.Warn("no valid endpoints configured - server will start without runtime access")
+		log.Warn("no valid endpoints configured - server will start without runtime access")
 	}
 
 	if defaultEp == "" {
@@ -225,6 +225,6 @@ func (a *App) Close() {
 		}
 	}
 	if a.Logger != nil {
-		a.Logger.Sync()
+		_ = a.Logger.Sync()
 	}
 }

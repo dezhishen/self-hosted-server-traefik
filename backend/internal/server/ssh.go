@@ -16,8 +16,8 @@ import (
 	"strings"
 
 	gossh "golang.org/x/crypto/ssh"
-	"go.uber.org/zap"
 
+	"github.com/dezhishen/self-hosted-server-traefik/backend/logger"
 	"github.com/dezhishen/self-hosted-server-traefik/contracts"
 )
 
@@ -101,10 +101,10 @@ func (s *Server) handleSSHKeygen(w http.ResponseWriter, r *http.Request) *APIErr
 	s.app.RefreshEndpoints()
 
 	s.app.Logger.Info("ssh key pair generated and stored server-side",
-		zap.String("endpoint", req.EndpointName),
-		zap.String("name", req.Name),
-		zap.String("type", req.Type),
-		zap.String("fingerprint", epCfg.Connection.SSHKeyFingerprint),
+		logger.String("endpoint", req.EndpointName),
+		logger.String("name", req.Name),
+		logger.String("type", req.Type),
+		logger.String("fingerprint", epCfg.Connection.SSHKeyFingerprint),
 	)
 
 	jsonResp(w, keygenResponse{
@@ -171,9 +171,9 @@ func (s *Server) handleSSHImport(w http.ResponseWriter, r *http.Request) *APIErr
 	s.app.RefreshEndpoints()
 
 	s.app.Logger.Info("ssh private key imported",
-		zap.String("endpoint", req.EndpointName),
-		zap.String("type", epCfg.Connection.SSHKeyType),
-		zap.String("fingerprint", epCfg.Connection.SSHKeyFingerprint),
+		logger.String("endpoint", req.EndpointName),
+		logger.String("type", epCfg.Connection.SSHKeyType),
+		logger.String("fingerprint", epCfg.Connection.SSHKeyFingerprint),
 	)
 
 	jsonResp(w, keygenResponse{
@@ -406,41 +406,26 @@ func (s *Server) handleSSHAuthorize(w http.ResponseWriter, r *http.Request) *API
 	}
 	defer client.Close()
 
-	// Run: mkdir -p ~/.ssh && chmod 700 ~/.ssh
+	// Create ~/.ssh if needed and append public key
 	session, err := client.NewSession()
-	if err != nil {
-		return InternalError(ErrInternal, "failed to create SSH session").
-			WithCause(err)
-	}
-	if err := session.Run("mkdir -p ~/.ssh && chmod 700 ~/.ssh"); err != nil {
-		session.Close()
-		return InternalError(ErrInternal, "failed to create .ssh directory").
-			WithCause(err)
-	}
-	session.Close()
-
-	// Append public key to authorized_keys
-	// Use a single-quoted heredoc to avoid shell expansion
-	cmd := fmt.Sprintf("echo '%s' >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys",
-		strings.ReplaceAll(conn.SSHPublicKey, "'", "'\\''"))
-
-	session, err = client.NewSession()
 	if err != nil {
 		return InternalError(ErrInternal, "failed to create SSH session").
 			WithCause(err)
 	}
 	defer session.Close()
 
+	cmd := fmt.Sprintf("mkdir -p ~/.ssh && echo '%s' >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys",
+		strings.ReplaceAll(conn.SSHPublicKey, "'", "'\\''"))
 	if err := session.Run(cmd); err != nil {
 		return InternalError(ErrInternal, "failed to install public key").
 			WithCause(err)
 	}
 
 	s.app.Logger.Info("SSH public key authorized",
-		zap.String("endpoint", req.EndpointName),
-		zap.String("host", addr),
-		zap.String("user", sshUser),
-		zap.String("fingerprint", conn.SSHKeyFingerprint),
+		logger.String("endpoint", req.EndpointName),
+		logger.String("host", addr),
+		logger.String("user", sshUser),
+		logger.String("fingerprint", conn.SSHKeyFingerprint),
 	)
 
 	jsonResp(w, map[string]string{"status": "ok"})

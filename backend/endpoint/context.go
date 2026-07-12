@@ -3,10 +3,9 @@ package endpoint
 import (
 	"path/filepath"
 
-	"go.uber.org/zap"
-
-	"github.com/dezhishen/self-hosted-server-traefik/contracts"
+	"github.com/dezhishen/self-hosted-server-traefik/backend/logger"
 	"github.com/dezhishen/self-hosted-server-traefik/backend/store"
+	"github.com/dezhishen/self-hosted-server-traefik/contracts"
 )
 
 type Context struct {
@@ -18,7 +17,7 @@ type Context struct {
 	ServiceManager contracts.ServiceManager
 	MigrateService contracts.MigrateService
 	ParamStore     contracts.ParamStore
-	Logger         *zap.Logger
+	Logger         logger.Logger
 }
 
 type ContextOpts struct {
@@ -28,7 +27,7 @@ type ContextOpts struct {
 	BaseDataDir    string
 	ServiceLoader  contracts.ServiceLoader
 	TemplateEngine contracts.TemplateEngine
-	Logger         *zap.Logger
+	Logger         logger.Logger
 }
 
 func NewContext(opts ContextOpts) *Context {

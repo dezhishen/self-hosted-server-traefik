@@ -12,9 +12,10 @@ import (
 type contextKey string
 
 const (
-	authHeader     = "Authorization"
-	authScheme     = "Bearer "
-	ctxAuthUserKey = contextKey("auth_username")
+	authHeader       = "Authorization"
+	authScheme       = "Bearer "
+	ctxAuthUserKey   = contextKey("auth_username")
+	ctxAuthKeyScope  = contextKey("auth_apikey_scope")
 )
 
 // sessionManager manages bearer token sessions in-memory.
@@ -76,7 +77,8 @@ func extractBearerToken(r *http.Request) (string, bool) {
 
 // publicRoutes lists path prefixes that don't require authentication.
 var publicRoutes = []string{
-	"/api/auth/",
+	"/api/auth/login",
+	"/api/auth/logout",
 	"/api/health",
 	"/api/endpoints",
 }
