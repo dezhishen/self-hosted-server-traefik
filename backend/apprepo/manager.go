@@ -1,4 +1,4 @@
-package subscription
+package apprepo
 
 import (
 	"fmt"
@@ -9,24 +9,24 @@ import (
 	"github.com/dezhishen/self-hosted-server-traefik/contracts"
 )
 
-// Compile-time check: *Manager implements contracts.SubscriptionManager.
-var _ contracts.SubscriptionManager = (*Manager)(nil)
+// Compile-time check: *Manager implements contracts.AppRepoManager.
+var _ contracts.AppRepoManager = (*Manager)(nil)
 
 type Manager struct {
-	store contracts.SubscriptionStore
+	store contracts.AppRepoStore
 	dir   string
 	l     logger.Logger
 }
 
-func NewManager(store contracts.SubscriptionStore, baseDir string, l logger.Logger) *Manager {
+func NewManager(store contracts.AppRepoStore, baseDir string, l logger.Logger) *Manager {
 	return &Manager{
 		store: store,
-		dir:   filepath.Join(baseDir, "templates"),
+		dir:   filepath.Join(baseDir, "apps"),
 		l:     l,
 	}
 }
 
-func (m *Manager) Add(sub *contracts.Subscription) error {
+func (m *Manager) Add(sub *contracts.AppRepo) error {
 	subs, err := m.store.Load()
 	if err != nil {
 		return err
@@ -48,7 +48,7 @@ func (m *Manager) Remove(name string) error {
 	if err != nil {
 		return err
 	}
-	var updated []*contracts.Subscription
+	var updated []*contracts.AppRepo
 	for _, s := range subs {
 		if s.Name != name {
 			updated = append(updated, s)
@@ -63,11 +63,11 @@ func (m *Manager) Remove(name string) error {
 	return nil
 }
 
-func (m *Manager) List() ([]*contracts.Subscription, error) {
+func (m *Manager) List() ([]*contracts.AppRepo, error) {
 	return m.store.Load()
 }
 
-func (m *Manager) Get(name string) (*contracts.Subscription, error) {
+func (m *Manager) Get(name string) (*contracts.AppRepo, error) {
 	subs, err := m.store.Load()
 	if err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func (m *Manager) Get(name string) (*contracts.Subscription, error) {
 
 // DefaultSubscriptions returns the default subscriptions to seed on first run.
 // The "community" subscription now points to the project's index.yaml on GitHub.
-var DefaultSubscriptions = []*contracts.Subscription{
+var DefaultSubscriptions = []*contracts.AppRepo{
 	{
 		Name:        "community",
 		Description: "Community service templates from the SelfHosted project",
@@ -122,13 +122,13 @@ func (m *Manager) Sync(name string) error {
 		return fmt.Errorf("fetch index for %s: %w", name, err)
 	}
 
-	// 2. Parse into TemplateIndex
+	// 2. Parse into AppIndex
 	idx, err := parseIndex(rawData)
 	if err != nil {
 		return fmt.Errorf("parse index for %s: %w", name, err)
 	}
 
-	m.l.Info("index fetched", logger.String("name", name), logger.Int("templates", len(*idx)))
+	m.l.Info("index fetched", logger.String("name", name), logger.Int("apps", len(*idx)))
 
 	// 3. Create target directory
 	targetDir := filepath.Join(m.dir, name)
@@ -173,7 +173,7 @@ func (m *Manager) Sync(name string) error {
 		return fmt.Errorf("synced %s: %d/%d templates failed", name, failed, len(*idx))
 	}
 
-	m.l.Info("subscription synced", logger.String("name", name), logger.Int("templates", len(*idx)))
+	m.l.Info("app repo synced", logger.String("name", name), logger.Int("apps", len(*idx)))
 	return nil
 }
 

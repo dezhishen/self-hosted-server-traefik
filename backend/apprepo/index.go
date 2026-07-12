@@ -1,4 +1,4 @@
-package subscription
+package apprepo
 
 import (
 	"fmt"
@@ -15,20 +15,20 @@ import (
 	"github.com/dezhishen/self-hosted-server-traefik/contracts"
 )
 
-// FetchIndex fetches and parses a TemplateIndex from the given URL or file path.
+// FetchIndex fetches and parses a AppIndex from the given URL or file path.
 // Supports http://, https://, and file:// schemes.
-func FetchIndex(rawURL string) (*contracts.TemplateIndex, error) {
+func FetchIndex(rawURL string) (*contracts.AppIndex, error) {
 	data, err := readURL(rawURL)
 	if err != nil {
 		return nil, fmt.Errorf("fetch index %s: %w", rawURL, err)
 	}
 
-	var idx contracts.TemplateIndex
+	var idx contracts.AppIndex
 	if err := yaml.Unmarshal(data, &idx); err != nil {
 		return nil, fmt.Errorf("parse index %s: %w", rawURL, err)
 	}
 	if idx == nil {
-		idx = contracts.TemplateIndex{}
+		idx = contracts.AppIndex{}
 	}
 	return &idx, nil
 }
@@ -83,14 +83,14 @@ func DownloadTemplate(templateURL, destPath string) error {
 	return nil
 }
 
-// parseIndex parses raw YAML data into a TemplateIndex.
-func parseIndex(data []byte) (*contracts.TemplateIndex, error) {
-	var idx contracts.TemplateIndex
+// parseIndex parses raw YAML data into a AppIndex.
+func parseIndex(data []byte) (*contracts.AppIndex, error) {
+	var idx contracts.AppIndex
 	if err := yaml.Unmarshal(data, &idx); err != nil {
 		return nil, err
 	}
 	if idx == nil {
-		idx = contracts.TemplateIndex{}
+		idx = contracts.AppIndex{}
 	}
 	return &idx, nil
 }

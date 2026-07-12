@@ -3,7 +3,7 @@ package contracts
 type MigrateService interface {
 	Analyze(epName string) ([]*MigrationCandidate, error)
 	Execute(req *MigrationRequest) (string, error)
-	Generate(req *GenerateTemplateRequest) (*GenerateTemplateResult, error)
+	Generate(req *GenerateAppRequest) (*GenerateAppResult, error)
 	Adopt(req *AdoptRequest) (*AdoptResult, error)
 }
 
@@ -21,12 +21,12 @@ type MigrationRequest struct {
 	RemoveOld   bool          `json:"remove_old"`
 }
 
-type GenerateTemplateRequest struct {
+type GenerateAppRequest struct {
 	ContainerID string `json:"container_id"`
 	ServiceName string `json:"service_name"`
 }
 
-type GenerateTemplateResult struct {
+type GenerateAppResult struct {
 	ServiceName string `json:"service_name"`
 	FilePath    string `json:"file_path"`
 }
@@ -36,6 +36,7 @@ type GenerateTemplateResult struct {
 type AdoptRequest struct {
 	ContainerID string `json:"container_id"`
 	ServiceName string `json:"service_name"`
+	RepoName    string `json:"repo_name,omitempty"`
 	Version     string `json:"version,omitempty"`
 }
 
@@ -43,6 +44,7 @@ type AdoptRequest struct {
 type AdoptResult struct {
 	ContainerID string            `json:"container_id"`
 	ServiceName string            `json:"service_name"`
+	RepoName    string            `json:"repo_name,omitempty"`
 	Endpoint    string            `json:"endpoint"`
 	Labels      map[string]string `json:"labels"`
 }

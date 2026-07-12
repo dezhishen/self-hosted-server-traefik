@@ -141,8 +141,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/ssh/keys", s.handle(s.withAuth(s.handleSSHKeys)))
 	mux.HandleFunc("DELETE /api/ssh/keys/{name}", s.handle(s.withAuth(s.handleSSHKeyDelete)))
 	mux.HandleFunc("/api/ssh/authorize", s.handle(s.withAuth(s.handleSSHAuthorize)))
-	mux.HandleFunc("/api/subscriptions", s.handle(s.withAuth(s.handleSubscriptions)))
-	mux.HandleFunc("/api/subscriptions/", s.handle(s.withAuth(s.handleSubscriptionByID)))
+	mux.HandleFunc("/api/app-repos", s.handle(s.withAuth(s.handleAppRepos)))
+	mux.HandleFunc("/api/app-repos/", s.handle(s.withAuth(s.handleAppRepoByID)))
 
 	// ===== API Key 管理 (仅 session auth) =====
 	mux.HandleFunc("/api/apikeys", s.handle(s.withAuth(s.handleAPIKeys)))
@@ -640,24 +640,24 @@ func (s *Server) handleContainers(w http.ResponseWriter, r *http.Request, ep *en
 }
 
 // ============================================================
-// Handler — Subscriptions
+// Handler — App Repositories
 // ============================================================
 
-// GET /api/subscriptions
-// POST /api/subscriptions
-func (s *Server) handleSubscriptions(w http.ResponseWriter, r *http.Request) *APIError {
-	subMgr := s.app.SubscriptionManager()
-	if subMgr == nil {
-		return InternalError(ErrInternal, "subscription manager not available")
+// GET /api/app-repos
+// POST /api/app-repos
+func (s *Server) handleAppRepos(w http.ResponseWriter, r *http.Request) *APIError {
+	repoMgr := s.app.AppRepoManager()
+	if repoMgr == nil {
+		return InternalError(ErrInternal, "app repository manager not available")
 	}
 	switch r.Method {
 	case http.MethodGet:
-		subs, err := subMgr.List()
+		repos, err := repoMgr.List()
 		if err != nil {
-			return InternalError(ErrInternal, "failed to list subscriptions").
+			return InternalError(ErrInternal, "failed to list app repositories").
 				WithCause(err)
 		}
-		jsonResp(w, subs)
+		jsonResp(w, repos)
 		return nil
 
 	case http.MethodPost:
@@ -671,7 +671,7 @@ func (s *Server) handleSubscriptions(w http.ResponseWriter, r *http.Request) *AP
 		if req.Name == "" || req.URL == "" {
 			return ValidationError(ErrMissingField, "name and url are required")
 		}
-		if err := subMgr.Add(&contracts.Subscription{Name: req.Name, URL: req.URL, Enabled: true}); err != nil {
+		if err := repoMgr.Add(&contracts.AppRepo{Name: req.Name, URL: req.URL, Enabled: true}); err != nil {
 			return InternalError(ErrInternal, err.Error()).
 				WithCause(err)
 		}
@@ -683,10 +683,10 @@ func (s *Server) handleSubscriptions(w http.ResponseWriter, r *http.Request) *AP
 	}
 }
 
-// POST /api/subscriptions/{name}/sync
-// DELETE /api/subscriptions/{name}
-func (s *Server) handleSubscriptionByID(w http.ResponseWriter, r *http.Request) *APIError {
-	name := strings.TrimPrefix(r.URL.Path, "/api/subscriptions/")
+// POST /api/app-repos/{name}/sync
+// DELETE /api/app-repos/{name}
+func (s *Server) handleAppRepoByID(w http.ResponseWriter, r *http.Request) *APIError {
+	name := strings.TrimPrefix(r.URL.Path, "/api/app-repos/")
 	parts := strings.SplitN(name, "/", 2)
 	name = parts[0]
 	action := ""
@@ -694,31 +694,31 @@ func (s *Server) handleSubscriptionByID(w http.ResponseWriter, r *http.Request) 
 		action = parts[1]
 	}
 
-	subMgr := s.app.SubscriptionManager()
-	if subMgr == nil {
-		return InternalError(ErrInternal, "subscription manager not available")
+	repoMgr := s.app.AppRepoManager()
+	if repoMgr == nil {
+		return InternalError(ErrInternal, "app repository manager not available")
 	}
 
 	switch {
 	case r.Method == http.MethodPost && action == "sync":
 		// Sync runs in background so the API doesn't block for 65+ HTTP downloads.
 		go func() {
-			if err := subMgr.Sync(name); err != nil {
-				s.app.Logger.Error("subscription sync failed",
+			if err := repoMgr.Sync(name); err != nil {
+				s.app.Logger.Error("app repo sync failed",
 					logger.String("name", name),
 					logger.Error(err),
 				)
 				return
 			}
-			// Register the synced template directory so the ServiceLoader
-			// can find templates from this subscription immediately.
-			subTmplDir := filepath.Join(s.app.Config.BaseDataDir, "templates", name)
-			if _, err := os.Stat(filepath.Join(subTmplDir, "index.yaml")); err == nil {
+			// Register the synced app directory so the ServiceLoader
+			// can find apps from this repository immediately.
+			subAppDir := filepath.Join(s.app.Config.BaseDataDir, "apps", name)
+			if _, err := os.Stat(filepath.Join(subAppDir, "index.yaml")); err == nil {
 				if loader, ok := s.app.ServiceLoader.(*service.Loader); ok {
-					loader.AddPath(subTmplDir)
-					s.app.Logger.Info("registered subscription templates",
+					loader.AddPath(subAppDir)
+					s.app.Logger.Info("registered app repo app definitions",
 						logger.String("name", name),
-						logger.String("dir", subTmplDir),
+						logger.String("dir", subAppDir),
 					)
 				}
 			}
@@ -727,10 +727,10 @@ func (s *Server) handleSubscriptionByID(w http.ResponseWriter, r *http.Request) 
 		return nil
 
 	case r.Method == http.MethodDelete:
-		if err := subMgr.Remove(name); err != nil {
+		if err := repoMgr.Remove(name); err != nil {
 			return InternalError(ErrInternal, err.Error()).
 				WithCause(err).
-				WithDetail("subscription", name)
+				WithDetail("app_repo", name)
 		}
 		jsonResp(w, map[string]string{"status": "ok"})
 		return nil
@@ -781,7 +781,7 @@ func (s *Server) handleMigrateGenerate(w http.ResponseWriter, r *http.Request, e
 	if r.Method != http.MethodPost {
 		return MethodNotAllowed()
 	}
-	var req contracts.GenerateTemplateRequest
+	var req contracts.GenerateAppRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return ValidationError(ErrInvalidJSON, "invalid request body")
 	}

@@ -89,7 +89,7 @@ func run() int {
 	case "passwd":
 		return passwdCmd(configPath, args[1:])
 
-	case "install", "uninstall", "status", "list", "sub", "remote", "serve":
+	case "install", "uninstall", "status", "list", "apprepo", "remote", "serve":
 		client, err := sdk.New(ctx, sdk.Options{ConfigPath: configPath, Host: host})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -181,52 +181,52 @@ func run() int {
 				return 1
 			}
 
-		case "sub":
-			if len(args) < 2 {
-				fmt.Println("Usage: selfhosted sub <add|remove|list|sync> ...")
-				return 2
-			}
-			switch args[1] {
-			case "add":
-				if len(args) < 4 {
-					fmt.Println("Usage: selfhosted sub add <name> <url>")
+			case "apprepo":
+				if len(args) < 2 {
+					fmt.Println("Usage: selfhosted apprepo <add|remove|list|sync> ...")
 					return 2
 				}
-				if err := client.SubAdd(ctx, args[2], args[3]); err != nil {
-					fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-					return 1
-				}
-			case "remove":
-				if len(args) < 3 {
-					fmt.Println("Usage: selfhosted sub remove <name>")
+				switch args[1] {
+				case "add":
+					if len(args) < 4 {
+						fmt.Println("Usage: selfhosted apprepo add <name> <url>")
+						return 2
+					}
+					if err := client.AppRepoAdd(ctx, args[2], args[3]); err != nil {
+						fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+						return 1
+					}
+				case "remove":
+					if len(args) < 3 {
+						fmt.Println("Usage: selfhosted apprepo remove <name>")
+						return 2
+					}
+					if err := client.AppRepoRemove(ctx, args[2]); err != nil {
+						fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+						return 1
+					}
+				case "list":
+					repos, err := client.AppRepoList(ctx)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+						return 1
+					}
+					for _, s := range repos {
+						fmt.Printf("%-20s %s\n", s.Name, s.URL)
+					}
+				case "sync":
+					if len(args) < 3 {
+						fmt.Println("Usage: selfhosted apprepo sync <name>")
+						return 2
+					}
+					if err := client.AppRepoSync(ctx, args[2]); err != nil {
+						fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+						return 1
+					}
+				default:
+					fmt.Printf("unknown apprepo command: %s\n", args[1])
 					return 2
 				}
-				if err := client.SubRemove(ctx, args[2]); err != nil {
-					fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-					return 1
-				}
-			case "list":
-				subs, err := client.SubList(ctx)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-					return 1
-				}
-				for _, s := range subs {
-					fmt.Printf("%-20s %s\n", s.Name, s.URL)
-				}
-			case "sync":
-				if len(args) < 3 {
-					fmt.Println("Usage: selfhosted sub sync <name>")
-					return 2
-				}
-				if err := client.SubSync(ctx, args[2]); err != nil {
-					fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-					return 1
-				}
-			default:
-				fmt.Printf("unknown sub command: %s\n", args[1])
-				return 2
-			}
 
 		case "remote":
 			if len(args) < 2 {
@@ -546,7 +546,7 @@ Commands:
   list                    List services
   serve [addr]            Start web dashboard
   passwd [password]       Reset password (random if omitted)
-  sub add/remove/list     Manage subscriptions
+  apprepo add/remove/list/sync  Manage app repositories
   remote add/remove/list  Manage remote hosts
   version                 Show version
   help                    Show this help`)

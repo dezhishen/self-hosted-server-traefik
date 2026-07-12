@@ -18,7 +18,7 @@ type AppConfig struct {
 	BaseDataDir   string                     `yaml:"base_data_dir,omitempty" json:"base_data_dir,omitempty" mapstructure:"base_data_dir"`
 	Auth          *AuthConfig                `yaml:"auth,omitempty" json:"auth,omitempty" mapstructure:"auth"`
 	Endpoints     map[string]*EndpointConfig  `yaml:"endpoints" json:"endpoints" mapstructure:"endpoints"`
-	Subscriptions []Subscription            `yaml:"subscriptions,omitempty" json:"subscriptions,omitempty" mapstructure:"subscriptions"`
+	AppRepos []AppRepo            `yaml:"subscriptions,omitempty" json:"subscriptions,omitempty" mapstructure:"subscriptions"`
 }
 
 type EndpointConfig struct {

@@ -11,7 +11,7 @@ import (
 	"github.com/dezhishen/self-hosted-server-traefik/backend/config"
 	"github.com/dezhishen/self-hosted-server-traefik/backend/endpoint"
 	"github.com/dezhishen/self-hosted-server-traefik/backend/service"
-	"github.com/dezhishen/self-hosted-server-traefik/backend/subscription"
+	"github.com/dezhishen/self-hosted-server-traefik/backend/apprepo"
 	"github.com/dezhishen/self-hosted-server-traefik/backend/template"
 )
 
@@ -33,7 +33,7 @@ type App struct {
 	TemplateEngine     contracts.TemplateEngine
 	ServiceLoader      contracts.ServiceLoader
 	ServiceValidator   contracts.ServiceValidator
-	subMgr             contracts.SubscriptionManager
+	subMgr             contracts.AppRepoManager
 }
 
 // initEndpointContext creates a single endpoint context from config.
@@ -114,26 +114,26 @@ func (a *App) RefreshEndpoints() {
 	a.DefaultEndpoint = defaultEp
 }
 
-// resolveTemplatesDir finds the templates/ directory, checking multiple locations
+// resolveAppsDir finds the apps/ directory, checking multiple locations
 // since the CWD may not be the project root (e.g. make dev uses -C backend).
-func resolveTemplatesDir(baseDataDir string) string {
+func resolveAppsDir(baseDataDir string) string {
 	// 1. Check relative to CWD (works when running from project root)
-	if _, err := os.Stat("templates/index.yaml"); err == nil {
-		if abs, err := filepath.Abs("templates"); err == nil {
+	if _, err := os.Stat("apps/index.yaml"); err == nil {
+		if abs, err := filepath.Abs("apps"); err == nil {
 			return abs
 		}
-		return "templates"
+		return "apps"
 	}
 	// 2. Check parent of CWD (works when CWD = backend/)
-	if _, err := os.Stat("../templates/index.yaml"); err == nil {
-		if abs, err := filepath.Abs("../templates"); err == nil {
+	if _, err := os.Stat("../apps/index.yaml"); err == nil {
+		if abs, err := filepath.Abs("../apps"); err == nil {
 			return abs
 		}
-		return "../templates"
+		return "../apps"
 	}
-	// 3. Check relative to base data dir (dev setup: baseDataDir = .selfhosted.dev, templates at project root)
+	// 3. Check relative to base data dir (dev setup: baseDataDir = .selfhosted.dev, apps at project root)
 	if baseDataDir != "" {
-		candidate := filepath.Join(baseDataDir, "..", "templates")
+		candidate := filepath.Join(baseDataDir, "..", "apps")
 		if _, err := os.Stat(filepath.Join(candidate, "index.yaml")); err == nil {
 			if abs, err := filepath.Abs(candidate); err == nil {
 				return abs
@@ -142,7 +142,7 @@ func resolveTemplatesDir(baseDataDir string) string {
 		}
 	}
 	// 4. Fallback: return relative path, will be handled gracefully by LoadAll()
-	return "templates"
+	return "apps"
 }
 
 func NewApp(configPath string) (*App, error) {
@@ -190,23 +190,23 @@ func NewApp(configPath string) (*App, error) {
 	// 6. Create shared services
 	tmpl := template.NewEngine()
 
-	// Loader uses the templates/ directory which contains index.yaml
+	// Loader uses the apps/ directory which contains index.yaml
 	// Resolve to absolute path since CWD may differ (e.g. make dev uses -C backend)
-	templatesDir := resolveTemplatesDir(cfg.BaseDataDir)
-	log.Info("resolved templates directory", logger.String("dir", templatesDir))
-	svcLoader := service.NewLoader([]string{templatesDir})
+	appsDir := resolveAppsDir(cfg.BaseDataDir)
+	log.Info("resolved apps directory", logger.String("dir", appsDir))
+	svcLoader := service.NewLoader([]string{appsDir})
 	svcValidator := service.NewValidator()
 
 	// 5b. Create subscription manager
-	subStore := subscription.NewFileStore(filepath.Join(cfg.BaseDataDir, "config", "subscriptions.json"))
-	subMgr := subscription.NewManager(subStore, cfg.BaseDataDir, log)
+	subStore := apprepo.NewFileStore(filepath.Join(cfg.BaseDataDir, "config", "subscriptions.json"))
+	subMgr := apprepo.NewManager(subStore, cfg.BaseDataDir, log)
 
 	// Development convenience: detect local templates/ dir and use it as default
-	if localIndex := "templates/index.yaml"; len(subscription.DefaultSubscriptions) > 0 {
+	if localIndex := "apps/index.yaml"; len(apprepo.DefaultSubscriptions) > 0 {
 		if absPath, err := filepath.Abs(localIndex); err == nil {
 			if _, err := os.Stat(absPath); err == nil {
-				subscription.DefaultSubscriptions[0].URL = absPath
-				subscription.DefaultSubscriptions[0].Description = "Local service templates (development)"
+				apprepo.DefaultSubscriptions[0].URL = absPath
+				apprepo.DefaultSubscriptions[0].Description = "Local service templates (development)"
 			}
 		}
 	}
@@ -219,7 +219,7 @@ func NewApp(configPath string) (*App, error) {
 	// Each subscription caches its index.yaml and templates under {baseDir}/templates/{name}/
 	subs, _ := subMgr.List()
 	for _, sub := range subs {
-		subTmplDir := filepath.Join(cfg.BaseDataDir, "templates", sub.Name)
+		subTmplDir := filepath.Join(cfg.BaseDataDir, "apps", sub.Name)
 		if _, err := os.Stat(filepath.Join(subTmplDir, "index.yaml")); err == nil {
 			svcLoader.AddPath(subTmplDir)
 		}
@@ -290,7 +290,7 @@ func (a *App) GetDefaultEndpoint() *endpoint.Context {
 	return a.Endpoints[a.DefaultEndpoint]
 }
 
-func (a *App) SubscriptionManager() contracts.SubscriptionManager {
+func (a *App) AppRepoManager() contracts.AppRepoManager {
 	return a.subMgr
 }
 

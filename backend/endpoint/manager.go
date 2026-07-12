@@ -289,7 +289,11 @@ func (m *serviceManager) buildRunParams(svc *contracts.ServiceDefinition, params
 	for k, v := range svc.Container.Labels {
 		labels[k] = v
 	}
-	for k, v := range contracts.ManagedLabels(svc.Name, svc.APIVersion, m.name, "docker") {
+	repo := svc.Source
+	if repo == "" {
+		repo = "builtin"
+	}
+	for k, v := range contracts.ManagedLabels(svc.Name, repo, svc.APIVersion, m.name, "docker") {
 		labels[k] = v
 	}
 

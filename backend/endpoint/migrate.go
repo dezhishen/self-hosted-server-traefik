@@ -23,12 +23,14 @@ type migrateService struct {
 	log           logger.Logger
 	name          string
 	generatedDir  string
+	paramStore    contracts.ParamStore
 }
 
 func NewMigrateService(
 	runtime contracts.ContainerRuntime,
 	serviceLoader contracts.ServiceLoader,
 	serviceMgr contracts.ServiceManager,
+	paramStore contracts.ParamStore,
 	log logger.Logger,
 	name string,
 	generatedDir string,
@@ -37,6 +39,7 @@ func NewMigrateService(
 		runtime:       runtime,
 		serviceLoader: serviceLoader,
 		serviceMgr:    serviceMgr,
+		paramStore:    paramStore,
 		log:           log,
 		name:          name,
 		generatedDir:  generatedDir,
@@ -161,7 +164,7 @@ func (m *migrateService) Execute(req *contracts.MigrationRequest) (string, error
 	return newID, nil
 }
 
-func (m *migrateService) Generate(req *contracts.GenerateTemplateRequest) (*contracts.GenerateTemplateResult, error) {
+func (m *migrateService) Generate(req *contracts.GenerateAppRequest) (*contracts.GenerateAppResult, error) {
 	container, err := m.runtime.ContainerInspect(req.ContainerID)
 	if err != nil {
 		return nil, fmt.Errorf("inspect container: %w", err)
@@ -187,11 +190,11 @@ func (m *migrateService) Generate(req *contracts.GenerateTemplateRequest) (*cont
 		loader.AddPath(m.generatedDir)
 	}
 
-	m.log.Info("template generated",
+	m.log.Info("app definition generated",
 		logger.String("service", req.ServiceName),
 		logger.String("file", filePath),
 	)
-	return &contracts.GenerateTemplateResult{
+	return &contracts.GenerateAppResult{
 		ServiceName: req.ServiceName,
 		FilePath:    filePath,
 	}, nil
@@ -222,26 +225,112 @@ func (m *migrateService) Adopt(req *contracts.AdoptRequest) (*contracts.AdoptRes
 		version = "adopted"
 	}
 
+	repoName := req.RepoName
+	if repoName == "" {
+		repoName = "adopted"
+	}
+
 	// Build the managed labels
-	managedLabels := contracts.ManagedLabels(serviceName, version, m.name, "docker")
+	managedLabels := contracts.ManagedLabels(serviceName, repoName, version, m.name, "docker")
 
 	// Apply labels to the running container
 	if err := m.runtime.ContainerUpdateLabels(req.ContainerID, managedLabels); err != nil {
 		return nil, fmt.Errorf("update container labels: %w", err)
 	}
 
+	// Save container params to the param store so the service appears as managed
+	params := m.buildAdoptParams(serviceName, container)
+	for _, p := range params {
+		if err := m.paramStore.Set(p); err != nil {
+			m.log.Warn("failed to save adopt param",
+				logger.String("param", p.Name),
+				logger.Error(err),
+			)
+		}
+	}
+
 	m.log.Info("container adopted as managed service",
 		logger.String("container_id", req.ContainerID),
 		logger.String("service", serviceName),
+		logger.String("repo", repoName),
 		logger.String("endpoint", m.name),
 	)
 
 	return &contracts.AdoptResult{
 		ContainerID: req.ContainerID,
 		ServiceName: serviceName,
+		RepoName:    repoName,
 		Endpoint:    m.name,
 		Labels:      managedLabels,
 	}, nil
+}
+
+// buildAdoptParams extracts a container's current configuration into ParamValue
+// entries and saves them to the param store so the adopted container is
+// discoverable as a managed service.
+func (m *migrateService) buildAdoptParams(serviceName string, c *contracts.ContainerInfo) []*contracts.ParamValue {
+	var params []*contracts.ParamValue
+
+	// Image
+	if c.Image != "" {
+		params = append(params, &contracts.ParamValue{Name: serviceName + "_image", Value: c.Image})
+	}
+
+	// Environment — store as JSON map
+	if len(c.Env) > 0 {
+		envMap := make(map[string]string)
+		for k, v := range c.Env {
+			envMap[k] = v
+		}
+		params = append(params, &contracts.ParamValue{Name: serviceName + "_env", Value: envMap})
+	}
+
+	// Ports
+	for _, p := range c.Ports {
+		portName := fmt.Sprintf("%s_port_%d", serviceName, p.ContainerPort)
+		params = append(params, &contracts.ParamValue{Name: portName, Value: p.HostPort})
+	}
+
+	// Volumes / Mounts
+	for i, mnt := range c.Mounts {
+		mountName := fmt.Sprintf("%s_volume_%d", serviceName, i)
+		params = append(params, &contracts.ParamValue{Name: mountName, Value: mnt.Source + ":" + mnt.Target})
+	}
+
+	// Restart policy
+	if c.RestartPolicy != "" {
+		params = append(params, &contracts.ParamValue{Name: serviceName + "_restart", Value: c.RestartPolicy})
+	}
+
+	// Network mode
+	if c.NetworkMode != "" {
+		params = append(params, &contracts.ParamValue{Name: serviceName + "_network", Value: c.NetworkMode})
+	}
+
+	// Privileged
+	if c.Privileged {
+		params = append(params, &contracts.ParamValue{Name: serviceName + "_privileged", Value: "true"})
+	}
+
+	// CapAdd / CapDrop
+	if len(c.CapAdd) > 0 {
+		params = append(params, &contracts.ParamValue{Name: serviceName + "_cap_add", Value: c.CapAdd})
+	}
+	if len(c.CapDrop) > 0 {
+		params = append(params, &contracts.ParamValue{Name: serviceName + "_cap_drop", Value: c.CapDrop})
+	}
+
+	// DNS
+	if len(c.DNS) > 0 {
+		params = append(params, &contracts.ParamValue{Name: serviceName + "_dns", Value: c.DNS})
+	}
+
+	// ExtraHosts
+	if len(c.ExtraHosts) > 0 {
+		params = append(params, &contracts.ParamValue{Name: serviceName + "_extra_hosts", Value: c.ExtraHosts})
+	}
+
+	return params
 }
 
 // buildServiceDef constructs a ServiceDefinition from a running container's info.

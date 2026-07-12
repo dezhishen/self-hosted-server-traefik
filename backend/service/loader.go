@@ -30,7 +30,7 @@ func deriveSource(dir string) string {
 	base := filepath.Base(dir)
 	// Map well-known directory names to readable source labels.
 	switch base {
-	case "templates":
+	case "apps":
 		return "builtin"
 	case "generated":
 		return "generated"
@@ -179,17 +179,17 @@ func (l *Loader) loadFile(path string) (*contracts.ServiceDefinition, error) {
 }
 
 // loadLocalIndex reads and parses a local index.yaml file.
-func loadLocalIndex(path string) (*contracts.TemplateIndex, error) {
+func loadLocalIndex(path string) (*contracts.AppIndex, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	var idx contracts.TemplateIndex
+	var idx contracts.AppIndex
 	if err := yaml.Unmarshal(data, &idx); err != nil {
 		return nil, fmt.Errorf("parse %s: %w", path, err)
 	}
 	if idx == nil {
-		idx = contracts.TemplateIndex{}
+		idx = contracts.AppIndex{}
 	}
 	return &idx, nil
 }

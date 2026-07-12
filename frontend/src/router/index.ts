@@ -24,9 +24,9 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/ServiceDetail.vue')
   },
   {
-    path: '/subscriptions',
-    name: 'SubscriptionList',
-    component: () => import('@/views/SubscriptionList.vue')
+    path: '/app-repos',
+    name: 'AppRepoList',
+    component: () => import('@/views/AppRepoList.vue')
   },
   {
     path: '/endpoints',

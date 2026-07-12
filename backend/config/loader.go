@@ -189,7 +189,7 @@ func (l *Loader) saveFile(config *contracts.AppConfig, path string) error {
 		v.Set("auth", config.Auth)
 	}
 	v.Set("endpoints", config.Endpoints)
-	v.Set("subscriptions", config.Subscriptions)
+	v.Set("subscriptions", config.AppRepos)
 
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return fmt.Errorf("create config dir: %w", err)

@@ -39,17 +39,17 @@ export function executeMigration(req: MigrationRequest): Promise<{ data: { conta
   return client.post('/migrate/execute', req)
 }
 
-export interface GenerateTemplateRequest {
+export interface GenerateAppRequest {
   container_id: string
   service_name: string
 }
 
-export interface GenerateTemplateResult {
+export interface GenerateAppResult {
   service_name: string
   file_path: string
 }
 
-export function generateTemplate(req: GenerateTemplateRequest): Promise<{ data: GenerateTemplateResult }> {
+export function generateApp(req: GenerateAppRequest): Promise<{ data: GenerateAppResult }> {
   return client.post('/migrate/generate', req)
 }
 

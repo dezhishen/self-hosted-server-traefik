@@ -4,13 +4,13 @@ import { useI18n } from 'vue-i18n'
 import {
   analyzeMigrations,
   executeMigration,
-  generateTemplate,
+  generateApp,
   adoptContainer,
 } from '@/api/migrate'
 import type {
   MigrationCandidate,
   MigrationRequest,
-  GenerateTemplateRequest,
+  GenerateAppRequest,
   AdoptRequest,
 } from '@/api/migrate'
 import { listContainers } from '@/api/runtime'
@@ -92,11 +92,11 @@ async function confirmGenerate() {
   if (!selected.value || !generateSvcName.value) return
   generating.value = true
   try {
-    const req: GenerateTemplateRequest = {
+    const req: GenerateAppRequest = {
       container_id: selected.value.container.id,
       service_name: generateSvcName.value,
     }
-    await generateTemplate(req)
+    await generateApp(req)
     ElMessage.success(t('migration.generate_success') + ': ' + generateSvcName.value)
     generateDialogVisible.value = false
     fetchCandidates()
@@ -298,7 +298,7 @@ function switchTab(tab: 'migrate' | 'adopt') {
             :disabled="!selected.matched_service"
             @click="handleGenerate"
           >
-            {{ t('migration.generate_template') }}
+            {{ t('migration.generate_app') }}
           </el-button>
         </div>
       </template>
@@ -334,7 +334,7 @@ function switchTab(tab: 'migrate' | 'adopt') {
   <!-- Generate Template Dialog -->
   <el-dialog
     v-model="generateDialogVisible"
-    :title="t('migration.generate_template')"
+    :title="t('migration.generate_app')"
     width="500px"
   >
     <el-form label-position="top">

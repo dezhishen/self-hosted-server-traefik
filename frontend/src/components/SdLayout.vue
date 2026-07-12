@@ -31,7 +31,7 @@ const breadcrumbMap: Record<string, string> = {
   ServiceList: 'nav.services',
   ServiceDetail: 'services.detail',
   ParamList: 'services.params',
-  SubscriptionList: 'nav.subscriptions',
+  AppRepoList: 'nav.app_repos',
   EndpointList: 'nav.endpoints',
   Settings: 'nav.settings',
   Migration: 'nav.migration'
@@ -161,8 +161,8 @@ function handleUserCommand(command: string) {
                     <el-dropdown-item :icon="Setting" command="/settings">
                       {{ t('nav.settings') }}
                     </el-dropdown-item>
-                    <el-dropdown-item :icon="Tickets" command="/subscriptions">
-                      {{ t('nav.subscriptions') }}
+                    <el-dropdown-item :icon="Tickets" command="/app-repos">
+                      {{ t('nav.app_repos') }}
                     </el-dropdown-item>
                     <el-dropdown-item :icon="Connection" command="/endpoints">
                       {{ t('nav.endpoints') }}

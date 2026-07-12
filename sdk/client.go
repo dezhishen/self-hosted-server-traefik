@@ -270,19 +270,19 @@ func (c *Client) ParamGet(ctx context.Context, key string) (string, error) {
 	return "", fmt.Errorf("not implemented")
 }
 
-func (c *Client) SubAdd(ctx context.Context, name, url string) error {
+func (c *Client) AppRepoAdd(ctx context.Context, name, url string) error {
 	return fmt.Errorf("not implemented")
 }
 
-func (c *Client) SubRemove(ctx context.Context, name string) error {
+func (c *Client) AppRepoRemove(ctx context.Context, name string) error {
 	return fmt.Errorf("not implemented")
 }
 
-func (c *Client) SubList(ctx context.Context) ([]contracts.Subscription, error) {
+func (c *Client) AppRepoList(ctx context.Context) ([]contracts.AppRepo, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-func (c *Client) SubSync(ctx context.Context, name string) error {
+func (c *Client) AppRepoSync(ctx context.Context, name string) error {
 	return fmt.Errorf("not implemented")
 }
 

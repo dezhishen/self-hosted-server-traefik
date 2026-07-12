@@ -43,7 +43,7 @@ export interface AppConfig {
   base_data_dir?: string
   auth?: AuthConfig
   endpoints: Record<string, EndpointConfig>
-  subscriptions?: { name: string; url: string; enabled: boolean }[]
+  app_repos?: { name: string; url: string; enabled: boolean }[]
 }
 
 export function getConfig(): Promise<{ data: AppConfig }> {
