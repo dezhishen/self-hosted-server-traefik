@@ -97,9 +97,7 @@ function handleUserCommand(command: string) {
             <el-breadcrumb-item :to="{ path: '/' }">{{ t('nav.dashboard') }}</el-breadcrumb-item>
             <el-breadcrumb-item v-if="breadcrumb">{{ breadcrumb }}</el-breadcrumb-item>
           </el-breadcrumb>
-          <el-breadcrumb separator="/" class="md:hidden text-sm">
-            <el-breadcrumb-item v-if="breadcrumb">{{ breadcrumb }}</el-breadcrumb-item>
-          </el-breadcrumb>
+
 
           <!-- Right side controls -->
           <div class="ml-auto flex items-center gap-2">
