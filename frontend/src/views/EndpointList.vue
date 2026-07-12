@@ -77,7 +77,7 @@ async function handleSave() {
 
 function addEndpoint() {
   if (!config.value) return
-  const name = prompt('Endpoint name:')
+  const name = prompt(t('settings.msg_endpoint_name'))
   if (!name) return
   config.value.endpoints[name] = {
     name,
@@ -118,7 +118,7 @@ function openKeygenForEndpoint(name: string) {
 
 async function handleKeygen() {
   if (!keygenName.value.trim()) {
-    ElMessage.warning('Please enter a key name')
+    ElMessage.warning(t('settings.msg_key_name_required'))
     return
   }
   keygenLoading.value = true
@@ -142,7 +142,7 @@ function closeKeygen() {
 
 function copyPublicKey(key: string) {
   navigator.clipboard.writeText(key)
-  ElMessage.success('Public key copied')
+  ElMessage.success(t('settings.msg_key_copied'))
 }
 
 // --- SSH Key Import ---
@@ -154,7 +154,7 @@ function openImportForEndpoint(name: string) {
 
 async function handleImport() {
   if (!importPrivateKey.value.trim()) {
-    ElMessage.warning('Please paste your private key')
+    ElMessage.warning(t('settings.msg_key_paste_required'))
     return
   }
   importLoading.value = true
@@ -162,7 +162,7 @@ async function handleImport() {
     const res = await sshKeyImport(importEndpointName.value, importPrivateKey.value)
     endpointKeyMap.value[importEndpointName.value] = res.data
     importDialogVisible.value = false
-    ElMessage.success('Private key imported')
+    ElMessage.success(t('settings.msg_key_imported'))
   } catch {
     // error handled by global errorHandler
   } finally {
@@ -187,70 +187,70 @@ onMounted(fetchConfig)
             <div class="flex items-start sm:items-center justify-between flex-col sm:flex-row gap-2">
               <strong>{{ name }}</strong>
               <div class="flex gap-2 flex-wrap">
-                <el-tag v-if="ep.default" type="warning" size="small">default</el-tag>
+                <el-tag v-if="ep.default" type="warning" size="small">{{ t('settings.default') }}</el-tag>
                 <el-button size="small" type="danger" plain @click="removeEndpoint(name)">
-                  Remove
+                  {{ t('settings.remove') }}
                 </el-button>
               </div>
             </div>
           </template>
           <el-form :model="ep" label-width="110px" size="small" label-position="left">
-            <el-form-item label="Type">
+            <el-form-item :label="t('settings.type')">
               <el-select v-model="ep.connection.type" @change="initTLS(ep as any)">
-                <el-option label="unix" value="unix" />
-                <el-option label="tcp" value="tcp" />
-                <el-option label="http" value="http" />
-                <el-option label="https" value="https" />
-                <el-option label="ssh" value="ssh" />
+                <el-option :label="t('settings.type_unix')" value="unix" />
+                <el-option :label="t('settings.type_tcp')" value="tcp" />
+                <el-option :label="t('settings.type_http')" value="http" />
+                <el-option :label="t('settings.type_https')" value="https" />
+                <el-option :label="t('settings.type_ssh')" value="ssh" />
               </el-select>
             </el-form-item>
-            <el-form-item label="Endpoint">
-              <el-input v-model="ep.connection.endpoint" placeholder="/var/run/docker.sock or host:port" />
+            <el-form-item :label="t('settings.endpoint')">
+              <el-input v-model="ep.connection.endpoint" :placeholder="t('settings.endpoint_placeholder')" />
             </el-form-item>
-            <el-form-item label="Engine">
-              <el-select v-model="ep.connection.engine" placeholder="auto">
-                <el-option label="auto" value="" />
-                <el-option label="docker" value="docker" />
-                <el-option label="podman" value="podman" />
+            <el-form-item :label="t('settings.engine')">
+              <el-select v-model="ep.connection.engine" :placeholder="t('settings.engine_auto')">
+                <el-option :label="t('settings.engine_auto')" value="" />
+                <el-option :label="t('settings.engine_docker')" value="docker" />
+                <el-option :label="t('settings.engine_podman')" value="podman" />
               </el-select>
             </el-form-item>
 
             <template v-if="showSSH(ep.connection.type)">
               <el-divider />
-              <el-form-item label="SSH User">
-                <el-input v-model="ep.connection.ssh_user" placeholder="root" />
+              <el-form-item :label="t('settings.ssh_user')">
+                <el-input v-model="ep.connection.ssh_user" :placeholder="t('settings.ssh_user_placeholder')" />
               </el-form-item>
 
-              <el-form-item label="SSH Key">
+              <el-form-item :label="t('settings.ssh_key')">
                 <div class="flex flex-col gap-2 w-full">
                   <div v-if="getEPKeyInfo(name)" class="flex items-center gap-2 flex-wrap">
-                    <el-tag type="info" size="small">configured</el-tag>
+                    <el-tag type="info" size="small">{{ t('settings.configured') }}</el-tag>
                     <span class="text-xs text-gray-500">
-                      Private key is stored server-side
+                      {{ t('settings.ssh_key_stored') }}
                     </span>
                   </div>
                   <div v-else class="text-xs text-gray-500">
-                    No SSH key configured. Generate a new key pair or import an existing one.
+                    {{ t('settings.ssh_no_key') }}
                   </div>
                   <div class="flex gap-2 flex-wrap w-full sm:flex-nowrap">
                     <el-button size="small" class="flex-1 sm:flex-none" @click="openKeygenForEndpoint(name)">
-                      {{ getEPKeyInfo(name) ? 'Regenerate' : 'Generate SSH Key' }}
+                      {{ getEPKeyInfo(name) ? t('settings.ssh_regenerate') : t('settings.ssh_generate') }}
                     </el-button>
                     <el-button size="small" plain class="flex-1 sm:flex-none" @click="openImportForEndpoint(name)">
-                      Import Key
+                      {{ t('settings.ssh_import_key') }}
                     </el-button>
                   </div>
                 </div>
               </el-form-item>
 
               <template v-if="getEPKeyInfo(name)">
-                <el-form-item label="Key Type">
+                <el-form-item :label="t('settings.key_type')">
                   <el-tag size="small" type="success">{{ getEPKeyInfo(name)!.type }}</el-tag>
                 </el-form-item>
-                <el-form-item label="Fingerprint">
+                <el-form-item :label="t('settings.fingerprint')">
                   <span class="text-sm font-mono">{{ getEPKeyInfo(name)!.fingerprint }}</span>
                 </el-form-item>
-                <el-form-item label="Public Key">
+                <el-form-item :label="t('settings.public_key')">
                   <div class="relative w-full">
                     <el-input
                       :model-value="getEPKeyInfo(name)!.public_key"
@@ -263,11 +263,11 @@ onMounted(fetchConfig)
                       size="small"
                       @click="copyPublicKey(getEPKeyInfo(name)!.public_key)"
                     >
-                      Copy
+                      {{ t('settings.copy') }}
                     </el-button>
                   </div>
                   <p class="text-xs text-gray-500 mt-1">
-                    Add this public key to <code>~/.ssh/authorized_keys</code> on the remote server
+                    {{ t('settings.public_key_hint') }}
                   </p>
                 </el-form-item>
               </template>
@@ -275,21 +275,21 @@ onMounted(fetchConfig)
 
             <template v-if="showTLS(ep.connection.type)">
               <el-divider />
-              <el-form-item label="TLS">
+              <el-form-item :label="t('settings.tls')">
                 <el-switch v-model="ep.connection.tls!.enabled" />
               </el-form-item>
 
               <template v-if="ep.connection.tls?.enabled">
-                <el-form-item label="CA Cert">
-                  <el-input v-model="ep.connection.tls.ca_cert" type="textarea" :rows="2" placeholder="PEM content" />
+                <el-form-item :label="t('settings.ca_cert')">
+                  <el-input v-model="ep.connection.tls.ca_cert" type="textarea" :rows="2" :placeholder="t('settings.pem_placeholder')" />
                 </el-form-item>
-                <el-form-item label="Client Cert">
-                  <el-input v-model="ep.connection.tls.cert" type="textarea" :rows="2" placeholder="PEM content" />
+                <el-form-item :label="t('settings.client_cert')">
+                  <el-input v-model="ep.connection.tls.cert" type="textarea" :rows="2" :placeholder="t('settings.pem_placeholder')" />
                 </el-form-item>
-                <el-form-item label="Client Key">
-                  <el-input v-model="ep.connection.tls.key" type="textarea" :rows="2" placeholder="PEM content" />
+                <el-form-item :label="t('settings.client_key')">
+                  <el-input v-model="ep.connection.tls.key" type="textarea" :rows="2" :placeholder="t('settings.pem_placeholder')" />
                 </el-form-item>
-                <el-form-item label="Skip Verify">
+                <el-form-item :label="t('settings.skip_verify')">
                   <el-switch v-model="ep.connection.tls.skip_verify!" />
                 </el-form-item>
               </template>
@@ -297,7 +297,7 @@ onMounted(fetchConfig)
           </el-form>
           <div class="flex justify-end mt-3 pt-3 border-t">
             <el-button size="small" type="primary" :loading="saving" @click="handleSave">
-              Save Endpoint
+              {{ t('settings.save_endpoint') }}
             </el-button>
           </div>
         </SdCard>
@@ -308,8 +308,8 @@ onMounted(fetchConfig)
       </div>
 
       <div class="flex items-center gap-2 mt-4">
-        <el-button type="primary" plain @click="addEndpoint">+ Add Endpoint</el-button>
-        <el-button type="primary" :loading="saving" @click="handleSave">Save All Changes</el-button>
+        <el-button type="primary" plain @click="addEndpoint">{{ t('settings.add_endpoint') }}</el-button>
+        <el-button type="primary" :loading="saving" @click="handleSave">{{ t('settings.save_all') }}</el-button>
       </div>
     </div>
   </div>
@@ -317,17 +317,17 @@ onMounted(fetchConfig)
   <!-- SSH Keygen Dialog -->
   <el-dialog
     v-model="keygenDialogVisible"
-    :title="keygenStep === 'form' ? 'Generate SSH Key' : 'SSH Key Generated'"
+    :title="keygenStep === 'form' ? t('settings.keygen_title') : t('settings.keygen_result_title')"
     :width="'min(600px, 92vw)'"
     :close-on-click-modal="false"
     @close="closeKeygen"
   >
     <template v-if="keygenStep === 'form'">
       <el-form label-position="top">
-        <el-form-item label="Key Name" required>
-          <el-input v-model="keygenName" placeholder="e.g. my-server-key" />
+        <el-form-item :label="t('settings.key_name')" required>
+          <el-input v-model="keygenName" :placeholder="t('settings.key_name_placeholder')" />
         </el-form-item>
-        <el-form-item label="Key Type">
+        <el-form-item :label="t('settings.key_type_select')">
           <el-select v-model="keygenType">
             <el-option label="Ed25519 (recommended)" value="ed25519" />
             <el-option label="RSA 2048" value="rsa-2048" />
@@ -338,9 +338,9 @@ onMounted(fetchConfig)
         </el-form-item>
       </el-form>
       <div class="text-right">
-        <el-button @click="closeKeygen">Cancel</el-button>
+        <el-button @click="closeKeygen">{{ t('settings.cancel') }}</el-button>
         <el-button type="primary" :loading="keygenLoading" @click="handleKeygen">
-          Generate
+          {{ t('settings.generate') }}
         </el-button>
       </div>
     </template>
@@ -349,14 +349,14 @@ onMounted(fetchConfig)
       <div class="space-y-4">
         <el-alert
           type="success"
-          :title="`${keygenResult.type} key generated — ${keygenResult.fingerprint}`"
+          :title="t('settings.keygen_success', { type: keygenResult.type, fingerprint: keygenResult.fingerprint })"
           :closable="false"
           show-icon
         />
         <div>
-          <label class="text-sm font-semibold block mb-1">Public Key</label>
+          <label class="text-sm font-semibold block mb-1">{{ t('settings.public_key') }}</label>
           <p class="text-xs text-gray-500 mb-2">
-            Add this public key to the remote server's <code>~/.ssh/authorized_keys</code>.
+            {{ t('settings.public_key_hint') }}
           </p>
           <div class="relative">
             <el-input
@@ -370,13 +370,13 @@ onMounted(fetchConfig)
               size="small"
               @click="copyPublicKey(keygenResult.public_key)"
             >
-              Copy
+              {{ t('settings.copy') }}
             </el-button>
           </div>
         </div>
       </div>
       <div class="text-right mt-4">
-        <el-button type="primary" @click="closeKeygen">Done</el-button>
+        <el-button type="primary" @click="closeKeygen">{{ t('settings.done') }}</el-button>
       </div>
     </template>
   </el-dialog>
@@ -384,24 +384,23 @@ onMounted(fetchConfig)
   <!-- SSH Key Import Dialog -->
   <el-dialog
     v-model="importDialogVisible"
-    title="Import SSH Private Key"
+    :title="t('settings.import_title')"
     :width="'min(600px, 92vw)'"
     :close-on-click-modal="false"
   >
     <p class="text-sm text-gray-500 mb-3">
-      Paste your existing SSH private key. The key will be stored server-side
-      and <strong>never returned</strong> to the browser.
+      {{ t('settings.import_desc') }}
     </p>
     <el-input
       v-model="importPrivateKey"
       type="textarea"
       :rows="6"
-      placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;..."
+      :placeholder="t('settings.import_placeholder')"
     />
     <div class="text-right mt-4">
-      <el-button @click="importDialogVisible = false">Cancel</el-button>
+      <el-button @click="importDialogVisible = false">{{ t('settings.cancel') }}</el-button>
       <el-button type="primary" :loading="importLoading" @click="handleImport">
-        Import
+        {{ t('settings.import') }}
       </el-button>
     </div>
   </el-dialog>

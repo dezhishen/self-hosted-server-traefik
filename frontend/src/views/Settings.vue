@@ -39,7 +39,7 @@ async function handleSave() {
 
 async function handlePasswordSave() {
   if (!newPassword.value) {
-    ElMessage.warning('Please enter a new password')
+    ElMessage.warning(t('settings.msg_password_required'))
     return
   }
   if (newPassword.value !== confirmPassword.value) {
@@ -74,11 +74,11 @@ onMounted(fetchConfig)
             <span class="font-semibold">{{ t('settings.title') }}</span>
           </template>
           <el-form label-position="top" v-if="config">
-            <el-form-item label="Config Path">
+            <el-form-item :label="t('settings.config_path')">
               <el-input :model-value="config.base_data_dir" disabled />
             </el-form-item>
-            <el-form-item label="Username">
-              <el-input v-model="config.auth!.username" placeholder="admin" />
+            <el-form-item :label="t('auth.username')">
+              <el-input v-model="config.auth!.username" :placeholder="t('auth.username_placeholder')" />
             </el-form-item>
             <el-button type="primary" :loading="saving" @click="handleSave">
               {{ t('settings.save') }}
@@ -109,7 +109,7 @@ onMounted(fetchConfig)
               />
             </el-form-item>
             <el-button type="primary" :loading="passwordSaving" @click="handlePasswordSave">
-              Update Password
+              {{ t('settings.update_password') }}
             </el-button>
           </el-form>
         </SdCard>
