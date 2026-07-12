@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getConfig, updateConfig, sshKeygen, sshKeyImport } from '@/api/config'
+import { getConfig, updateConfig, sshKeygen, sshKeyImport, sshAuthorize } from '@/api/config'
 import type { AppConfig, TLSConfig, SSHKeygenResult } from '@/api/config'
 import SdCard from '@/components/SdCard.vue'
 import { ElMessage } from 'element-plus'
@@ -27,6 +27,12 @@ const importDialogVisible = ref(false)
 const importEndpointName = ref('')
 const importPrivateKey = ref('')
 const importLoading = ref(false)
+
+// SSH authorize state
+const authorizeDialogVisible = ref(false)
+const authorizeEndpointName = ref('')
+const authorizePassword = ref('')
+const authorizeLoading = ref(false)
 
 function getEPKeyInfo(name: string) {
   const ep = config.value?.endpoints[name]
@@ -170,6 +176,30 @@ async function handleImport() {
   }
 }
 
+// --- SSH Authorize ---
+function openAuthorize(name: string) {
+  authorizeEndpointName.value = name
+  authorizePassword.value = ''
+  authorizeDialogVisible.value = true
+}
+
+async function handleAuthorize() {
+  if (!authorizePassword.value.trim()) {
+    ElMessage.warning(t('settings.msg_password_required'))
+    return
+  }
+  authorizeLoading.value = true
+  try {
+    await sshAuthorize(authorizeEndpointName.value, authorizePassword.value)
+    ElMessage.success(t('settings.msg_authorized'))
+    authorizeDialogVisible.value = false
+  } catch {
+    // error handled by global errorHandler
+  } finally {
+    authorizeLoading.value = false
+  }
+}
+
 onMounted(fetchConfig)
 </script>
 
@@ -268,6 +298,16 @@ onMounted(fetchConfig)
                   <p class="text-xs text-gray-500 mt-1">
                     {{ t('settings.public_key_hint') }}
                   </p>
+                </el-form-item>
+                <el-form-item>
+                  <el-button
+                    size="small"
+                    type="primary"
+                    @click="openAuthorize(name)"
+                  >
+                    {{ t('settings.authorize_remote') }}
+                  </el-button>
+                  <span class="text-xs text-gray-500 ml-2">{{ t('settings.authorize_hint') }}</span>
                 </el-form-item>
               </template>
             </template>
@@ -395,6 +435,31 @@ onMounted(fetchConfig)
       <el-button @click="importDialogVisible = false">{{ t('settings.cancel') }}</el-button>
       <el-button type="primary" :loading="importLoading" @click="handleImport">
         {{ t('settings.import') }}
+      </el-button>
+    </div>
+  </el-dialog>
+
+  <!-- SSH Authorize Dialog -->
+  <el-dialog
+    v-model="authorizeDialogVisible"
+    :title="t('settings.authorize_title')"
+    :width="'min(400px, 90vw)'"
+    :close-on-click-modal="false"
+  >
+    <p class="text-sm text-gray-500 mb-3">
+      {{ t('settings.authorize_desc', { name: authorizeEndpointName }) }}
+    </p>
+    <el-input
+      v-model="authorizePassword"
+      type="password"
+      :placeholder="t('settings.authorize_password_placeholder')"
+      show-password
+      @keyup.enter="handleAuthorize"
+    />
+    <div class="text-right mt-4">
+      <el-button @click="authorizeDialogVisible = false">{{ t('settings.cancel') }}</el-button>
+      <el-button type="primary" :loading="authorizeLoading" @click="handleAuthorize">
+        {{ t('settings.authorize_confirm') }}
       </el-button>
     </div>
   </el-dialog>

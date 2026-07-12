@@ -120,6 +120,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/ssh/keygen", s.handle(s.withAuth(s.handleSSHKeygen)))
 	mux.HandleFunc("/api/ssh/import", s.handle(s.withAuth(s.handleSSHImport)))
 	mux.HandleFunc("/api/ssh/keys", s.handle(s.withAuth(s.handleSSHKeys)))
+	mux.HandleFunc("/api/ssh/authorize", s.handle(s.withAuth(s.handleSSHAuthorize)))
 	mux.HandleFunc("/api/subscriptions", s.handle(s.withAuth(s.handleSubscriptions)))
 	mux.HandleFunc("/api/subscriptions/", s.handle(s.withAuth(s.handleSubscriptionByID)))
 

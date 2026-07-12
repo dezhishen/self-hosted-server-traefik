@@ -130,6 +130,13 @@
   "settings.msg_key_paste_required": "请粘贴私钥",
   "settings.msg_key_imported": "私钥已导入",
   "settings.msg_password_required": "请输入新密码",
+  "settings.authorize_remote": "授权到远程",
+  "settings.authorize_hint": "推送公钥到远程服务器",
+  "settings.authorize_title": "SSH 密钥授权",
+  "settings.authorize_desc": "输入 {name} 的 SSH 密码以完成密钥授权",
+  "settings.authorize_password_placeholder": "远程服务器 SSH 密码",
+  "settings.authorize_confirm": "确认授权",
+  "settings.msg_authorized": "SSH 密钥授权成功",
 
   "theme.dark": "深色模式",
   "theme.light": "浅色模式",

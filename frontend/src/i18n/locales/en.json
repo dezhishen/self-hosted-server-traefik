@@ -130,6 +130,13 @@
   "settings.msg_key_paste_required": "Please paste your private key",
   "settings.msg_key_imported": "Private key imported",
   "settings.msg_password_required": "Please enter a new password",
+  "settings.authorize_remote": "Authorize to Remote",
+  "settings.authorize_hint": "Push this key to the remote server",
+  "settings.authorize_title": "Authorize SSH Key",
+  "settings.authorize_desc": "Enter the SSH password for {name} to authorize the key",
+  "settings.authorize_password_placeholder": "Remote server SSH password",
+  "settings.authorize_confirm": "Authorize",
+  "settings.msg_authorized": "SSH key authorized successfully",
 
   "theme.dark": "Dark Mode",
   "theme.light": "Light Mode",

@@ -74,6 +74,10 @@ export function sshKeyList(): Promise<{ data: SSHKeyInfo[] }> {
   return client.get('/ssh/keys')
 }
 
+export function sshAuthorize(endpointName: string, password: string): Promise<void> {
+  return client.post('/ssh/authorize', { endpoint_name: endpointName, password })
+}
+
 export function changePassword(password: string): Promise<void> {
   return client.post('/config/password', { password })
 }
