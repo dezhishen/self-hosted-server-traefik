@@ -109,6 +109,7 @@ function handleUserCommand(command: string) {
             >
               <el-button size="small" text>
                 <el-icon><Connection /></el-icon>
+                <span class="ml-1 max-w-16 sm:max-w-24 truncate">{{ remoteStore.current }}</span>
               </el-button>
               <template #dropdown>
                 <el-dropdown-menu>
