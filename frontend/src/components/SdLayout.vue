@@ -159,9 +159,6 @@ function handleUserCommand(command: string) {
                     <el-dropdown-item :icon="Promotion" command="/migrate">
                       {{ t('nav.migration') }}
                     </el-dropdown-item>
-                    <el-dropdown-item :icon="Connection" command="/endpoints">
-                      {{ t('nav.endpoints') }}
-                    </el-dropdown-item>
                     <el-dropdown-item :icon="Setting" command="/settings">
                       {{ t('nav.settings') }}
                     </el-dropdown-item>
