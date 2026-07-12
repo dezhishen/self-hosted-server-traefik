@@ -8,15 +8,15 @@ dependencies: [mariadb]
 container:
   name: mariadb-backup
   image: databack/mysql-backup
-  user: "{{ .Custom.PUID | default "1000" }}:{{ .Custom.PGID | default "1000" }}"
+  user: "{{ .Custom.PUID | default \"1000\" }}:{{ .Custom.PGID | default \"1000\" }}"
   command:
     - dump
   volumes:
     - "{{ .DataDir }}/mariadb-backup/backup:/db"
   environment:
-    TZ: "{{ .Custom.TZ | default "Asia/Shanghai" }}"
+    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
     LANG: "zh_CN.UTF-8"
-    DB_SERVER: "{{ .Custom.MYSQL_HOST | default "mariadb" }}"
+    DB_SERVER: "{{ .Custom.MYSQL_HOST | default \"mariadb\" }}"
     DB_USER: root
     DB_PASS: "{{ .Custom.MYSQL_PASSWORD }}"
     DB_DUMP_FREQUENCY: "60"

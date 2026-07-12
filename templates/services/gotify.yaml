@@ -11,7 +11,7 @@ container:
   volumes:
     - "{{ .DataDir }}/gotify/data:/app/data"
   environment:
-    TZ: "{{ .Custom.TZ | default "Asia/Shanghai" }}"
+    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
     LANG: "zh_CN.UTF-8"
   networks:
     - "{{ .NetworkName }}"

@@ -2,10 +2,10 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { listServices, restartService, uninstallService } from '@/api/services'
+import { listServices, installService, restartService, uninstallService } from '@/api/services'
 import type { Service } from '@/api/services'
 import SdStatus from '@/components/SdStatus.vue'
-import { Plus, Search, Refresh, VideoPlay } from '@element-plus/icons-vue'
+import { Plus, Search, Refresh, VideoPlay, Download } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const { t } = useI18n()
@@ -13,6 +13,36 @@ const router = useRouter()
 const services = ref<Service[]>([])
 const loading = ref(false)
 const keyword = ref('')
+
+// Install dialog
+const installDialogVisible = ref(false)
+const installTarget = ref('')
+const installing = ref(false)
+const availableServices = ref<Service[]>([])
+
+function openInstallDialog() {
+  installTarget.value = ''
+  installDialogVisible.value = true
+  // Load available services (templates from subscriptions)
+  listServices().then(res => {
+    availableServices.value = res.data || []
+  })
+}
+
+async function executeInstall() {
+  if (!installTarget.value) return
+  installing.value = true
+  try {
+    await installService({ name: installTarget.value, params: [] })
+    ElMessage.success(t('common.success'))
+    installDialogVisible.value = false
+    fetchServices()
+  } catch {
+    // error handled by global handler
+  } finally {
+    installing.value = false
+  }
+}
 
 async function fetchServices() {
   loading.value = true
@@ -62,7 +92,7 @@ onMounted(fetchServices)
 <template>
   <div class="page-header flex items-center justify-between flex-wrap gap-2">
     <h2>{{ t('services.title') }}</h2>
-    <el-button type="primary" :icon="Plus">{{ t('services.install') }}</el-button>
+    <el-button type="primary" :icon="Plus" @click="openInstallDialog">{{ t('services.install') }}</el-button>
   </div>
 
   <div class="mb-4 flex flex-wrap gap-3">
@@ -105,4 +135,36 @@ onMounted(fetchServices)
     </el-table-column>
   </el-table>
   </div>
+
+  <!-- Install dialog -->
+  <el-dialog
+    v-model="installDialogVisible"
+    :title="t('services.install')"
+    width="min(600px, 92vw)"
+    :close-on-click-modal="false"
+  >
+    <el-form @submit.prevent="executeInstall">
+      <el-form-item :label="t('services.select') || 'Select service'" required>
+        <el-select v-model="installTarget" filterable style="width: 100%;" :placeholder="t('services.select') || 'Select service'">
+          <el-option
+            v-for="svc in availableServices"
+            :key="svc.name"
+            :label="`${svc.name}${svc.description ? ' — ' + svc.description : ''}`"
+            :value="svc.name"
+          >
+            <div class="flex items-center justify-between">
+              <span>{{ svc.name }}</span>
+              <span class="text-xs text-gray-400 ml-2">{{ svc.category }}</span>
+            </div>
+          </el-option>
+        </el-select>
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="installDialogVisible = false">{{ t('common.close') }}</el-button>
+      <el-button type="primary" :icon="Download" :loading="installing" :disabled="!installTarget" @click="executeInstall">
+        {{ installing ? t('services.installing') : t('services.install') }}
+      </el-button>
+    </template>
+  </el-dialog>
 </template>

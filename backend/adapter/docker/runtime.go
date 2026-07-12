@@ -1,13 +1,17 @@
 package docker
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/netip"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -28,9 +32,19 @@ var _ contracts.ContainerRuntime = (*Runtime)(nil)
 // Runtime implements contracts.ContainerRuntime using the Docker Go SDK.
 // It connects directly to the Docker daemon API without requiring the docker CLI.
 type Runtime struct {
-	client  *client.Client
-	cancel  context.CancelFunc
-	sshDial *sshDialer // non-nil only for SSH connections
+	client     *client.Client
+	httpClient *http.Client // raw HTTP client for API calls not exposed by moby SDK
+	daemonHost string       // host:port portion from DaemonHost() for URL construction
+	cancel     context.CancelFunc
+	sshDial    *sshDialer // non-nil only for SSH connections
+}
+
+// unixDialer returns a dial function for the given Unix socket path.
+func unixDialer(socketPath string) func(ctx context.Context, network, addr string) (net.Conn, error) {
+	return func(ctx context.Context, network, addr string) (net.Conn, error) {
+		var d net.Dialer
+		return d.DialContext(ctx, "unix", socketPath)
+	}
 }
 
 // NewRuntime creates a new Docker SDK runtime based on the connection config.
@@ -52,13 +66,22 @@ func NewRuntime(cfg contracts.ConnectionConfig) (*Runtime, error) {
 		if endpoint == "" {
 			endpoint = "/var/run/docker.sock"
 		}
-		opts = append(opts, client.WithHost("unix://"+endpoint))
+		rt.httpClient = &http.Client{
+			Transport: &http.Transport{
+				DialContext: unixDialer(endpoint),
+			},
+		}
+		opts = append(opts, client.WithHTTPClient(rt.httpClient))
+		opts = append(opts, client.WithHost("http://docker"))
 
 	case contracts.ConnectionTypeTCP, contracts.ConnectionTypeHTTP:
 		endpoint := cfg.Endpoint
 		if endpoint == "" {
 			endpoint = "/var/run/docker.sock"
 		}
+		rt.httpClient = &http.Client{}
+		rt.daemonHost = endpoint
+		opts = append(opts, client.WithHTTPClient(rt.httpClient))
 		opts = append(opts, client.WithHost("tcp://"+endpoint))
 
 	case contracts.ConnectionTypeHTTPS:
@@ -76,9 +99,10 @@ func NewRuntime(cfg contracts.ConnectionConfig) (*Runtime, error) {
 			transport := &http.Transport{
 				TLSClientConfig: tlsConfig,
 			}
-			httpClient := &http.Client{Transport: transport}
-			opts = append(opts, client.WithHTTPClient(httpClient))
+			rt.httpClient = &http.Client{Transport: transport}
+			opts = append(opts, client.WithHTTPClient(rt.httpClient))
 		}
+		rt.daemonHost = endpoint
 		opts = append(opts, client.WithHost(host))
 
 	case contracts.ConnectionTypeSSH:
@@ -88,7 +112,13 @@ func NewRuntime(cfg contracts.ConnectionConfig) (*Runtime, error) {
 			return nil, fmt.Errorf("SSH dialer: %w", err)
 		}
 		rt.sshDial = dialer
+		rt.httpClient = &http.Client{
+			Transport: &http.Transport{
+				DialContext: dialer.DialContext,
+			},
+		}
 		opts = append(opts,
+			client.WithHTTPClient(rt.httpClient),
 			client.WithHost("http://docker"),
 			client.WithDialContext(dialer.DialContext),
 		)
@@ -104,6 +134,11 @@ func NewRuntime(cfg contracts.ConnectionConfig) (*Runtime, error) {
 		return nil, fmt.Errorf("create Docker client: %w", err)
 	}
 	rt.client = cli
+
+	// Derive daemonHost from the moby client for non-TCP schemes (unix/ssh)
+	if rt.daemonHost == "" {
+		rt.daemonHost = cli.DaemonHost()
+	}
 
 	// Verify connection
 	if _, err := cli.Ping(ctx, client.PingOptions{}); err != nil {
@@ -270,6 +305,42 @@ func (r *Runtime) ContainerList(all bool) ([]contracts.ContainerInfo, error) {
 		result = append(result, *toContainerSummaryInfo(&c))
 	}
 	return result, nil
+}
+
+// ContainerUpdateLabels adds or updates labels on a running container without
+// stopping or recreating it. Uses the Docker API's /containers/{id}/update
+// endpoint which supports Labels since API v1.40.
+func (r *Runtime) ContainerUpdateLabels(containerID string, labels map[string]string) error {
+	// Build payload: the Docker API accepts Labels in the update body.
+	payload := map[string]map[string]string{"Labels": labels}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("marshal label payload: %w", err)
+	}
+
+	version := r.client.ClientVersion()
+	apiPath := path.Join("/", "v"+strings.TrimPrefix(version, "v"), "containers", containerID, "update")
+
+	reqURL := "http://" + r.daemonHost + apiPath
+
+	req, err := http.NewRequestWithContext(context.Background(), "POST", reqURL, bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := r.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("update labels HTTP call: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		respBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("update labels failed (HTTP %d): %s", resp.StatusCode, strings.TrimSpace(string(respBody)))
+	}
+
+	return nil
 }
 
 // ---------------------------------------------------------------------------
@@ -482,9 +553,32 @@ func toContainerInfo(resp *container.InspectResponse) *contracts.ContainerInfo {
 		}
 	}
 
-	// Labels
+	// Config
 	if resp.Config != nil {
 		info.Labels = resp.Config.Labels
+		info.Env = toEnvMap(resp.Config.Env)
+		info.Command = resp.Config.Cmd
+		info.Entrypoint = resp.Config.Entrypoint
+		info.User = resp.Config.User
+	}
+
+	// Host config
+	if resp.HostConfig != nil {
+		info.Privileged = resp.HostConfig.Privileged
+		info.CapAdd = resp.HostConfig.CapAdd
+		info.CapDrop = resp.HostConfig.CapDrop
+		if len(resp.HostConfig.DNS) > 0 {
+			dns := make([]string, len(resp.HostConfig.DNS))
+			for i, addr := range resp.HostConfig.DNS {
+				dns[i] = addr.String()
+			}
+			info.DNS = dns
+		}
+		info.ExtraHosts = resp.HostConfig.ExtraHosts
+		info.NetworkMode = string(resp.HostConfig.NetworkMode)
+		if resp.HostConfig.RestartPolicy.Name != "" {
+			info.RestartPolicy = string(resp.HostConfig.RestartPolicy.Name)
+		}
 	}
 
 	// Mounts
@@ -501,6 +595,20 @@ func toContainerInfo(resp *container.InspectResponse) *contracts.ContainerInfo {
 	}
 
 	return info
+}
+
+// toEnvMap converts Docker's ["KEY=value", ...] format to map[string]string.
+func toEnvMap(env []string) map[string]string {
+	if len(env) == 0 {
+		return nil
+	}
+	m := make(map[string]string, len(env))
+	for _, e := range env {
+		if idx := strings.Index(e, "="); idx > 0 {
+			m[e[:idx]] = e[idx+1:]
+		}
+	}
+	return m
 }
 
 func toContainerSummaryInfo(c *container.Summary) *contracts.ContainerInfo {

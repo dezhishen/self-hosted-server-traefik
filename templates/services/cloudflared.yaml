@@ -22,7 +22,7 @@ container:
   volumes:
     - "{{ .DataDir }}/cloudflared/etc:/etc/cloudflared"
   environment:
-    TZ: "{{ .Custom.TZ | default "Asia/Shanghai" }}"
+    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
   networks:
     - "{{ .NetworkName }}"
   restart: always

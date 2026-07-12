@@ -44,12 +44,15 @@ func NewContext(opts ContextOpts) *Context {
 		Name:           opts.Name,
 	})
 
+	generatedDir := filepath.Join(opts.BaseDataDir, "templates", "generated")
+
 	migrateSvc := NewMigrateService(
 		opts.Runtime,
 		opts.ServiceLoader,
 		svcMgr,
 		opts.Logger,
 		opts.Name,
+		generatedDir,
 	)
 
 	return &Context{

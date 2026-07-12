@@ -1,8 +1,13 @@
 package contracts
 
+import (
+	"gopkg.in/yaml.v3"
+)
+
 type ServiceDefinition struct {
 	APIVersion   string              `yaml:"api_version" json:"api_version"`
 	Name         string              `yaml:"name" json:"name"`
+	Source       string              `yaml:"-" json:"source,omitempty"`
 	Description  string              `yaml:"description,omitempty" json:"description,omitempty"`
 	Image        string              `yaml:"image,omitempty" json:"image,omitempty"`
 	Images       []string            `yaml:"images,omitempty" json:"images,omitempty"`
@@ -11,7 +16,7 @@ type ServiceDefinition struct {
 	Container    *ContainerConfig    `yaml:"container,omitempty" json:"container,omitempty"`
 	Traefik      *TraefikConfig      `yaml:"traefik,omitempty" json:"traefik,omitempty"`
 	Dependencies []string            `yaml:"dependencies,omitempty" json:"dependencies,omitempty"`
-	PostInstall  []*PostInstallHook  `yaml:"post_install,omitempty" json:"post_install,omitempty"`
+	PostInstall  PostInstallHookList  `yaml:"post_install,omitempty" json:"post_install,omitempty"`
 	Category     string              `yaml:"category,omitempty" json:"category,omitempty"`
 	Tags         []string            `yaml:"tags,omitempty" json:"tags,omitempty"`
 }
@@ -105,7 +110,7 @@ type TraefikConfig struct {
 	Enabled      bool                        `yaml:"enabled" json:"enabled"`
 	Entrypoint   string                      `yaml:"entrypoint,omitempty" json:"entrypoint,omitempty"`
 	Host         string                      `yaml:"host,omitempty" json:"host,omitempty"`
-	TLS          bool                        `yaml:"tls,omitempty" json:"tls,omitempty"`
+	TLS          FlexBool                    `yaml:"tls,omitempty" json:"tls,omitempty"`
 	CertResolver string                      `yaml:"cert_resolver,omitempty" json:"cert_resolver,omitempty"`
 	Middlewares  []string                    `yaml:"middlewares,omitempty" json:"middlewares,omitempty"`
 	Auth         *TraefikAuthConfig          `yaml:"auth,omitempty" json:"auth,omitempty"`
@@ -113,6 +118,17 @@ type TraefikConfig struct {
 	LoadBalancer *LoadBalancerDef            `yaml:"load_balancer,omitempty" json:"load_balancer,omitempty"`
 	ExtraLabels  map[string]string           `yaml:"extra_labels,omitempty" json:"extra_labels,omitempty"`
 	Routers      []*TraefikRouterDef         `yaml:"routers,omitempty" json:"routers,omitempty"`
+}
+
+// UnmarshalYAML handles `auth: true` (bool) in addition to the normal object form.
+func (c *TraefikAuthConfig) UnmarshalYAML(value *yaml.Node) error {
+	var b bool
+	if err := value.Decode(&b); err == nil {
+		// auth: true means use defaults (empty config → basic auth is implied)
+		return nil
+	}
+	type raw TraefikAuthConfig
+	return value.Decode((*raw)(c))
 }
 
 type TraefikRouterDef struct {
@@ -161,6 +177,35 @@ type PostInstallHook struct {
 	Command []string `yaml:"command,omitempty" json:"command,omitempty"`
 	URL     string   `yaml:"url,omitempty" json:"url,omitempty"`
 	Message string   `yaml:"message,omitempty" json:"message,omitempty"`
+}
+
+// PostInstallHookList handles both single-map and array forms of post_install in YAML.
+// Templates often use:
+//
+//	post_install:
+//	  message: "..."
+//
+// Instead of the array form:
+//
+//	post_install:
+//	  - message: "..."
+type PostInstallHookList []*PostInstallHook
+
+// UnmarshalYAML decodes a single PostInstallHook or a slice of them.
+func (p *PostInstallHookList) UnmarshalYAML(value *yaml.Node) error {
+	// Try array first
+	var hooks []*PostInstallHook
+	if err := value.Decode(&hooks); err == nil {
+		*p = hooks
+		return nil
+	}
+	// Fallback: single hook
+	var hook PostInstallHook
+	if err := value.Decode(&hook); err != nil {
+		return err
+	}
+	*p = []*PostInstallHook{&hook}
+	return nil
 }
 
 type HealthcheckDef struct {

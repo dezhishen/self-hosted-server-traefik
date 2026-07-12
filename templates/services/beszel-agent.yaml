@@ -11,11 +11,11 @@ container:
   volumes:
     - "/var/run/docker.sock:/var/run/docker.sock:ro"
   environment:
-    TZ: "{{ .Custom.TZ | default "Asia/Shanghai" }}"
+    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
     LANG: "zh_CN.UTF-8"
     PORT: "45876"
     KEY: "{{ .Custom.BESZEL_PUBLIC_KEY }}"
-    HUB_URL: "{{ .Custom.BESZEL_HUB_URL | default "http://beszel:8090" }}"
+    HUB_URL: "{{ .Custom.BESZEL_HUB_URL | default \"http://beszel:8090\" }}"
     TOKEN: "{{ .Custom.BESZEL_TOKEN }}"
   networks:
     - "{{ .NetworkName }}"

@@ -11,7 +11,7 @@ container:
   volumes:
     - "{{ .DataDir }}/postgres/15/data:/var/lib/postgresql/data:Z"
   environment:
-    TZ: "{{ .Custom.TZ | default "Asia/Shanghai" }}"
+    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
     LANG: "C.UTF-8"
     LC_ALL: "C.UTF-8"
     POSTGRES_USER: root

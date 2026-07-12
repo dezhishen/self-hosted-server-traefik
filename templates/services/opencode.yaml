@@ -8,19 +8,19 @@ dependencies: []
 container:
   name: opencode
   image: opencode-custom:latest
-  user: "{{ .Custom.PUID | default "1000" }}:{{ .Custom.PGID | default "1000" }}"
+  user: "{{ .Custom.PUID | default \"1000\" }}:{{ .Custom.PGID | default \"1000\" }}"
   command:
     - serve
     - "--port"
-    - "{{ .Custom.OPENCODE_PORT | default "4096" }}"
+    - "{{ .Custom.OPENCODE_PORT | default \"4096\" }}"
     - "--hostname"
     - "0.0.0.0"
   shm_size: "1g"
   devices:
     - "/dev/dri:/dev/dri"
   group_add:
-    - "{{ .Custom.VIDEO_GID | default "44" }}"
-    - "{{ .Custom.RENDER_GID | default "104" }}"
+    - "{{ .Custom.VIDEO_GID | default \"44\" }}"
+    - "{{ .Custom.RENDER_GID | default \"104\" }}"
   volumes:
     - "{{ .DataDir }}/opencode/home:/home/opencode"
     - "{{ .DataDir }}/opencode/config:/home/opencode/.config/opencode"
@@ -28,7 +28,7 @@ container:
     - "{{ .DataDir }}/opencode/apt-cache:/var/cache/apt"
     - "{{ .HOME }}/.ssh:/home/opencode/.ssh"
   environment:
-    TZ: "{{ .Custom.TZ | default "Asia/Shanghai" }}"
+    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
     LANG: "zh_CN.UTF-8"
     HOME: /home/opencode
     XDG_CONFIG_HOME: /home/opencode/.config
@@ -36,9 +36,9 @@ container:
     XDG_CACHE_HOME: /home/opencode/.cache
     BUN_INSTALL: /home/opencode/.bun
     OPENCODE_SERVER_PASSWORD: "{{ .Custom.OPENCODE_PASSWORD }}"
-    OPENCODE_PORT: "{{ .Custom.OPENCODE_PORT | default "4096" }}"
-    OPENCODE_APT_MIRROR: "{{ .Custom.OPENCODE_APT_MIRROR | default "default" }}"
-    OPENCODE_SSH_MODE: "{{ .Custom.OPENCODE_SSH_MODE | default "host" }}"
+    OPENCODE_PORT: "{{ .Custom.OPENCODE_PORT | default \"4096\" }}"
+    OPENCODE_APT_MIRROR: "{{ .Custom.OPENCODE_APT_MIRROR | default \"default\" }}"
+    OPENCODE_SSH_MODE: "{{ .Custom.OPENCODE_SSH_MODE | default \"host\" }}"
   networks:
     - "{{ .NetworkName }}"
   restart: always

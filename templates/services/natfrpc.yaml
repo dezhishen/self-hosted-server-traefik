@@ -12,7 +12,7 @@ container:
     - "-f"
     - "{{ .Custom.NATFRPC_TOKEN }}:{{ .Custom.NATFRPC_TUNNELS }}"
   environment:
-    TZ: "{{ .Custom.TZ | default "Asia/Shanghai" }}"
+    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
   networks:
     - "{{ .NetworkName }}"
   restart: always

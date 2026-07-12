@@ -38,3 +38,34 @@ export function analyzeMigrations(): Promise<{ data: MigrationCandidate[] }> {
 export function executeMigration(req: MigrationRequest): Promise<{ data: { container_id: string } }> {
   return client.post('/migrate/execute', req)
 }
+
+export interface GenerateTemplateRequest {
+  container_id: string
+  service_name: string
+}
+
+export interface GenerateTemplateResult {
+  service_name: string
+  file_path: string
+}
+
+export function generateTemplate(req: GenerateTemplateRequest): Promise<{ data: GenerateTemplateResult }> {
+  return client.post('/migrate/generate', req)
+}
+
+export interface AdoptRequest {
+  container_id: string
+  service_name?: string
+  version?: string
+}
+
+export interface AdoptResult {
+  container_id: string
+  service_name: string
+  endpoint: string
+  labels: Record<string, string>
+}
+
+export function adoptContainer(req: AdoptRequest): Promise<{ data: AdoptResult }> {
+  return client.post('/migrate/adopt', req)
+}

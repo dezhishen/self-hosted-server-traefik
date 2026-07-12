@@ -11,12 +11,12 @@ container:
   volumes:
     - "{{ .DataDir }}/wakapi/data:/data"
   environment:
-    TZ: "{{ .Custom.TZ | default "Asia/Shanghai" }}"
+    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
     LANG: "zh_CN.UTF-8"
     WAKAPI_PASSWORD_SALT: "{{ .Custom.WAKAPI_PASSWORD_SALT }}"
     WAKAPI_DB_TYPE: mysql
     WAKAPI_DB_HOST: "{{ .Custom.MYSQL_HOST }}"
-    WAKAPI_DB_PORT: "{{ .Custom.MYSQL_PORT | default "3306" }}"
+    WAKAPI_DB_PORT: "{{ .Custom.MYSQL_PORT | default \"3306\" }}"
     WAKAPI_DB_NAME: wakapi
     WAKAPI_DB_USER: "{{ .Custom.MYSQL_USER }}"
     WAKAPI_DB_PASSWORD: "{{ .Custom.MYSQL_PASSWORD }}"

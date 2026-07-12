@@ -1,12 +1,17 @@
 package podman
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"net"
+	"net/http"
 	"net/netip"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/moby/moby/client"
 	"github.com/moby/moby/api/types/container"
@@ -27,8 +32,10 @@ const DefaultSocketPath = "/run/podman/podman.sock"
 // Runtime implements contracts.ContainerRuntime using the moby Docker SDK
 // connected to Podman's Docker-compatible API socket.
 type Runtime struct {
-	client *client.Client
-	cancel context.CancelFunc
+	client     *client.Client
+	httpClient *http.Client
+	socketPath string
+	cancel     context.CancelFunc
 }
 
 // NewRuntime creates a new Podman SDK runtime connected to Podman's Docker socket.
@@ -41,9 +48,27 @@ func NewRuntime(cfg contracts.ConnectionConfig) (*Runtime, error) {
 		socketPath = DefaultSocketPath
 	}
 
+	rt := &Runtime{
+		cancel:     cancel,
+		socketPath: socketPath,
+	}
+
+	// Create HTTP client for raw API calls (label updates, etc.)
+	dialFunc := func(ctx context.Context, network, addr string) (net.Conn, error) {
+		var d net.Dialer
+		return d.DialContext(ctx, "unix", socketPath)
+	}
+	rt.httpClient = &http.Client{
+		Transport: &http.Transport{
+			DialContext: dialFunc,
+		},
+		Timeout: 30 * time.Second,
+	}
+
 	opts := []client.Opt{
 		client.WithAPIVersionNegotiation(),
-		client.WithHost("unix://" + socketPath),
+		client.WithHost("http://docker"),
+		client.WithHTTPClient(rt.httpClient),
 	}
 
 	cli, err := client.NewClientWithOpts(opts...)
@@ -51,6 +76,7 @@ func NewRuntime(cfg contracts.ConnectionConfig) (*Runtime, error) {
 		cancel()
 		return nil, fmt.Errorf("create Podman client: %w", err)
 	}
+	rt.client = cli
 
 	// Verify connection
 	if _, err := cli.Ping(ctx, client.PingOptions{}); err != nil {
@@ -59,7 +85,7 @@ func NewRuntime(cfg contracts.ConnectionConfig) (*Runtime, error) {
 		return nil, fmt.Errorf("Podman ping: %w", err)
 	}
 
-	return &Runtime{client: cli, cancel: cancel}, nil
+	return rt, nil
 }
 
 // Close cleans up the Podman client.
@@ -216,6 +242,40 @@ func (r *Runtime) ContainerList(all bool) ([]contracts.ContainerInfo, error) {
 // ---------------------------------------------------------------------------
 // Image operations
 // ---------------------------------------------------------------------------
+
+// ContainerUpdateLabels adds or updates labels on a running container without
+// stopping or recreating it. Uses the Docker-compatible API's /containers/{id}/update
+// endpoint (supported since API v1.40).
+func (r *Runtime) ContainerUpdateLabels(containerID string, labels map[string]string) error {
+	payload := map[string]map[string]string{"Labels": labels}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("marshal label payload: %w", err)
+	}
+
+	version := r.client.ClientVersion()
+	apiPath := "/v" + strings.TrimPrefix(version, "v") + "/containers/" + containerID + "/update"
+	reqURL := "http://docker" + apiPath
+
+	req, err := http.NewRequestWithContext(context.Background(), "POST", reqURL, bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := r.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("update labels HTTP call: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		respBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("update labels failed (HTTP %d): %s", resp.StatusCode, strings.TrimSpace(string(respBody)))
+	}
+
+	return nil
+}
 
 func (r *Runtime) PullImage(image string) error {
 	resp, err := r.client.ImagePull(context.Background(), image, client.ImagePullOptions{})

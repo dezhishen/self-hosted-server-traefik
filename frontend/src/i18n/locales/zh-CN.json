@@ -181,5 +181,19 @@
   "migration.params": "参数",
   "migration.migrate": "迁移",
   "migration.confirm_migrate": "将停止并移除旧容器，然后创建新的托管容器。是否继续？",
-  "migration.success": "迁移成功。新容器 ID"
+  "migration.success": "迁移成功。新容器 ID",
+  "migration.generate_template": "生成模板",
+  "migration.generate_name": "服务名称",
+  "migration.generate_save": "生成并保存",
+  "migration.generate_success": "模板已生成",
+  "migration.generate_error": "模板生成失败",
+
+  "adopt.title": "容器接管",
+  "adopt.adopt": "接管",
+  "adopt.dialog_title": "接管容器",
+  "adopt.container_id": "容器 ID",
+  "adopt.service_name": "服务名称",
+  "adopt.no_unmanaged": "未发现未管理的容器",
+  "adopt.success": "容器接管成功",
+  "adopt.error": "容器接管失败"
 }

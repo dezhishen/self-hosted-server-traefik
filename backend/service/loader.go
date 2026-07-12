@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -21,16 +22,40 @@ func NewLoader(paths []string) *Loader {
 	return &Loader{paths: paths}
 }
 
+// deriveSource returns a human-readable source label for a template directory.
+// This is used to tag service definitions with their origin and to enable
+// per-source deduplication so that templates from different sources (built-in,
+// subscriptions, generated) all appear in the service list.
+func deriveSource(dir string) string {
+	base := filepath.Base(dir)
+	// Map well-known directory names to readable source labels.
+	switch base {
+	case "templates":
+		return "builtin"
+	case "generated":
+		return "generated"
+	default:
+		// For subscription directories like "community", "test", etc.
+		return base
+	}
+}
+
 func (l *Loader) LoadAll() ([]*contracts.ServiceDefinition, error) {
 	var result []*contracts.ServiceDefinition
+	// Dedup key is "source:name" so templates from different sources
+	// (built-in, subscriptions, generated) are all visible.
 	seen := make(map[string]bool)
 	for _, dir := range l.paths {
+		log.Printf("DEBUG LoadAll: loading dir=%s", dir)
 		services, err := l.loadDir(dir, seen)
 		if err != nil {
+			log.Printf("DEBUG LoadAll: dir=%s error=%v, skipping", dir, err)
 			continue
 		}
+		log.Printf("DEBUG LoadAll: dir=%s found %d services", dir, len(services))
 		result = append(result, services...)
 	}
+	log.Printf("DEBUG LoadAll: total services = %d", len(result))
 	return result, nil
 }
 
@@ -72,34 +97,45 @@ func (l *Loader) loadDir(dir string, seen map[string]bool) ([]*contracts.Service
 }
 
 // loadIndex reads an index.yaml and loads all listed template files.
+// Templates are tagged with their source (derived from baseDir) and deduped
+// by "source:name" so templates from different sources all appear.
 func (l *Loader) loadIndex(indexPath, baseDir string, seen map[string]bool) ([]*contracts.ServiceDefinition, error) {
 	idx, err := loadLocalIndex(indexPath)
 	if err != nil {
+		log.Printf("DEBUG loadIndex: loadLocalIndex(%s) error: %v", indexPath, err)
 		return nil, err
 	}
+	log.Printf("DEBUG loadIndex: index has %d entries", len(*idx))
 
+	source := deriveSource(baseDir)
 	var result []*contracts.ServiceDefinition
 	for _, entry := range *idx {
 		svcPath := filepath.Join(baseDir, entry)
 		svc, err := l.loadFile(svcPath)
 		if err != nil {
+			log.Printf("DEBUG loadIndex: skipping %s: %v", svcPath, err)
 			continue
 		}
-		if seen[svc.Name] {
+		key := source + ":" + svc.Name
+		if seen[key] {
 			continue
 		}
-		seen[svc.Name] = true
+		seen[key] = true
+		svc.Source = source
 		result = append(result, svc)
 	}
+	log.Printf("DEBUG loadIndex: loaded %d services", len(result))
 	return result, nil
 }
 
-// scanDir loads all *.yaml/*.yml files from a directory (original behavior).
+// scanDir loads all *.yaml/*.yml files from a directory (fallback when no index.yaml).
+// Templates are tagged with their source and deduped by "source:name".
 func (l *Loader) scanDir(dir string, seen map[string]bool) ([]*contracts.ServiceDefinition, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
 	}
+	source := deriveSource(dir)
 	var result []*contracts.ServiceDefinition
 	for _, e := range entries {
 		if e.IsDir() {
@@ -116,10 +152,12 @@ func (l *Loader) scanDir(dir string, seen map[string]bool) ([]*contracts.Service
 		if err != nil {
 			continue
 		}
-		if seen[svc.Name] {
+		key := source + ":" + svc.Name
+		if seen[key] {
 			continue
 		}
-		seen[svc.Name] = true
+		seen[key] = true
+		svc.Source = source
 		result = append(result, svc)
 	}
 	return result, nil

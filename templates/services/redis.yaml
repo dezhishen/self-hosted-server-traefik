@@ -8,7 +8,7 @@ dependencies: []
 container:
   name: redis
   image: valkey/valkey
-  user: "{{ .Custom.PUID | default "1000" }}:{{ .Custom.PGID | default "1000" }}"
+  user: "{{ .Custom.PUID | default \"1000\" }}:{{ .Custom.PGID | default \"1000\" }}"
   command:
     - "--requirepass"
     - "{{ .Custom.REDIS_PASSWORD }}"

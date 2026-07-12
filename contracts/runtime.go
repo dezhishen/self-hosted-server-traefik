@@ -1,5 +1,13 @@
 package contracts
 
+import (
+	"fmt"
+	"strconv"
+	"strings"
+
+	"gopkg.in/yaml.v3"
+)
+
 type ConnectionType string
 
 const (
@@ -17,6 +25,42 @@ const (
 	EngineTypePodman EngineType = "podman"
 	EngineTypeAuto   EngineType = "auto"
 )
+
+// FlexBool accepts both bool and string YAML values.
+// This handles templates where fields like `tls: "{{ .TLSEnabled }}"` use
+// Go template expressions that look like YAML strings, even though
+// the underlying type is boolean.
+type FlexBool struct {
+	Val bool   `yaml:",inline" json:"value"`
+	Raw string `yaml:"-" json:"raw,omitempty"` // original template string, if any
+}
+
+// UnmarshalYAML decodes from bool or string into FlexBool.
+func (f *FlexBool) UnmarshalYAML(value *yaml.Node) error {
+	var b bool
+	if err := value.Decode(&b); err == nil {
+		f.Val = b
+		return nil
+	}
+	var s string
+	if err := value.Decode(&s); err == nil {
+		f.Raw = s
+		// Treat Go template expressions as truthy
+		if strings.Contains(s, "{{") {
+			f.Val = true
+			return nil
+		}
+		// Try parsing common string representations
+		switch strings.ToLower(strings.TrimSpace(s)) {
+		case "true", "yes", "1", "on":
+			f.Val = true
+		default:
+			f.Val = false
+		}
+		return nil
+	}
+	return fmt.Errorf("cannot unmarshal %s into FlexBool", value.Tag)
+}
 
 type RestartPolicy string
 
@@ -64,6 +108,53 @@ type PortMapping struct {
 	Protocol      string `yaml:"protocol,omitempty" json:"protocol,omitempty"`
 }
 
+// UnmarshalYAML handles both object format {host_port, container_port, protocol}
+// and string format "host_port:container_port/protocol" or "container_port".
+func (p *PortMapping) UnmarshalYAML(value *yaml.Node) error {
+	// Try string format first
+	var s string
+	if err := value.Decode(&s); err == nil {
+		return p.parsePortString(s)
+	}
+	// Fall back to struct format
+	type raw PortMapping // alias to avoid infinite recursion
+	return value.Decode((*raw)(p))
+}
+
+func (p *PortMapping) parsePortString(s string) error {
+	protocol := ""
+	// Extract /protocol suffix
+	if idx := strings.Index(s, "/"); idx >= 0 {
+		protocol = s[idx+1:]
+		s = s[:idx]
+	}
+	// Split on ":" to get host:container
+	parts := strings.SplitN(s, ":", 2)
+	switch len(parts) {
+	case 1:
+		// Just container port (e.g. "443" or "8080")
+		cp, err := strconv.Atoi(strings.TrimSpace(parts[0]))
+		if err != nil {
+			return fmt.Errorf("invalid port %q: %w", s, err)
+		}
+		p.ContainerPort = cp
+	case 2:
+		// host:container (e.g. "80:80")
+		hp, err := strconv.Atoi(strings.TrimSpace(parts[0]))
+		if err != nil {
+			return fmt.Errorf("invalid host port %q: %w", parts[0], err)
+		}
+		cp, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+		if err != nil {
+			return fmt.Errorf("invalid container port %q: %w", parts[1], err)
+		}
+		p.HostPort = hp
+		p.ContainerPort = cp
+	}
+	p.Protocol = protocol
+	return nil
+}
+
 type VolumeMount struct {
 	Source   string `yaml:"source" json:"source"`
 	Target   string `yaml:"target" json:"target"`
@@ -71,10 +162,59 @@ type VolumeMount struct {
 	Type     string `yaml:"type,omitempty" json:"type,omitempty"`
 }
 
+// UnmarshalYAML handles both object format {source, target, read_only, type}
+// and string format "source:target" or "source:target:ro".
+func (v *VolumeMount) UnmarshalYAML(value *yaml.Node) error {
+	var s string
+	if err := value.Decode(&s); err == nil {
+		return v.parseVolumeString(s)
+	}
+	type raw VolumeMount
+	return value.Decode((*raw)(v))
+}
+
+func (v *VolumeMount) parseVolumeString(s string) error {
+	parts := strings.SplitN(s, ":", 3)
+	switch len(parts) {
+	case 1:
+		return fmt.Errorf("invalid volume mount %q: expected source:target", s)
+	case 2:
+		v.Source = parts[0]
+		v.Target = parts[1]
+	case 3:
+		v.Source = parts[0]
+		v.Target = parts[1]
+		v.ReadOnly = strings.TrimSpace(parts[2]) == "ro"
+	}
+	return nil
+}
+
 type DeviceMapping struct {
 	HostPath      string `yaml:"host_path" json:"host_path"`
 	ContainerPath string `yaml:"container_path" json:"container_path"`
 	Permissions   string `yaml:"permissions,omitempty" json:"permissions,omitempty"`
+}
+
+// UnmarshalYAML handles both object format {host_path, container_path}
+// and string format "/dev/sda" (same host and container) or "/dev/sda:/dev/sda".
+func (d *DeviceMapping) UnmarshalYAML(value *yaml.Node) error {
+	var s string
+	if err := value.Decode(&s); err == nil {
+		return d.parseDeviceString(s)
+	}
+	type raw DeviceMapping
+	return value.Decode((*raw)(d))
+}
+
+func (d *DeviceMapping) parseDeviceString(s string) error {
+	parts := strings.SplitN(s, ":", 2)
+	d.HostPath = parts[0]
+	if len(parts) == 2 {
+		d.ContainerPath = parts[1]
+	} else {
+		d.ContainerPath = parts[0]
+	}
+	return nil
 }
 
 type ContainerRunParams struct {
@@ -103,17 +243,27 @@ type ContainerRunParams struct {
 }
 
 type ContainerInfo struct {
-	ID        string            `yaml:"id" json:"id"`
-	Name      string            `yaml:"name" json:"name"`
-	Image     string            `yaml:"image" json:"image"`
-	Status    string            `yaml:"status" json:"status"`
-	State     string            `yaml:"state" json:"state"`
-	CreatedAt string            `yaml:"created_at" json:"created_at"`
-	Env       map[string]string `yaml:"env,omitempty" json:"env,omitempty"`
-	Ports     []PortMapping     `yaml:"ports,omitempty" json:"ports,omitempty"`
-	Networks  map[string]string `yaml:"networks,omitempty" json:"networks,omitempty"`
-	Labels    map[string]string `yaml:"labels,omitempty" json:"labels,omitempty"`
-	Mounts    []VolumeMount     `yaml:"mounts,omitempty" json:"mounts,omitempty"`
+	ID            string            `yaml:"id" json:"id"`
+	Name          string            `yaml:"name" json:"name"`
+	Image         string            `yaml:"image" json:"image"`
+	Status        string            `yaml:"status" json:"status"`
+	State         string            `yaml:"state" json:"state"`
+	CreatedAt     string            `yaml:"created_at" json:"created_at"`
+	Env           map[string]string `yaml:"env,omitempty" json:"env,omitempty"`
+	Ports         []PortMapping     `yaml:"ports,omitempty" json:"ports,omitempty"`
+	Networks      map[string]string `yaml:"networks,omitempty" json:"networks,omitempty"`
+	Labels        map[string]string `yaml:"labels,omitempty" json:"labels,omitempty"`
+	Mounts        []VolumeMount     `yaml:"mounts,omitempty" json:"mounts,omitempty"`
+	Command       []string          `yaml:"command,omitempty" json:"command,omitempty"`
+	Entrypoint    []string          `yaml:"entrypoint,omitempty" json:"entrypoint,omitempty"`
+	User          string            `yaml:"user,omitempty" json:"user,omitempty"`
+	RestartPolicy string            `yaml:"restart_policy,omitempty" json:"restart_policy,omitempty"`
+	NetworkMode   string            `yaml:"network_mode,omitempty" json:"network_mode,omitempty"`
+	Privileged    bool              `yaml:"privileged,omitempty" json:"privileged,omitempty"`
+	CapAdd        []string          `yaml:"cap_add,omitempty" json:"cap_add,omitempty"`
+	CapDrop       []string          `yaml:"cap_drop,omitempty" json:"cap_drop,omitempty"`
+	DNS           []string          `yaml:"dns,omitempty" json:"dns,omitempty"`
+	ExtraHosts    []string          `yaml:"extra_hosts,omitempty" json:"extra_hosts,omitempty"`
 }
 
 type ImageInfo struct {
@@ -191,6 +341,7 @@ type ContainerRuntime interface {
 	ContainerExec(containerID string, command []string) (string, error)
 	ContainerLogs(containerID string, tail int) (string, error)
 	ContainerList(all bool) ([]ContainerInfo, error)
+	ContainerUpdateLabels(containerID string, labels map[string]string) error
 	PullImage(image string) error
 	ImageList() ([]ImageInfo, error)
 	NetworkCreate(params NetworkCreateParams) (string, error)

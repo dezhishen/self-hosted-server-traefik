@@ -8,7 +8,7 @@ dependencies: []
 container:
   name: radicale
   image: ghcr.io/kozea/radicale:stable
-  user: "{{ .Custom.PUID | default "1000" }}:{{ .Custom.PGID | default "1000" }}"
+  user: "{{ .Custom.PUID | default \"1000\" }}:{{ .Custom.PGID | default \"1000\" }}"
   volumes:
     - "{{ .DataDir }}/radicale/data:/var/lib/radicale"
     - "{{ .DataDir }}/radicale/config:/etc/radicale"

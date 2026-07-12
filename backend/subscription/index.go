@@ -53,9 +53,17 @@ func ResolveEntry(indexURL, entry string) string {
 		return entry
 	}
 
-	// Relative path — resolve against index URL directory
-	baseDir := path.Dir(indexURL)
-	return strings.TrimRight(baseDir, "/") + "/" + entry
+	// Relative path — resolve against index URL directory using URL parsing.
+	// We MUST use url.Parse then operate only on the Path component, because
+	// path.Dir internally calls Clean which collapses "//" to "/" — breaking
+	// the scheme separator (https:// → https:/).
+	u, err := url.Parse(indexURL)
+	if err != nil {
+		// Fallback: naive concatenation (unlikely to be correct, but won't crash)
+		return strings.TrimRight(indexURL, "/") + "/" + entry
+	}
+	u.Path = path.Dir(u.Path) + "/" + entry
+	return u.String()
 }
 
 // DownloadTemplate downloads a template file from a URL and saves it to the given path.

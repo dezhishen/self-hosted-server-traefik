@@ -3,6 +3,7 @@ package logger
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -13,16 +14,35 @@ type zapAdapter struct {
 	z *zap.Logger
 }
 
+// log writes a message at the given level, capturing the caller
+// at the direct call site using runtime.Caller — no hardcoded skip needed.
+func (a *zapAdapter) log(level zapcore.Level, msg string, fields ...Field) {
+	ce := a.z.Check(level, msg)
+	if ce == nil {
+		return
+	}
+	// Capture caller: runtime.Caller(0) = this method, Caller(1) = the adapter method, Caller(2) = actual call site
+	if pc, file, line, ok := runtime.Caller(2); ok {
+		ce.Caller = zapcore.EntryCaller{
+			Defined:  true,
+			PC:       pc,
+			File:     file,
+			Line:     line,
+		}
+	}
+	ce.Write(toZapFields(fields)...)
+}
+
 func (a *zapAdapter) Info(msg string, fields ...Field) {
-	a.z.Info(msg, toZapFields(fields)...)
+	a.log(zapcore.InfoLevel, msg, fields...)
 }
 
 func (a *zapAdapter) Warn(msg string, fields ...Field) {
-	a.z.Warn(msg, toZapFields(fields)...)
+	a.log(zapcore.WarnLevel, msg, fields...)
 }
 
 func (a *zapAdapter) Error(msg string, fields ...Field) {
-	a.z.Error(msg, toZapFields(fields)...)
+	a.log(zapcore.ErrorLevel, msg, fields...)
 }
 
 func (a *zapAdapter) With(fields ...Field) Logger {
@@ -66,7 +86,7 @@ func InitLogger(baseDir string) Logger {
 		zap.NewAtomicLevelAt(zap.InfoLevel),
 	)
 
-	z := zap.New(zc, zap.AddCaller(), zap.AddCallerSkip(1), zap.AddStacktrace(zapcore.ErrorLevel))
+	z := zap.New(zc, zap.AddStacktrace(zapcore.ErrorLevel))
 	zap.ReplaceGlobals(z)
 	return &zapAdapter{z: z}
 }

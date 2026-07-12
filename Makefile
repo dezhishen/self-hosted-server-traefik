@@ -13,7 +13,7 @@ DEV_PID_FILE := $(DEV_DIR)/selfhosted.pid
 BK_PID_FILE  := $(DEV_DIR)/backend.pid
 FE_PID_FILE  := $(DEV_DIR)/frontend.pid
 
-.PHONY: all build build-backend frontend test test-go test-e2e lint clean dev dev-frontend killdev makedev
+.PHONY: all build build-backend frontend test test-go test-e2e lint clean dev dev-frontend killdev makedev passwd
 
 all: build
 
@@ -121,6 +121,17 @@ makedev: killdev frontend
 	@echo $$! > $(DEV_PID_FILE)
 	@echo "→ Dev server started (PID $$(cat $(DEV_PID_FILE)))"
 	@echo "→ Logs: $(DEV_DIR)/server.log"
+
+## —— Passwd ——
+
+passwd:
+	@mkdir -p $(DEV_DIR)
+	@PASSWORD="$(or $(PASSWORD),"")"; \
+	if [ -z "$$PASSWORD" ]; then \
+		$(GO) run -C $(CURDIR)/backend ./cmd/... -c $(DEV_CONFIG) passwd; \
+	else \
+		$(GO) run -C $(CURDIR)/backend ./cmd/... -c $(DEV_CONFIG) passwd "$$PASSWORD"; \
+	fi
 
 dev-frontend:
 	@cd frontend && $(PNPM) run dev

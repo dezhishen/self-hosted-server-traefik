@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -12,6 +14,7 @@ import (
 	"github.com/dezhishen/self-hosted-server-traefik/backend/core"
 	"github.com/dezhishen/self-hosted-server-traefik/backend/endpoint"
 	"github.com/dezhishen/self-hosted-server-traefik/backend/logger"
+	"github.com/dezhishen/self-hosted-server-traefik/backend/service"
 	"github.com/dezhishen/self-hosted-server-traefik/contracts"
 )
 
@@ -131,6 +134,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/containers", s.handleWithEndpoint(s.handleContainers))
 	mux.HandleFunc("/api/migrate/analyze", s.handleWithEndpoint(s.handleMigrateAnalyze))
 	mux.HandleFunc("/api/migrate/execute", s.handleWithEndpoint(s.handleMigrateExecute))
+	mux.HandleFunc("/api/migrate/generate", s.handleWithEndpoint(s.handleMigrateGenerate))
+	mux.HandleFunc("/api/migrate/adopt", s.handleWithEndpoint(s.handleMigrateAdopt))
 	mux.HandleFunc("/api/ssh/keygen", s.handle(s.withAuth(s.handleSSHKeygen)))
 	mux.HandleFunc("/api/ssh/import", s.handle(s.withAuth(s.handleSSHImport)))
 	mux.HandleFunc("/api/ssh/keys", s.handle(s.withAuth(s.handleSSHKeys)))
@@ -696,12 +701,29 @@ func (s *Server) handleSubscriptionByID(w http.ResponseWriter, r *http.Request) 
 
 	switch {
 	case r.Method == http.MethodPost && action == "sync":
-		if err := subMgr.Sync(name); err != nil {
-			return InfrastructureError(ErrSubscriptionSync, err.Error()).
-				WithCause(err).
-				WithDetail("subscription", name)
-		}
-		jsonResp(w, map[string]string{"status": "synced"})
+		// Sync runs in background so the API doesn't block for 65+ HTTP downloads.
+		go func() {
+			if err := subMgr.Sync(name); err != nil {
+				s.app.Logger.Error("subscription sync failed",
+					logger.String("name", name),
+					logger.Error(err),
+				)
+				return
+			}
+			// Register the synced template directory so the ServiceLoader
+			// can find templates from this subscription immediately.
+			subTmplDir := filepath.Join(s.app.Config.BaseDataDir, "templates", name)
+			if _, err := os.Stat(filepath.Join(subTmplDir, "index.yaml")); err == nil {
+				if loader, ok := s.app.ServiceLoader.(*service.Loader); ok {
+					loader.AddPath(subTmplDir)
+					s.app.Logger.Info("registered subscription templates",
+						logger.String("name", name),
+						logger.String("dir", subTmplDir),
+					)
+				}
+			}
+		}()
+		jsonResp(w, map[string]string{"status": "syncing"})
 		return nil
 
 	case r.Method == http.MethodDelete:
@@ -751,6 +773,48 @@ func (s *Server) handleMigrateExecute(w http.ResponseWriter, r *http.Request, ep
 			WithCause(err)
 	}
 	jsonResp(w, map[string]string{"container_id": newID})
+	return nil
+}
+
+// POST /api/migrate/generate
+func (s *Server) handleMigrateGenerate(w http.ResponseWriter, r *http.Request, ep *endpoint.Context) *APIError {
+	if r.Method != http.MethodPost {
+		return MethodNotAllowed()
+	}
+	var req contracts.GenerateTemplateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return ValidationError(ErrInvalidJSON, "invalid request body")
+	}
+	if req.ContainerID == "" || req.ServiceName == "" {
+		return ValidationError(ErrMissingField, "container_id and service_name are required")
+	}
+	result, err := ep.MigrateService.Generate(&req)
+	if err != nil {
+		return InternalError(ErrInternal, err.Error()).
+			WithCause(err)
+	}
+	jsonResp(w, result)
+	return nil
+}
+
+// POST /api/migrate/adopt
+func (s *Server) handleMigrateAdopt(w http.ResponseWriter, r *http.Request, ep *endpoint.Context) *APIError {
+	if r.Method != http.MethodPost {
+		return MethodNotAllowed()
+	}
+	var req contracts.AdoptRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return ValidationError(ErrInvalidJSON, "invalid request body")
+	}
+	if req.ContainerID == "" {
+		return ValidationError(ErrMissingField, "container_id is required")
+	}
+	result, err := ep.MigrateService.Adopt(&req)
+	if err != nil {
+		return InternalError(ErrInternal, err.Error()).
+			WithCause(err)
+	}
+	jsonResp(w, result)
 	return nil
 }
 

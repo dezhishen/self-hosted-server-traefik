@@ -114,6 +114,37 @@ func (a *App) RefreshEndpoints() {
 	a.DefaultEndpoint = defaultEp
 }
 
+// resolveTemplatesDir finds the templates/ directory, checking multiple locations
+// since the CWD may not be the project root (e.g. make dev uses -C backend).
+func resolveTemplatesDir(baseDataDir string) string {
+	// 1. Check relative to CWD (works when running from project root)
+	if _, err := os.Stat("templates/index.yaml"); err == nil {
+		if abs, err := filepath.Abs("templates"); err == nil {
+			return abs
+		}
+		return "templates"
+	}
+	// 2. Check parent of CWD (works when CWD = backend/)
+	if _, err := os.Stat("../templates/index.yaml"); err == nil {
+		if abs, err := filepath.Abs("../templates"); err == nil {
+			return abs
+		}
+		return "../templates"
+	}
+	// 3. Check relative to base data dir (dev setup: baseDataDir = .selfhosted.dev, templates at project root)
+	if baseDataDir != "" {
+		candidate := filepath.Join(baseDataDir, "..", "templates")
+		if _, err := os.Stat(filepath.Join(candidate, "index.yaml")); err == nil {
+			if abs, err := filepath.Abs(candidate); err == nil {
+				return abs
+			}
+			return candidate
+		}
+	}
+	// 4. Fallback: return relative path, will be handled gracefully by LoadAll()
+	return "templates"
+}
+
 func NewApp(configPath string) (*App, error) {
 	// 1. Init logger (temporary dir until config is loaded)
 	tmpLogger := logger.NewNop()
@@ -160,12 +191,25 @@ func NewApp(configPath string) (*App, error) {
 	tmpl := template.NewEngine()
 
 	// Loader uses the templates/ directory which contains index.yaml
-	svcLoader := service.NewLoader([]string{"templates"})
+	// Resolve to absolute path since CWD may differ (e.g. make dev uses -C backend)
+	templatesDir := resolveTemplatesDir(cfg.BaseDataDir)
+	log.Info("resolved templates directory", logger.String("dir", templatesDir))
+	svcLoader := service.NewLoader([]string{templatesDir})
 	svcValidator := service.NewValidator()
 
 	// 5b. Create subscription manager
 	subStore := subscription.NewFileStore(filepath.Join(cfg.BaseDataDir, "config", "subscriptions.json"))
 	subMgr := subscription.NewManager(subStore, cfg.BaseDataDir, log)
+
+	// Development convenience: detect local templates/ dir and use it as default
+	if localIndex := "templates/index.yaml"; len(subscription.DefaultSubscriptions) > 0 {
+		if absPath, err := filepath.Abs(localIndex); err == nil {
+			if _, err := os.Stat(absPath); err == nil {
+				subscription.DefaultSubscriptions[0].URL = absPath
+				subscription.DefaultSubscriptions[0].Description = "Local service templates (development)"
+			}
+		}
+	}
 
 	// Seed default subscriptions and register their template directories
 	if err := subMgr.SeedDefaults(); err != nil {

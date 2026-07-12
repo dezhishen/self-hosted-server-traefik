@@ -13,10 +13,10 @@ container:
   volumes:
     - "{{ .DataDir }}/ttyd/data:/data"
   environment:
-    TZ: "{{ .Custom.TZ | default "Asia/Shanghai" }}"
+    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
     LANG: "zh_CN.UTF-8"
-    UID: "{{ .Custom.PUID | default "1000" }}"
-    GID: "{{ .Custom.PGID | default "1000" }}"
+    UID: "{{ .Custom.PUID | default \"1000\" }}"
+    GID: "{{ .Custom.PGID | default \"1000\" }}"
   networks:
     - "{{ .NetworkName }}"
   restart: always

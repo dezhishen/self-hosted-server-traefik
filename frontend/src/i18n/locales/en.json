@@ -181,5 +181,18 @@
   "migration.params": "Parameters",
   "migration.migrate": "Migrate",
   "migration.confirm_migrate": "This will stop and remove the old container, then create a new managed one. Continue?",
-  "migration.success": "Migration successful. New container ID"
+  "migration.success": "Migration successful. New container ID",
+  "migration.generate_template": "Generate Template",
+  "migration.generate_name": "Service Name",
+  "migration.generate_save": "Generate & Save",
+  "migration.generate_success": "Template generated",
+  "migration.generate_error": "Failed to generate template",
+  "adopt.title": "Adopt Containers",
+  "adopt.adopt": "Adopt",
+  "adopt.dialog_title": "Adopt Container",
+  "adopt.container_id": "Container ID",
+  "adopt.service_name": "Service Name",
+  "adopt.no_unmanaged": "No unmanaged containers found",
+  "adopt.success": "Container adopted successfully",
+  "adopt.error": "Failed to adopt container"
 }
