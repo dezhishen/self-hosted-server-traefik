@@ -26,6 +26,9 @@ type App struct {
 	// Endpoint contexts keyed by endpoint name
 	Endpoints map[string]*endpoint.Context
 
+	// SSH key manager (separate store from endpoints.yaml)
+	SSHKeyManager *SSHKeyManager
+
 	// Shared services (not per-endpoint)
 	TemplateEngine     contracts.TemplateEngine
 	ServiceLoader      contracts.ServiceLoader
@@ -35,8 +38,18 @@ type App struct {
 
 // initEndpointContext creates a single endpoint context from config.
 // Extracted into a method so it can be reused when refreshing endpoints after config changes.
+// Resolves SSH key references from the key store before creating the runtime.
 func (a *App) initEndpointContext(name string, epCfg *contracts.EndpointConfig) (*endpoint.Context, error) {
-	runtime, err := endpoint.CreateRuntime(*epCfg.Connection, a.Config.BaseDataDir)
+	// Resolve SSH key reference: copy config and populate private key from key store
+	connCfg := *epCfg.Connection
+	if connCfg.SSHKeyRef != "" && a.SSHKeyManager != nil {
+		if pk, ok := a.SSHKeyManager.GetPrivateKey(connCfg.SSHKeyRef); ok {
+			connCfg.SSHPrivateKey = pk
+		} else {
+			return nil, fmt.Errorf("SSH key %q not found for endpoint %q", connCfg.SSHKeyRef, name)
+		}
+	}
+	runtime, err := endpoint.CreateRuntime(connCfg, a.Config.BaseDataDir)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +138,25 @@ func NewApp(configPath string) (*App, error) {
 		logger.Int("endpoints", len(cfg.Endpoints)),
 	)
 
-	// 5. Create shared services
+	// 5. Initialize SSH key manager (separate store from endpoints.yaml)
+	keyStorePath := filepath.Join(cfg.BaseDataDir, "config", "ssh_keys.yaml")
+	keyMgr := NewSSHKeyManager(keyStorePath)
+	if err := keyMgr.Load(); err != nil {
+		log.Warn("failed to load SSH keys", logger.Error(err))
+	}
+
+	// 5b. Migrate legacy endpoints that have SSHPrivateKey embedded
+	migrated, err := keyMgr.MigrateFromEndpoints(cfg.Endpoints)
+	if err != nil {
+		log.Warn("failed to migrate legacy SSH keys", logger.Error(err))
+	} else if migrated {
+		log.Info("migrated legacy SSH keys to standalone key store")
+		if err := cfgMgr.SaveEndpoints(cfg.Endpoints); err != nil {
+			log.Warn("failed to save migrated endpoints", logger.Error(err))
+		}
+	}
+
+	// 6. Create shared services
 	tmpl := template.NewEngine()
 
 	// Loader uses the templates/ directory which contains index.yaml
@@ -152,11 +183,12 @@ func NewApp(configPath string) (*App, error) {
 
 	_ = tmpLogger
 
-	// 6. Create App with shared services (needed before endpoint init)
+	// 7. Create App with shared services (needed before endpoint init)
 	app := &App{
 		Config:           cfg,
 		ConfigMgr:        cfgMgr,
 		Logger:           log,
+		SSHKeyManager:    keyMgr,
 		TemplateEngine:   tmpl,
 		ServiceLoader:    svcLoader,
 		ServiceValidator: svcValidator,
@@ -164,7 +196,7 @@ func NewApp(configPath string) (*App, error) {
 		Endpoints:        make(map[string]*endpoint.Context, len(cfg.Endpoints)),
 	}
 
-	// 7. Initialize endpoint contexts
+	// 8. Initialize endpoint contexts
 	var defaultEp string
 	for name, epCfg := range cfg.Endpoints {
 		if epCfg.Default {

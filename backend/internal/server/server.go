@@ -134,6 +134,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/ssh/keygen", s.handle(s.withAuth(s.handleSSHKeygen)))
 	mux.HandleFunc("/api/ssh/import", s.handle(s.withAuth(s.handleSSHImport)))
 	mux.HandleFunc("/api/ssh/keys", s.handle(s.withAuth(s.handleSSHKeys)))
+	mux.HandleFunc("DELETE /api/ssh/keys/{name}", s.handle(s.withAuth(s.handleSSHKeyDelete)))
 	mux.HandleFunc("/api/ssh/authorize", s.handle(s.withAuth(s.handleSSHAuthorize)))
 	mux.HandleFunc("/api/subscriptions", s.handle(s.withAuth(s.handleSubscriptions)))
 	mux.HandleFunc("/api/subscriptions/", s.handle(s.withAuth(s.handleSubscriptionByID)))
@@ -328,9 +329,18 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) *APIError 
 func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) *APIError {
 	switch r.Method {
 	case http.MethodGet:
+		// Resolve SSH key metadata from key store for each endpoint
 		for _, ep := range s.app.Config.Endpoints {
-			if ep.Connection != nil && ep.Connection.SSHPrivateKey != "" {
-				computeSSHKeyMeta(ep.Connection)
+			if ep.Connection == nil || ep.Connection.SSHKeyRef == "" {
+				continue
+			}
+			if s.app.SSHKeyManager == nil {
+				continue
+			}
+			if fp, kt, pub, ok := s.app.SSHKeyManager.Resolve(ep.Connection.SSHKeyRef); ok {
+				ep.Connection.SSHKeyFingerprint = fp
+				ep.Connection.SSHKeyType = kt
+				ep.Connection.SSHPublicKey = pub
 			}
 		}
 		jsonResp(w, s.app.Config)
@@ -343,13 +353,17 @@ func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) *APIError 
 				WithCause(err)
 		}
 
+		// No SSHPrivateKey preservation needed — keys are independent in ssh_keys.yaml.
+		// Validate that referenced SSH keys exist in the key store.
 		for name, ep := range incoming.Endpoints {
-			if ep.Connection == nil {
+			if ep.Connection == nil || ep.Connection.SSHKeyRef == "" {
 				continue
 			}
-			if existing, ok := s.app.Config.Endpoints[name]; ok {
-				if existing.Connection != nil && existing.Connection.SSHPrivateKey != "" {
-					ep.Connection.SSHPrivateKey = existing.Connection.SSHPrivateKey
+			if s.app.SSHKeyManager != nil {
+				if _, ok := s.app.SSHKeyManager.Get(ep.Connection.SSHKeyRef); !ok {
+					return ValidationError(ErrInvalidValue, "SSH key not found: "+ep.Connection.SSHKeyRef).
+						WithDetail("endpoint", name).
+						WithDetail("ssh_key_ref", ep.Connection.SSHKeyRef)
 				}
 			}
 		}

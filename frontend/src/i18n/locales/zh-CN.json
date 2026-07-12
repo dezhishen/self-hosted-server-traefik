@@ -98,6 +98,7 @@
   "settings.ssh_no_key": "未配置 SSH 密钥。生成新密钥对或导入已有密钥。",
   "settings.ssh_regenerate": "重新生成",
   "settings.ssh_generate": "生成 SSH 密钥",
+  "settings.private_key": "私钥",
   "settings.ssh_import_key": "导入密钥",
   "settings.key_type": "密钥类型",
   "settings.fingerprint": "指纹",

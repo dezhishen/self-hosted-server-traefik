@@ -1,4 +1,5 @@
 import axios from 'axios'
+import router from '@/router'
 import { errorHandler, extractAppError } from './errors'
 
 const client = axios.create({
@@ -48,18 +49,7 @@ client.interceptors.response.use(
     // 401 → 清除登录态，跳转登录
     if (error.response?.status === 401) {
       clearAuth()
-      // Use Vue Router if available, fallback to window.location
-      try {
-        // Dynamic import to avoid circular dependency
-        const router = (window as any).__vue_router
-        if (router) {
-          router.push('/login')
-        } else {
-          window.location.href = '/login'
-        }
-      } catch {
-        window.location.href = '/login'
-      }
+      router.push('/login')
       return Promise.reject(appError)
     }
 

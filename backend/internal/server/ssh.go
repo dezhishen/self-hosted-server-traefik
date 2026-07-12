@@ -21,18 +21,26 @@ import (
 	"github.com/dezhishen/self-hosted-server-traefik/contracts"
 )
 
+// --- Request / Response types ---
+
 type keygenRequest struct {
-	EndpointName string `json:"endpoint_name"`
-	Name         string `json:"name"`
-	Type         string `json:"type"`
+	Name         string `json:"name"`                    // key name (required)
+	Type         string `json:"type"`                    // ed25519 (default), rsa-2048, etc.
+	EndpointName string `json:"endpoint_name,omitempty"` // optional: assign key to endpoint
+	Comment      string `json:"comment,omitempty"`       // optional description
 }
 
 type keygenResponse struct {
-	Name        string `json:"name"`
 	KeyName     string `json:"key_name"`
 	PublicKey   string `json:"public_key"`
 	Fingerprint string `json:"fingerprint"`
 	Type        string `json:"type"`
+}
+
+type sshImportRequest struct {
+	Name         string `json:"name"`                    // key name (required)
+	PrivateKey   string `json:"private_key"`             // PEM-encoded private key (required)
+	EndpointName string `json:"endpoint_name,omitempty"` // optional: assign key to endpoint
 }
 
 type sshKeyInfo struct {
@@ -42,7 +50,15 @@ type sshKeyInfo struct {
 	PublicKey   string `json:"public_key"`
 }
 
-// POST /api/ssh/keygen
+type authorizeRequest struct {
+	EndpointName    string `json:"endpoint_name"`
+	KeyRef          string `json:"key_ref,omitempty"`          // optional: key ref to authorize; defaults to endpoint's ssh_key_ref
+	TransportKeyRef string `json:"transport_key_ref,omitempty"` // optional: key to use for SSH transport auth
+	Password        string `json:"password,omitempty"`
+}
+
+// --- POST /api/ssh/keygen ---
+
 func (s *Server) handleSSHKeygen(w http.ResponseWriter, r *http.Request) *APIError {
 	if r.Method != http.MethodPost {
 		return MethodNotAllowed()
@@ -53,21 +69,12 @@ func (s *Server) handleSSHKeygen(w http.ResponseWriter, r *http.Request) *APIErr
 		return ValidationError(ErrInvalidJSON, "invalid request body").
 			WithDetail("parse_error", err.Error())
 	}
-	if req.EndpointName == "" {
-		return ValidationError(ErrMissingField, "endpoint_name is required").
-			WithDetail("field", "endpoint_name")
+	if req.Name == "" {
+		return ValidationError(ErrMissingField, "key name is required").
+			WithDetail("field", "name")
 	}
 	if req.Type == "" {
 		req.Type = "ed25519"
-	}
-
-	epCfg, ok := s.app.Config.Endpoints[req.EndpointName]
-	if !ok {
-		return NotFoundError(ErrEndpointNotFound, "endpoint not found: "+req.EndpointName).
-			WithDetail("endpoint", req.EndpointName)
-	}
-	if epCfg.Connection == nil {
-		epCfg.Connection = &contracts.ConnectionConfig{}
 	}
 
 	privKey, pubKey, err := generateSSHKeyPair(req.Type)
@@ -87,42 +94,61 @@ func (s *Server) handleSSHKeygen(w http.ResponseWriter, r *http.Request) *APIErr
 		Bytes: privBytes,
 	})
 
-	epCfg.Connection.SSHPrivateKey = string(privPEM)
 	pubSSH := string(gossh.MarshalAuthorizedKey(pubKey))
-	epCfg.Connection.SSHPublicKey = pubSSH
-	epCfg.Connection.SSHKeyFingerprint = gossh.FingerprintSHA256(pubKey)
-	epCfg.Connection.SSHKeyType = req.Type
+	fingerprint := gossh.FingerprintSHA256(pubKey)
+	keyType := req.Type
 
-	if err := s.app.ConfigMgr.SaveEndpoints(s.app.Config.Endpoints); err != nil {
-		return InternalError(ErrConfigSave, "failed to save config").
+	entry := contracts.NewSSHKeyEntry(
+		req.Name,
+		string(privPEM),
+		pubSSH,
+		fingerprint,
+		keyType,
+		req.Comment,
+	)
+
+	if err := s.app.SSHKeyManager.Set(entry); err != nil {
+		return InternalError(ErrConfigSave, "failed to save SSH key").
 			WithCause(err)
 	}
 
-	s.app.RefreshEndpoints()
+	// Optionally assign to endpoint
+	if req.EndpointName != "" {
+		if epCfg, ok := s.app.Config.Endpoints[req.EndpointName]; ok {
+			if epCfg.Connection == nil {
+				epCfg.Connection = &contracts.ConnectionConfig{}
+			}
+			epCfg.Connection.SSHKeyRef = req.Name
+			if err := s.app.ConfigMgr.SaveEndpoints(s.app.Config.Endpoints); err != nil {
+				return InternalError(ErrConfigSave, "failed to save endpoint config").
+					WithCause(err)
+			}
+		} else {
+			// Key was created but endpoint not found — still a success for keygen
+			s.app.Logger.Warn("key generated but endpoint not found for assignment",
+				logger.String("key", req.Name),
+				logger.String("endpoint", req.EndpointName),
+			)
+		}
+	}
 
-	s.app.Logger.Info("ssh key pair generated and stored server-side",
-		logger.String("endpoint", req.EndpointName),
-		logger.String("name", req.Name),
-		logger.String("type", req.Type),
-		logger.String("fingerprint", epCfg.Connection.SSHKeyFingerprint),
+	s.app.Logger.Info("ssh key pair generated and stored in key store",
+		logger.String("key", req.Name),
+		logger.String("type", keyType),
+		logger.String("fingerprint", fingerprint),
 	)
 
 	jsonResp(w, keygenResponse{
-		Name:        req.EndpointName,
 		KeyName:     req.Name,
 		PublicKey:   pubSSH,
-		Fingerprint: epCfg.Connection.SSHKeyFingerprint,
-		Type:        req.Type,
+		Fingerprint: fingerprint,
+		Type:        keyType,
 	})
 	return nil
 }
 
-type sshImportRequest struct {
-	EndpointName string `json:"endpoint_name"`
-	PrivateKey   string `json:"private_key"`
-}
+// --- POST /api/ssh/import ---
 
-// POST /api/ssh/import
 func (s *Server) handleSSHImport(w http.ResponseWriter, r *http.Request) *APIError {
 	if r.Method != http.MethodPost {
 		return MethodNotAllowed()
@@ -133,9 +159,9 @@ func (s *Server) handleSSHImport(w http.ResponseWriter, r *http.Request) *APIErr
 		return ValidationError(ErrInvalidJSON, "invalid request body").
 			WithDetail("parse_error", err.Error())
 	}
-	if req.EndpointName == "" {
-		return ValidationError(ErrMissingField, "endpoint_name is required").
-			WithDetail("field", "endpoint_name")
+	if req.Name == "" {
+		return ValidationError(ErrMissingField, "key name is required").
+			WithDetail("field", "name")
 	}
 	if req.PrivateKey == "" {
 		return ValidationError(ErrMissingField, "private_key is required").
@@ -148,107 +174,269 @@ func (s *Server) handleSSHImport(w http.ResponseWriter, r *http.Request) *APIErr
 			WithCause(err)
 	}
 
+	pubSSH := string(gossh.MarshalAuthorizedKey(pubKey))
+	fingerprint := gossh.FingerprintSHA256(pubKey)
+	keyType := sshKeyTypeName(pubKey.Type())
+
+	entry := contracts.NewSSHKeyEntry(
+		req.Name,
+		req.PrivateKey,
+		pubSSH,
+		fingerprint,
+		keyType,
+		"",
+	)
+
+	if err := s.app.SSHKeyManager.Set(entry); err != nil {
+		return InternalError(ErrConfigSave, "failed to save SSH key").
+			WithCause(err)
+	}
+
+	// Optionally assign to endpoint
+	if req.EndpointName != "" {
+		if epCfg, ok := s.app.Config.Endpoints[req.EndpointName]; ok {
+			if epCfg.Connection == nil {
+				epCfg.Connection = &contracts.ConnectionConfig{}
+			}
+			epCfg.Connection.SSHKeyRef = req.Name
+			if err := s.app.ConfigMgr.SaveEndpoints(s.app.Config.Endpoints); err != nil {
+				return InternalError(ErrConfigSave, "failed to save endpoint config").
+					WithCause(err)
+			}
+		} else {
+			s.app.Logger.Warn("key imported but endpoint not found for assignment",
+				logger.String("key", req.Name),
+				logger.String("endpoint", req.EndpointName),
+			)
+		}
+	}
+
+	s.app.Logger.Info("ssh private key imported to key store",
+		logger.String("key", req.Name),
+		logger.String("type", keyType),
+		logger.String("fingerprint", fingerprint),
+	)
+
+	jsonResp(w, keygenResponse{
+		KeyName:     req.Name,
+		PublicKey:   pubSSH,
+		Fingerprint: fingerprint,
+		Type:        keyType,
+	})
+	return nil
+}
+
+// --- GET /api/ssh/keys ---
+
+func (s *Server) handleSSHKeys(w http.ResponseWriter, r *http.Request) *APIError {
+	if r.Method != http.MethodGet {
+		return MethodNotAllowed()
+	}
+
+	keys := s.app.SSHKeyManager.List()
+	if keys == nil {
+		keys = []*contracts.SSHKeyEntry{}
+	}
+
+	// Map to response type
+	result := make([]sshKeyInfo, 0, len(keys))
+	for _, k := range keys {
+		result = append(result, sshKeyInfo{
+			Name:        k.Name,
+			Type:        k.KeyType,
+			Fingerprint: k.Fingerprint,
+			PublicKey:   k.PublicKey,
+		})
+	}
+
+	jsonResp(w, result)
+	return nil
+}
+
+// --- DELETE /api/ssh/keys/{name} ---
+
+func (s *Server) handleSSHKeyDelete(w http.ResponseWriter, r *http.Request) *APIError {
+	if r.Method != http.MethodDelete {
+		return MethodNotAllowed()
+	}
+
+	keyName := r.PathValue("name")
+	if keyName == "" {
+		return ValidationError(ErrMissingField, "key name is required").
+			WithDetail("field", "name")
+	}
+
+	// Check if key exists
+	if _, ok := s.app.SSHKeyManager.Get(keyName); !ok {
+		return NotFoundError(ErrSSHKeyNotFound, "SSH key not found: "+keyName).
+			WithDetail("key", keyName)
+	}
+
+	// Delete from key store
+	if err := s.app.SSHKeyManager.Delete(keyName); err != nil {
+		return InternalError(ErrConfigSave, "failed to delete SSH key").
+			WithCause(err)
+	}
+
+	// Clear references from all endpoints
+	refsCleared := false
+	for _, ep := range s.app.Config.Endpoints {
+		if ep.Connection != nil && ep.Connection.SSHKeyRef == keyName {
+			ep.Connection.SSHKeyRef = ""
+			refsCleared = true
+		}
+	}
+	if refsCleared {
+		if err := s.app.ConfigMgr.SaveEndpoints(s.app.Config.Endpoints); err != nil {
+			s.app.Logger.Warn("key deleted but failed to save endpoint refs",
+				logger.String("key", keyName),
+				logger.Error(err),
+			)
+		}
+	}
+
+	s.app.Logger.Info("SSH key deleted",
+		logger.String("key", keyName),
+	)
+
+	w.WriteHeader(http.StatusNoContent)
+	return nil
+}
+
+// --- POST /api/ssh/authorize ---
+
+func (s *Server) handleSSHAuthorize(w http.ResponseWriter, r *http.Request) *APIError {
+	if r.Method != http.MethodPost {
+		return MethodNotAllowed()
+	}
+
+	var req authorizeRequest
+	if err := decodeJSON(r, &req); err != nil {
+		return ValidationError(ErrInvalidJSON, "invalid request body").
+			WithDetail("parse_error", err.Error())
+	}
+	if req.EndpointName == "" {
+		return ValidationError(ErrMissingField, "endpoint_name is required").
+			WithDetail("field", "endpoint_name")
+	}
+	if req.Password == "" && req.TransportKeyRef == "" {
+		return ValidationError(ErrMissingField, "password or transport_key_ref is required").
+			WithDetail("field", "password or transport_key_ref")
+	}
+
 	epCfg, ok := s.app.Config.Endpoints[req.EndpointName]
 	if !ok {
 		return NotFoundError(ErrEndpointNotFound, "endpoint not found: "+req.EndpointName).
 			WithDetail("endpoint", req.EndpointName)
 	}
 	if epCfg.Connection == nil {
-		epCfg.Connection = &contracts.ConnectionConfig{}
+		return ValidationError(ErrInvalidValue, "endpoint has no connection config").
+			WithDetail("endpoint", req.EndpointName)
 	}
 
-	epCfg.Connection.SSHPrivateKey = req.PrivateKey
-	pubSSH := string(gossh.MarshalAuthorizedKey(pubKey))
-	epCfg.Connection.SSHPublicKey = pubSSH
-	epCfg.Connection.SSHKeyFingerprint = gossh.FingerprintSHA256(pubKey)
-	epCfg.Connection.SSHKeyType = sshKeyTypeName(pubKey.Type())
+	// Resolve key reference: use key_ref from request, or fall back to endpoint's SSHKeyRef
+	keyRef := req.KeyRef
+	if keyRef == "" {
+		keyRef = epCfg.Connection.SSHKeyRef
+	}
+	if keyRef == "" {
+		return ValidationError(ErrInvalidValue, "no SSH key referenced").
+			WithDetail("endpoint", req.EndpointName)
+	}
 
-	if err := s.app.ConfigMgr.SaveEndpoints(s.app.Config.Endpoints); err != nil {
-		return InternalError(ErrConfigSave, "failed to save config").
+	keyEntry, ok := s.app.SSHKeyManager.Get(keyRef)
+	if !ok {
+		return NotFoundError(ErrSSHKeyNotFound, "SSH key not found: "+keyRef).
+			WithDetail("key", keyRef)
+	}
+	if keyEntry.PublicKey == "" {
+		return InternalError(ErrInternal, "SSH key has no public key").
+			WithDetail("key", keyRef)
+	}
+
+	conn := epCfg.Connection
+
+	// Build SSH client config
+	sshUser := conn.SSHUser
+	if sshUser == "" {
+		sshUser = "root"
+	}
+
+	sshConfig := &gossh.ClientConfig{
+		User:            sshUser,
+		HostKeyCallback: gossh.InsecureIgnoreHostKey(),
+	}
+
+	// Determine auth method
+	if req.TransportKeyRef != "" {
+		pk, ok := s.app.SSHKeyManager.GetPrivateKey(req.TransportKeyRef)
+		if !ok {
+			return ValidationError(ErrInvalidValue, "transport key not found").
+				WithDetail("transport_key_ref", req.TransportKeyRef)
+		}
+		signer, err := gossh.ParsePrivateKey([]byte(pk))
+		if err != nil {
+			return ValidationError(ErrInvalidValue, "failed to parse transport key").
+				WithCause(err)
+		}
+		sshConfig.Auth = []gossh.AuthMethod{gossh.PublicKeys(signer)}
+	} else if req.Password != "" {
+		sshConfig.Auth = []gossh.AuthMethod{gossh.Password(req.Password)}
+	} else {
+		return ValidationError(ErrMissingField, "password or transport_key_ref is required")
+	}
+
+	// Parse host:port from endpoint
+	host := conn.Endpoint
+	port := 22
+	if parts := strings.Split(host, ":"); len(parts) == 2 {
+		host = parts[0]
+		if p, err := strconv.Atoi(parts[1]); err == nil {
+			port = p
+		}
+	}
+	addr := net.JoinHostPort(host, strconv.Itoa(port))
+
+	client, err := gossh.Dial("tcp", addr, sshConfig)
+	if err != nil {
+		return InternalError(ErrInternal, fmt.Sprintf("SSH connection failed: %v", err)).
+			WithCause(err)
+	}
+	defer client.Close()
+
+	// Create ~/.ssh if needed and append public key
+	session, err := client.NewSession()
+	if err != nil {
+		return InternalError(ErrInternal, "failed to create SSH session").
+			WithCause(err)
+	}
+	defer session.Close()
+
+	cmd := fmt.Sprintf("mkdir -p ~/.ssh && echo '%s' >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys",
+		strings.ReplaceAll(keyEntry.PublicKey, "'", "'\\''"))
+	if err := session.Run(cmd); err != nil {
+		return InternalError(ErrInternal, "failed to install public key").
 			WithCause(err)
 	}
 
-	s.app.RefreshEndpoints()
-
-	s.app.Logger.Info("ssh private key imported",
+	s.app.Logger.Info("SSH public key authorized",
 		logger.String("endpoint", req.EndpointName),
-		logger.String("type", epCfg.Connection.SSHKeyType),
-		logger.String("fingerprint", epCfg.Connection.SSHKeyFingerprint),
+		logger.String("host", addr),
+		logger.String("user", sshUser),
+		logger.String("key", keyRef),
+		logger.String("fingerprint", keyEntry.Fingerprint),
 	)
 
-	jsonResp(w, keygenResponse{
-		Name:        req.EndpointName,
-		KeyName:     "",
-		PublicKey:   pubSSH,
-		Fingerprint: epCfg.Connection.SSHKeyFingerprint,
-		Type:        epCfg.Connection.SSHKeyType,
-	})
+	// Refresh endpoints so the runtime reconnects using the now-authorized key
+	s.app.RefreshEndpoints()
+
+	jsonResp(w, map[string]string{"status": "ok"})
 	return nil
 }
 
-// computeSSHKeyMeta 从连接配置中的私钥派生 SSH 密钥元信息。
-func computeSSHKeyMeta(conn *contracts.ConnectionConfig) {
-	if conn.SSHPrivateKey == "" {
-		conn.SSHKeyFingerprint = ""
-		conn.SSHKeyType = ""
-		conn.SSHPublicKey = ""
-		return
-	}
-	pubKey, err := sshExtractPublicKey(conn.SSHPrivateKey)
-	if err != nil {
-		conn.SSHKeyFingerprint = ""
-		conn.SSHKeyType = ""
-		conn.SSHPublicKey = ""
-		return
-	}
-	conn.SSHKeyFingerprint = gossh.FingerprintSHA256(pubKey)
-	conn.SSHKeyType = sshKeyTypeName(pubKey.Type())
-	conn.SSHPublicKey = string(gossh.MarshalAuthorizedKey(pubKey))
-}
+// --- Helper functions ---
 
-// GET /api/ssh/keys
-func (s *Server) handleSSHKeys(w http.ResponseWriter, r *http.Request) *APIError {
-	if r.Method != http.MethodGet {
-		return MethodNotAllowed()
-	}
-
-	var keys []sshKeyInfo
-	seen := make(map[string]bool)
-
-	for name, ep := range s.app.Config.Endpoints {
-		if ep.Connection == nil || ep.Connection.SSHPrivateKey == "" {
-			continue
-		}
-		if seen[name] {
-			continue
-		}
-		seen[name] = true
-
-		pubKey, err := sshExtractPublicKey(ep.Connection.SSHPrivateKey)
-		if err != nil {
-			keys = append(keys, sshKeyInfo{
-				Name: name,
-				Type: "unknown",
-			})
-			continue
-		}
-
-		keys = append(keys, sshKeyInfo{
-			Name:        name,
-			Type:        sshKeyTypeName(pubKey.Type()),
-			Fingerprint: gossh.FingerprintSHA256(pubKey),
-			PublicKey:   string(gossh.MarshalAuthorizedKey(pubKey)),
-		})
-	}
-
-	if keys == nil {
-		keys = []sshKeyInfo{}
-	}
-	jsonResp(w, keys)
-	return nil
-}
-
-// ssh 密钥解析与生成（保持不变）
+// sshExtractPublicKey parses a PEM-encoded private key and returns the SSH public key.
 func sshExtractPublicKey(pemData string) (gossh.PublicKey, error) {
 	parsed, err := gossh.ParseRawPrivateKey([]byte(pemData))
 	if err != nil {
@@ -335,101 +523,6 @@ func generateECDSA(curve elliptic.Curve) (interface{}, gossh.PublicKey, error) {
 		return nil, nil, err
 	}
 	return priv, sshPub, nil
-}
-
-// POST /api/ssh/authorize
-// Connects to the remote server with password auth and copies the public key
-// into ~/.ssh/authorized_keys (equivalent of ssh-copy-id).
-type authorizeRequest struct {
-	EndpointName string `json:"endpoint_name"`
-	Password     string `json:"password"`
-}
-
-func (s *Server) handleSSHAuthorize(w http.ResponseWriter, r *http.Request) *APIError {
-	if r.Method != http.MethodPost {
-		return MethodNotAllowed()
-	}
-
-	var req authorizeRequest
-	if err := decodeJSON(r, &req); err != nil {
-		return ValidationError(ErrInvalidJSON, "invalid request body").
-			WithDetail("parse_error", err.Error())
-	}
-	if req.EndpointName == "" {
-		return ValidationError(ErrMissingField, "endpoint_name is required").
-			WithDetail("field", "endpoint_name")
-	}
-	if req.Password == "" {
-		return ValidationError(ErrMissingField, "password is required").
-			WithDetail("field", "password")
-	}
-
-	epCfg, ok := s.app.Config.Endpoints[req.EndpointName]
-	if !ok {
-		return NotFoundError(ErrEndpointNotFound, "endpoint not found: "+req.EndpointName).
-			WithDetail("endpoint", req.EndpointName)
-	}
-	if epCfg.Connection == nil || epCfg.Connection.SSHPublicKey == "" {
-		return ValidationError(ErrInvalidValue, "no SSH key configured for this endpoint").
-			WithDetail("endpoint", req.EndpointName)
-	}
-
-	conn := epCfg.Connection
-
-	// Build SSH client config with password auth
-	sshUser := conn.SSHUser
-	if sshUser == "" {
-		sshUser = "root"
-	}
-
-	sshConfig := &gossh.ClientConfig{
-		User:            sshUser,
-		Auth:            []gossh.AuthMethod{gossh.Password(req.Password)},
-		HostKeyCallback: gossh.InsecureIgnoreHostKey(),
-	}
-
-	// Parse host:port from endpoint
-	host := conn.Endpoint
-	port := 22
-	if parts := strings.Split(host, ":"); len(parts) == 2 {
-		host = parts[0]
-		if p, err := strconv.Atoi(parts[1]); err == nil {
-			port = p
-		}
-	}
-	addr := net.JoinHostPort(host, strconv.Itoa(port))
-
-	client, err := gossh.Dial("tcp", addr, sshConfig)
-	if err != nil {
-		return InternalError(ErrInternal, fmt.Sprintf("SSH connection failed: %v", err)).
-			WithCause(err)
-	}
-	defer client.Close()
-
-	// Create ~/.ssh if needed and append public key
-	session, err := client.NewSession()
-	if err != nil {
-		return InternalError(ErrInternal, "failed to create SSH session").
-			WithCause(err)
-	}
-	defer session.Close()
-
-	cmd := fmt.Sprintf("mkdir -p ~/.ssh && echo '%s' >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys",
-		strings.ReplaceAll(conn.SSHPublicKey, "'", "'\\''"))
-	if err := session.Run(cmd); err != nil {
-		return InternalError(ErrInternal, "failed to install public key").
-			WithCause(err)
-	}
-
-	s.app.Logger.Info("SSH public key authorized",
-		logger.String("endpoint", req.EndpointName),
-		logger.String("host", addr),
-		logger.String("user", sshUser),
-		logger.String("fingerprint", conn.SSHKeyFingerprint),
-	)
-
-	jsonResp(w, map[string]string{"status": "ok"})
-	return nil
 }
 
 type keyTypeError struct{ t string }

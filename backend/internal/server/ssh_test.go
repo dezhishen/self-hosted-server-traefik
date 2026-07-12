@@ -20,25 +20,27 @@ func newTestApp(t *testing.T) *core.App {
 	t.Helper()
 	dir := t.TempDir()
 
-	// Ensure config directory exists (SaveEndpoints writes to config/endpoints.yaml)
+	// Ensure config directory exists
 	os.MkdirAll(filepath.Join(dir, "config"), 0755)
 
 	cfgLoader := config.NewLoader()
 	cfgMgr := core.NewConfigManager(cfgLoader, dir)
-	// Seed config with empty endpoints so ConfigMgr has a valid path
 	cfgMgr.SaveEndpoints(make(map[string]*contracts.EndpointConfig))
+
+	// Initialize SSH key manager
+	keyMgr := core.NewSSHKeyManager(filepath.Join(dir, "config", "ssh_keys.yaml"))
 
 	app := &core.App{
 		Config: &contracts.AppConfig{
 			BaseDataDir: dir,
 		},
-		ConfigMgr: cfgMgr,
-		Logger:    logger.NewNop(),
+		ConfigMgr:     cfgMgr,
+		SSHKeyManager: keyMgr,
+		Logger:        logger.NewNop(),
 	}
 	return app
 }
 
-// newAuthRequest creates an HTTP request with a valid session token for testing auth-protected routes.
 func newAuthRequest(t *testing.T, srv *Server, method, path string, body io.Reader) *http.Request {
 	t.Helper()
 	token, err := srv.sessions.CreateSession("test")
@@ -67,13 +69,15 @@ func seedEndpoint(app *core.App, name string) {
 	}
 }
 
+// --- Keygen Tests ---
+
 func TestSSHKeygen_Success(t *testing.T) {
 	app := newTestApp(t)
 	seedEndpoint(app, "default")
 	srv := New(app)
 	handler := srv.Handler()
 
-	body := `{"endpoint_name":"default","name":"test-key","type":"ed25519"}`
+	body := `{"name":"test-key","type":"ed25519"}`
 	req := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
@@ -87,13 +91,9 @@ func TestSSHKeygen_Success(t *testing.T) {
 		t.Fatalf("failed to unmarshal response: %v", err)
 	}
 
-	if resp.Name != "default" {
-		t.Errorf("expected name 'default', got %q", resp.Name)
-	}
 	if resp.Type != "ed25519" {
 		t.Errorf("expected type 'ed25519', got %q", resp.Type)
 	}
-	// Private key is NEVER returned to frontend
 	if resp.PublicKey == "" {
 		t.Error("public_key should not be empty")
 	}
@@ -106,12 +106,66 @@ func TestSSHKeygen_Success(t *testing.T) {
 	if !strings.HasPrefix(resp.Fingerprint, "SHA256:") {
 		t.Errorf("expected fingerprint to start with 'SHA256:', got %q", resp.Fingerprint)
 	}
-	// Verify key was stored server-side in endpoint config
-	if app.Config.Endpoints["default"].Connection.SSHPrivateKey == "" {
-		t.Error("private key should be stored in endpoint config")
+	if resp.KeyName != "test-key" {
+		t.Errorf("expected KeyName 'test-key', got %q", resp.KeyName)
 	}
-	if !strings.Contains(app.Config.Endpoints["default"].Connection.SSHPrivateKey, "PRIVATE KEY") {
+
+	// Verify key was stored in key store
+	entry, ok := app.SSHKeyManager.Get("test-key")
+	if !ok {
+		t.Fatal("key 'test-key' should exist in key store")
+	}
+	if entry.PublicKey == "" {
+		t.Error("stored key should have a public key")
+	}
+	if entry.Fingerprint == "" {
+		t.Error("stored key should have a fingerprint")
+	}
+
+	// Verify private key is NOT exposed in Get (stripped for safety)
+	if entry.PrivateKey != "" {
+		t.Error("Get() should return key without PrivateKey")
+	}
+
+	// Verify private key IS stored in key manager (via GetPrivateKey)
+	pk, ok := app.SSHKeyManager.GetPrivateKey("test-key")
+	if !ok || pk == "" {
+		t.Error("private key should be retrievable via GetPrivateKey")
+	}
+	if !strings.Contains(pk, "PRIVATE KEY") {
 		t.Error("stored private key should be PEM-encoded")
+	}
+}
+
+func TestSSHKeygen_WithEndpointName(t *testing.T) {
+	app := newTestApp(t)
+	seedEndpoint(app, "myserver")
+	srv := New(app)
+	handler := srv.Handler()
+
+	body := `{"name":"mykey","endpoint_name":"myserver","type":"ed25519"}`
+	req := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	// Verify key was stored in key store
+	if _, ok := app.SSHKeyManager.Get("mykey"); !ok {
+		t.Fatal("key 'mykey' should exist in key store")
+	}
+
+	// Verify endpoint has SSHKeyRef set
+	ep := app.Config.Endpoints["myserver"]
+	if ep.Connection.SSHKeyRef != "mykey" {
+		t.Errorf("expected SSHKeyRef 'mykey', got %q", ep.Connection.SSHKeyRef)
+	}
+
+	// Verify SSHPrivateKey is NOT set in endpoint config
+	if ep.Connection.SSHPrivateKey != "" {
+		t.Error("SSHPrivateKey should not be set in endpoint config")
 	}
 }
 
@@ -121,7 +175,7 @@ func TestSSHKeygen_RSA2048(t *testing.T) {
 	srv := New(app)
 	handler := srv.Handler()
 
-	body := `{"endpoint_name":"default","name":"rsa-key","type":"rsa-2048"}`
+	body := `{"name":"rsa-key","type":"rsa-2048"}`
 	req := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
@@ -147,9 +201,11 @@ func TestSSHKeygen_RSA2048(t *testing.T) {
 	if resp.Fingerprint == "" {
 		t.Error("fingerprint should not be empty")
 	}
-	// Verify key stored server-side
-	if app.Config.Endpoints["default"].Connection.SSHPrivateKey == "" {
-		t.Error("private key should be stored in endpoint config")
+
+	// Verify via GetPrivateKey
+	pk, ok := app.SSHKeyManager.GetPrivateKey("rsa-key")
+	if !ok || pk == "" {
+		t.Error("private key should be retrievable via GetPrivateKey")
 	}
 }
 
@@ -159,7 +215,7 @@ func TestSSHKeygen_ECDSAP256(t *testing.T) {
 	srv := New(app)
 	handler := srv.Handler()
 
-	body := `{"endpoint_name":"default","name":"ecdsa-key","type":"ecdsa-p256"}`
+	body := `{"name":"ecdsa-key","type":"ecdsa-p256"}`
 	req := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
@@ -184,12 +240,12 @@ func TestSSHKeygen_ECDSAP256(t *testing.T) {
 	}
 }
 
-func TestSSHKeygen_MissingEndpointName(t *testing.T) {
+func TestSSHKeygen_MissingName(t *testing.T) {
 	app := newTestApp(t)
 	srv := New(app)
 	handler := srv.Handler()
 
-	body := `{"name":"test","type":"ed25519"}`
+	body := `{"type":"ed25519"}`
 	req := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
@@ -209,19 +265,19 @@ func TestSSHKeygen_MissingEndpointName(t *testing.T) {
 	}
 }
 
-func TestSSHKeygen_EndpointNotFound(t *testing.T) {
+func TestSSHKeygen_EndpointNotFoundIsOkay(t *testing.T) {
 	app := newTestApp(t)
-	// No endpoints seeded
+	// No endpoints seeded — keygen without endpoint_name should still succeed
 	srv := New(app)
 	handler := srv.Handler()
 
-	body := `{"endpoint_name":"nonexistent","type":"ed25519"}`
+	body := `{"name":"standalone-key","type":"ed25519"}`
 	req := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 
-	if w.Code != 404 {
-		t.Fatalf("expected 404, got %d: %s", w.Code, w.Body.String())
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 (keygen without endpoint should succeed), got %d: %s", w.Code, w.Body.String())
 	}
 }
 
@@ -231,7 +287,7 @@ func TestSSHKeygen_InvalidType(t *testing.T) {
 	srv := New(app)
 	handler := srv.Handler()
 
-	body := `{"endpoint_name":"default","name":"test","type":"dsa-1024"}`
+	body := `{"name":"test","type":"dsa-1024"}`
 	req := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
@@ -261,7 +317,7 @@ func TestSSHKeygen_DefaultType(t *testing.T) {
 	srv := New(app)
 	handler := srv.Handler()
 
-	body := `{"endpoint_name":"default","name":"default-key","type":""}`
+	body := `{"name":"default-key","type":""}`
 	req := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
@@ -286,7 +342,7 @@ func TestSSHKeygen_RSA4096(t *testing.T) {
 	srv := New(app)
 	handler := srv.Handler()
 
-	body := `{"endpoint_name":"default","name":"rsa4096-key","type":"rsa-4096"}`
+	body := `{"name":"rsa4096-key","type":"rsa-4096"}`
 	req := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
@@ -308,25 +364,21 @@ func TestSSHKeygen_RSA4096(t *testing.T) {
 	}
 }
 
-func TestSSHKeys_ListFromConfig(t *testing.T) {
+// --- Key List Tests ---
+
+func TestSSHKeys_ListFromStore(t *testing.T) {
 	app := newTestApp(t)
 	seedEndpoint(app, "myserver")
-
-	// Generate key — stores it server-side in the endpoint config
 	srv := New(app)
 	handler := srv.Handler()
 
-	body := `{"endpoint_name":"myserver","name":"mykey","type":"ed25519"}`
+	// Generate a key (without endpoint assignment)
+	body := `{"name":"mykey","type":"ed25519"}`
 	genReq := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
 	genW := httptest.NewRecorder()
 	handler.ServeHTTP(genW, genReq)
 	if genW.Code != http.StatusOK {
 		t.Fatalf("keygen failed: %d: %s", genW.Code, genW.Body.String())
-	}
-
-	// Verify the key was stored server-side
-	if app.Config.Endpoints["myserver"].Connection.SSHPrivateKey == "" {
-		t.Fatal("private key was not stored in endpoint config")
 	}
 
 	// List keys
@@ -347,11 +399,21 @@ func TestSSHKeys_ListFromConfig(t *testing.T) {
 		t.Fatal("expected at least 1 key")
 	}
 
-	if keys[0].Name != "myserver" {
-		t.Errorf("expected key name 'myserver', got %q", keys[0].Name)
+	found := false
+	for _, k := range keys {
+		if k.Name == "mykey" {
+			found = true
+			if k.Fingerprint == "" {
+				t.Error("fingerprint should not be empty")
+			}
+			if k.PublicKey == "" {
+				t.Error("public_key should not be empty")
+			}
+			break
+		}
 	}
-	if keys[0].Fingerprint == "" {
-		t.Error("fingerprint should not be empty")
+	if !found {
+		t.Error("expected 'mykey' in key list")
 	}
 }
 
@@ -378,6 +440,88 @@ func TestSSHKeys_EmptyList(t *testing.T) {
 	}
 }
 
+// --- Key Delete Tests ---
+
+func TestSSHKeyDelete_Success(t *testing.T) {
+	app := newTestApp(t)
+	srv := New(app)
+	handler := srv.Handler()
+
+	// Create a key first
+	body := `{"name":"delete-me","type":"ed25519"}`
+	genReq := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
+	genW := httptest.NewRecorder()
+	handler.ServeHTTP(genW, genReq)
+	if genW.Code != http.StatusOK {
+		t.Fatalf("keygen failed: %d", genW.Code)
+	}
+
+	// Delete it
+	delReq := newAuthRequest(t, srv, http.MethodDelete, "/api/ssh/keys/delete-me", nil)
+	delW := httptest.NewRecorder()
+	handler.ServeHTTP(delW, delReq)
+
+	if delW.Code != http.StatusNoContent {
+		t.Fatalf("expected 204, got %d: %s", delW.Code, delW.Body.String())
+	}
+
+	// Verify key is gone
+	if _, ok := app.SSHKeyManager.Get("delete-me"); ok {
+		t.Error("key should be deleted from key store")
+	}
+}
+
+func TestSSHKeyDelete_ReferencedKey(t *testing.T) {
+	app := newTestApp(t)
+	seedEndpoint(app, "myserver")
+	srv := New(app)
+	handler := srv.Handler()
+
+	// Create key with endpoint assignment
+	body := `{"name":"assigned-key","endpoint_name":"myserver","type":"ed25519"}`
+	genReq := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/keygen", strings.NewReader(body))
+	genW := httptest.NewRecorder()
+	handler.ServeHTTP(genW, genReq)
+	if genW.Code != http.StatusOK {
+		t.Fatalf("keygen failed: %d", genW.Code)
+	}
+
+	// Verify SSHKeyRef is set
+	if app.Config.Endpoints["myserver"].Connection.SSHKeyRef != "assigned-key" {
+		t.Fatal("expected endpoint to reference the key")
+	}
+
+	// Delete the key
+	delReq := newAuthRequest(t, srv, http.MethodDelete, "/api/ssh/keys/assigned-key", nil)
+	delW := httptest.NewRecorder()
+	handler.ServeHTTP(delW, delReq)
+
+	if delW.Code != http.StatusNoContent {
+		t.Fatalf("expected 204, got %d: %s", delW.Code, delW.Body.String())
+	}
+
+	// Verify endpoint's SSHKeyRef was cleared
+	if app.Config.Endpoints["myserver"].Connection.SSHKeyRef != "" {
+		t.Error("endpoint SSHKeyRef should be cleared after key deletion")
+	}
+}
+
+func TestSSHKeyDelete_NotFound(t *testing.T) {
+	app := newTestApp(t)
+	srv := New(app)
+	handler := srv.Handler()
+
+	delReq := newAuthRequest(t, srv, http.MethodDelete, "/api/ssh/keys/nonexistent", nil)
+	delW := httptest.NewRecorder()
+	handler.ServeHTTP(delW, delReq)
+
+	if delW.Code != 404 {
+		t.Fatalf("expected 404, got %d: %s", delW.Code, delW.Body.String())
+	}
+}
+
+// --- Import Tests ---
+
 func TestSSHImport_Success(t *testing.T) {
 	app := newTestApp(t)
 	seedEndpoint(app, "default")
@@ -385,7 +529,7 @@ func TestSSHImport_Success(t *testing.T) {
 	handler := srv.Handler()
 
 	// First generate a key to use as import source
-	genBody := `{"endpoint_name":"default","name":"source","type":"ed25519"}`
+	genBody := `{"name":"source","type":"ed25519"}`
 	genReq := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/keygen", strings.NewReader(genBody))
 	genW := httptest.NewRecorder()
 	handler.ServeHTTP(genW, genReq)
@@ -393,10 +537,10 @@ func TestSSHImport_Success(t *testing.T) {
 		t.Fatalf("keygen failed: %d", genW.Code)
 	}
 
-	privKey := app.Config.Endpoints["default"].Connection.SSHPrivateKey
+	privKey, _ := app.SSHKeyManager.GetPrivateKey("source")
 
-	// Now import that key via the import endpoint
-	importBody := `{"endpoint_name":"default","private_key":"` + strings.ReplaceAll(privKey, "\n", "\\n") + `"}`
+	// Now import that key
+	importBody := `{"name":"imported","private_key":"` + strings.ReplaceAll(privKey, "\n", "\\n") + `"}`
 	importReq := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/import", strings.NewReader(importBody))
 	importW := httptest.NewRecorder()
 	handler.ServeHTTP(importW, importReq)
@@ -416,6 +560,11 @@ func TestSSHImport_Success(t *testing.T) {
 	if resp.Fingerprint == "" {
 		t.Error("fingerprint should not be empty")
 	}
+
+	// Verify key is in store
+	if _, ok := app.SSHKeyManager.Get("imported"); !ok {
+		t.Error("imported key should exist in key store")
+	}
 }
 
 func TestSSHImport_InvalidKey(t *testing.T) {
@@ -424,7 +573,7 @@ func TestSSHImport_InvalidKey(t *testing.T) {
 	srv := New(app)
 	handler := srv.Handler()
 
-	body := `{"endpoint_name":"default","private_key":"not-a-real-key"}`
+	body := `{"name":"bad","private_key":"not-a-real-key"}`
 	req := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/import", strings.NewReader(body))
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
@@ -434,4 +583,50 @@ func TestSSHImport_InvalidKey(t *testing.T) {
 	}
 }
 
+func TestSSHImport_WithEndpointName(t *testing.T) {
+	app := newTestApp(t)
+	seedEndpoint(app, "myserver")
+	srv := New(app)
+	handler := srv.Handler()
 
+	// Generate source key
+	genBody := `{"name":"src","type":"ed25519"}`
+	genReq := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/keygen", strings.NewReader(genBody))
+	genW := httptest.NewRecorder()
+	handler.ServeHTTP(genW, genReq)
+	if genW.Code != http.StatusOK {
+		t.Fatalf("keygen failed: %d", genW.Code)
+	}
+
+	privKey, _ := app.SSHKeyManager.GetPrivateKey("src")
+
+	// Import with endpoint assignment
+	importBody := `{"name":"imported-key","endpoint_name":"myserver","private_key":"` + strings.ReplaceAll(privKey, "\n", "\\n") + `"}`
+	importReq := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/import", strings.NewReader(importBody))
+	importW := httptest.NewRecorder()
+	handler.ServeHTTP(importW, importReq)
+
+	if importW.Code != http.StatusOK {
+		t.Fatalf("import expected 200, got %d: %s", importW.Code, importW.Body.String())
+	}
+
+	// Verify endpoint SSHKeyRef
+	if app.Config.Endpoints["myserver"].Connection.SSHKeyRef != "imported-key" {
+		t.Errorf("expected SSHKeyRef 'imported-key', got %q", app.Config.Endpoints["myserver"].Connection.SSHKeyRef)
+	}
+}
+
+func TestSSHImport_MissingName(t *testing.T) {
+	app := newTestApp(t)
+	srv := New(app)
+	handler := srv.Handler()
+
+	body := `{"private_key":"some-key"}`
+	req := newAuthRequest(t, srv, http.MethodPost, "/api/ssh/import", strings.NewReader(body))
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != 400 {
+		t.Fatalf("expected 400, got %d: %s", w.Code, w.Body.String())
+	}
+}

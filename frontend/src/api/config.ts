@@ -18,9 +18,9 @@ export interface ConnectionConfig {
   engine?: string
   tls?: TLSConfig
   ssh_user?: string
-  /** Never sent or received via JSON — server-side only */
-  ssh_private_key?: never
-  /** Computed from private key, read-only via GET /api/config */
+  /** References a key in the SSH key store */
+  ssh_key_ref?: string
+  /** Resolved from key store, read-only via GET /api/config */
   ssh_key_fingerprint?: string
   ssh_key_type?: string
   ssh_public_key?: string
@@ -55,27 +55,38 @@ export function updateConfig(cfg: AppConfig): Promise<void> {
 }
 
 export interface SSHKeygenResult {
-  name: string
   key_name: string
   public_key: string
   fingerprint: string
   type: string
 }
 
-export function sshKeygen(endpointName: string, name: string, type = 'ed25519'): Promise<{ data: SSHKeygenResult }> {
-  return client.post('/ssh/keygen', { endpoint_name: endpointName, name, type })
+export function sshKeygen(name: string, type = 'ed25519', endpointName?: string): Promise<{ data: SSHKeygenResult }> {
+  const body: Record<string, string> = { name, type }
+  if (endpointName) body.endpoint_name = endpointName
+  return client.post('/ssh/keygen', body)
 }
 
-export function sshKeyImport(endpointName: string, privateKey: string): Promise<{ data: SSHKeygenResult }> {
-  return client.post('/ssh/import', { endpoint_name: endpointName, private_key: privateKey })
+export function sshKeyImport(name: string, privateKey: string, endpointName?: string): Promise<{ data: SSHKeygenResult }> {
+  const body: Record<string, string> = { name, private_key: privateKey }
+  if (endpointName) body.endpoint_name = endpointName
+  return client.post('/ssh/import', body)
 }
 
 export function sshKeyList(): Promise<{ data: SSHKeyInfo[] }> {
   return client.get('/ssh/keys')
 }
 
-export function sshAuthorize(endpointName: string, password: string): Promise<void> {
-  return client.post('/ssh/authorize', { endpoint_name: endpointName, password })
+export function sshKeyDelete(name: string): Promise<void> {
+  return client.delete(`/ssh/keys/${name}`)
+}
+
+export function sshAuthorize(endpointName: string, password?: string, keyRef?: string, transportKeyRef?: string): Promise<void> {
+  const body: Record<string, string> = { endpoint_name: endpointName }
+  if (password) body.password = password
+  if (keyRef) body.key_ref = keyRef
+  if (transportKeyRef) body.transport_key_ref = transportKeyRef
+  return client.post('/ssh/authorize', body)
 }
 
 export function changePassword(password: string): Promise<void> {

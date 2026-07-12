@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getConfig, updateConfig, sshKeygen, sshKeyImport, sshAuthorize } from '@/api/config'
-import type { AppConfig, TLSConfig, SSHKeygenResult } from '@/api/config'
+import { getConfig, updateConfig, sshKeygen, sshKeyImport, sshAuthorize, sshKeyList } from '@/api/config'
+import type { AppConfig, TLSConfig, SSHKeyInfo, SSHKeygenResult } from '@/api/config'
 import SdCard from '@/components/SdCard.vue'
 import { ElMessage } from 'element-plus'
 
@@ -21,10 +21,18 @@ const keygenType = ref('ed25519')
 const keygenResult = ref<SSHKeygenResult | null>(null)
 const keygenStep = ref<'form' | 'result'>('form')
 const endpointKeyMap = ref<Record<string, SSHKeygenResult>>({})
+const sshKeys = ref<SSHKeyInfo[]>([])
+async function loadSSHKeys() {
+  try {
+    const res = await sshKeyList()
+    sshKeys.value = (res.data || []).sort((a, b) => a.name.localeCompare(b.name))
+  } catch { sshKeys.value = [] }
+}
 
 // SSH import state
 const importDialogVisible = ref(false)
 const importEndpointName = ref('')
+const importKeyName = ref('')
 const importPrivateKey = ref('')
 const importLoading = ref(false)
 
@@ -33,21 +41,15 @@ const authorizeDialogVisible = ref(false)
 const authorizeEndpointName = ref('')
 const authorizePassword = ref('')
 const authorizeLoading = ref(false)
+const authorizeMethod = ref<'password' | 'key'>('key')
+const authorizeTransportKey = ref('')
 
-function getEPKeyInfo(name: string) {
+function getEPKeyInfo(name: string): SSHKeyInfo | SSHKeygenResult | null {
   const ep = config.value?.endpoints[name]
-  if (!ep) return null
-  if (endpointKeyMap.value[name]) return endpointKeyMap.value[name]
-  if (ep.connection.ssh_public_key) {
-    return {
-      name,
-      key_name: '',
-      public_key: ep.connection.ssh_public_key,
-      fingerprint: ep.connection.ssh_key_fingerprint || '',
-      type: ep.connection.ssh_key_type || ''
-    } as SSHKeygenResult
-  }
-  return null
+  if (!ep?.connection?.ssh_key_ref) return null
+  const fromStore = sshKeys.value.find(k => k.name === ep.connection.ssh_key_ref)
+  if (fromStore) return fromStore
+  return endpointKeyMap.value[name] || null
 }
 
 async function fetchConfig() {
@@ -129,7 +131,12 @@ async function handleKeygen() {
   }
   keygenLoading.value = true
   try {
-    const res = await sshKeygen(keygenEndpointName.value, keygenName.value.trim(), keygenType.value)
+    const res = await sshKeygen(keygenName.value.trim(), keygenType.value, keygenEndpointName.value)
+    await loadSSHKeys()
+    if (config.value?.endpoints[keygenEndpointName.value]) {
+      const ep = config.value.endpoints[keygenEndpointName.value]
+      ep.connection.ssh_key_ref = keygenName.value.trim()
+    }
     endpointKeyMap.value[keygenEndpointName.value] = res.data
     keygenResult.value = res.data
     keygenStep.value = 'result'
@@ -154,18 +161,28 @@ function copyPublicKey(key: string) {
 // --- SSH Key Import ---
 function openImportForEndpoint(name: string) {
   importEndpointName.value = name
+  importKeyName.value = name + '-key'
   importPrivateKey.value = ''
   importDialogVisible.value = true
 }
 
 async function handleImport() {
+  if (!importKeyName.value.trim()) {
+    ElMessage.warning(t('settings.msg_key_name_required'))
+    return
+  }
   if (!importPrivateKey.value.trim()) {
     ElMessage.warning(t('settings.msg_key_paste_required'))
     return
   }
   importLoading.value = true
   try {
-    const res = await sshKeyImport(importEndpointName.value, importPrivateKey.value)
+    const res = await sshKeyImport(importKeyName.value.trim(), importPrivateKey.value, importEndpointName.value)
+    await loadSSHKeys()
+    if (config.value?.endpoints[importEndpointName.value]) {
+      const ep = config.value.endpoints[importEndpointName.value]
+      ep.connection.ssh_key_ref = importKeyName.value.trim()
+    }
     endpointKeyMap.value[importEndpointName.value] = res.data
     importDialogVisible.value = false
     ElMessage.success(t('settings.msg_key_imported'))
@@ -180,27 +197,41 @@ async function handleImport() {
 function openAuthorize(name: string) {
   authorizeEndpointName.value = name
   authorizePassword.value = ''
+  authorizeTransportKey.value = ''
+  authorizeMethod.value = sshKeys.value.length > 0 ? 'key' : 'password'
   authorizeDialogVisible.value = true
 }
 
 async function handleAuthorize() {
-  if (!authorizePassword.value.trim()) {
-    ElMessage.warning(t('settings.msg_password_required'))
+  if (!authorizePassword.value && authorizeMethod.value === 'password') {
+    ElMessage.warning(t('settings.authorize_password_required'))
+    return
+  }
+  if (!authorizeTransportKey.value && authorizeMethod.value === 'key') {
+    ElMessage.warning(t('settings.authorize_key_required'))
     return
   }
   authorizeLoading.value = true
   try {
-    await sshAuthorize(authorizeEndpointName.value, authorizePassword.value)
-    ElMessage.success(t('settings.msg_authorized'))
+    await sshAuthorize(
+      authorizeEndpointName.value,
+      authorizeMethod.value === 'password' ? authorizePassword.value : undefined,
+      undefined,
+      authorizeMethod.value === 'key' ? authorizeTransportKey.value : undefined
+    )
+    ElMessage.success(t('settings.authorize_success'))
     authorizeDialogVisible.value = false
-  } catch {
-    // error handled by global errorHandler
+  } catch (err: any) {
+    ElMessage.error(err?.response?.data?.detail || t('settings.authorize_failed'))
   } finally {
     authorizeLoading.value = false
   }
 }
 
-onMounted(fetchConfig)
+onMounted(() => {
+  fetchConfig()
+  loadSSHKeys()
+})
 </script>
 
 <template>
@@ -252,18 +283,17 @@ onMounted(fetchConfig)
 
               <el-form-item :label="t('settings.ssh_key')">
                 <div class="flex flex-col gap-2 w-full">
-                  <div v-if="getEPKeyInfo(name)" class="flex items-center gap-2 flex-wrap">
-                    <el-tag type="info" size="small">{{ t('settings.configured') }}</el-tag>
-                    <span class="text-xs text-gray-500">
-                      {{ t('settings.ssh_key_stored') }}
-                    </span>
-                  </div>
-                  <div v-else class="text-xs text-gray-500">
-                    {{ t('settings.ssh_no_key') }}
-                  </div>
+                  <el-select v-model="ep.connection.ssh_key_ref" placeholder="Select a key..." clearable class="w-full">
+                    <el-option
+                      v-for="k in sshKeys"
+                      :key="k.name"
+                      :value="k.name"
+                      :label="`${k.name} [${k.type}] ${k.fingerprint}`"
+                    />
+                  </el-select>
                   <div class="flex gap-2 flex-wrap w-full sm:flex-nowrap">
                     <el-button size="small" class="flex-1 sm:flex-none" @click="openKeygenForEndpoint(name)">
-                      {{ getEPKeyInfo(name) ? t('settings.ssh_regenerate') : t('settings.ssh_generate') }}
+                      {{ t('settings.ssh_generate') }}
                     </el-button>
                     <el-button size="small" plain class="flex-1 sm:flex-none" @click="openImportForEndpoint(name)">
                       {{ t('settings.ssh_import_key') }}
@@ -425,12 +455,19 @@ onMounted(fetchConfig)
     <p class="text-sm text-gray-500 mb-3">
       {{ t('settings.import_desc') }}
     </p>
-    <el-input
-      v-model="importPrivateKey"
-      type="textarea"
-      :rows="6"
-      :placeholder="t('settings.import_placeholder')"
-    />
+    <el-form label-position="top">
+      <el-form-item :label="t('settings.key_name')" required>
+        <el-input v-model="importKeyName" :placeholder="t('settings.key_name_placeholder')" />
+      </el-form-item>
+      <el-form-item :label="t('settings.private_key')" required>
+        <el-input
+          v-model="importPrivateKey"
+          type="textarea"
+          :rows="6"
+          :placeholder="t('settings.import_placeholder')"
+        />
+      </el-form-item>
+    </el-form>
     <div class="text-right mt-4">
       <el-button @click="importDialogVisible = false">{{ t('settings.cancel') }}</el-button>
       <el-button type="primary" :loading="importLoading" @click="handleImport">
@@ -443,19 +480,35 @@ onMounted(fetchConfig)
   <el-dialog
     v-model="authorizeDialogVisible"
     :title="t('settings.authorize_title')"
-    :width="'min(400px, 90vw)'"
+    :width="'min(450px, 90vw)'"
     :close-on-click-modal="false"
   >
     <p class="text-sm text-gray-500 mb-3">
       {{ t('settings.authorize_desc', { name: authorizeEndpointName }) }}
     </p>
-    <el-input
-      v-model="authorizePassword"
-      type="password"
-      :placeholder="t('settings.authorize_password_placeholder')"
-      show-password
-      @keyup.enter="handleAuthorize"
-    />
+    <el-radio-group v-model="authorizeMethod" class="mb-4">
+      <el-radio value="key">Use existing SSH key</el-radio>
+      <el-radio value="password">Use password</el-radio>
+    </el-radio-group>
+    <template v-if="authorizeMethod === 'key'">
+      <el-select v-model="authorizeTransportKey" placeholder="Select transport key..." class="w-full">
+        <el-option
+          v-for="k in sshKeys"
+          :key="k.name"
+          :value="k.name"
+          :label="`${k.name} [${k.type}] ${k.fingerprint}`"
+        />
+      </el-select>
+    </template>
+    <template v-else>
+      <el-input
+        v-model="authorizePassword"
+        type="password"
+        :placeholder="t('settings.authorize_password_placeholder')"
+        show-password
+        @keyup.enter="handleAuthorize"
+      />
+    </template>
     <div class="text-right mt-4">
       <el-button @click="authorizeDialogVisible = false">{{ t('settings.cancel') }}</el-button>
       <el-button type="primary" :loading="authorizeLoading" @click="handleAuthorize">

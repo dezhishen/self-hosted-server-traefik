@@ -51,6 +51,7 @@ const (
 	ErrServiceNotFound      ErrorCode = "SERVICE_NOT_FOUND"
 	ErrSubscriptionNotFound ErrorCode = "SUBSCRIPTION_NOT_FOUND"
 	ErrContainerNotFound    ErrorCode = "CONTAINER_NOT_FOUND"
+	ErrSSHKeyNotFound       ErrorCode = "SSH_KEY_NOT_FOUND"
 )
 
 // ——— CONFLICT (409) ———

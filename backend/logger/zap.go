@@ -66,7 +66,7 @@ func InitLogger(baseDir string) Logger {
 		zap.NewAtomicLevelAt(zap.InfoLevel),
 	)
 
-	z := zap.New(zc, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
+	z := zap.New(zc, zap.AddCaller(), zap.AddCallerSkip(1), zap.AddStacktrace(zapcore.ErrorLevel))
 	zap.ReplaceGlobals(z)
 	return &zapAdapter{z: z}
 }

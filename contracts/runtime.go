@@ -46,15 +46,16 @@ type TLSConfig struct {
 }
 
 type ConnectionConfig struct {
-	Type              ConnectionType `yaml:"type" json:"type"`
-	Endpoint          string         `yaml:"endpoint" json:"endpoint"`
-	Engine            EngineType     `yaml:"engine,omitempty" json:"engine,omitempty"`
-	TLS               *TLSConfig     `yaml:"tls,omitempty" json:"tls,omitempty"`
-	SSHUser           string         `yaml:"ssh_user,omitempty" json:"ssh_user,omitempty"`
-	SSHPrivateKey     string         `yaml:"ssh_private_key,omitempty" json:"-"`         // never exposed via JSON
-	SSHKeyFingerprint string         `yaml:"-" json:"ssh_key_fingerprint,omitempty"`      // computed, read-only
-	SSHKeyType        string         `yaml:"-" json:"ssh_key_type,omitempty"`             // computed, read-only
-	SSHPublicKey      string         `yaml:"-" json:"ssh_public_key,omitempty"`           // computed, read-only
+	Type              ConnectionType `yaml:"type" json:"type" mapstructure:"type"`
+	Endpoint          string         `yaml:"endpoint" json:"endpoint" mapstructure:"endpoint"`
+	Engine            EngineType     `yaml:"engine,omitempty" json:"engine,omitempty" mapstructure:"engine"`
+	TLS               *TLSConfig     `yaml:"tls,omitempty" json:"tls,omitempty" mapstructure:"tls"`
+	SSHUser           string         `yaml:"ssh_user,omitempty" json:"ssh_user,omitempty" mapstructure:"ssh_user"`
+	SSHKeyRef         string         `yaml:"ssh_key_ref,omitempty" json:"ssh_key_ref,omitempty" mapstructure:"ssh_key_ref"`
+	SSHPrivateKey     string         `yaml:"-" json:"-" mapstructure:"-"`
+	SSHKeyFingerprint string         `yaml:"-" json:"ssh_key_fingerprint,omitempty" mapstructure:"-"`
+	SSHKeyType        string         `yaml:"-" json:"ssh_key_type,omitempty" mapstructure:"-"`
+	SSHPublicKey      string         `yaml:"-" json:"ssh_public_key,omitempty" mapstructure:"-"`
 }
 
 type PortMapping struct {

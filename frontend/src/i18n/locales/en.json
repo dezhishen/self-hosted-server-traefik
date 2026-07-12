@@ -98,6 +98,7 @@
   "settings.ssh_no_key": "No SSH key configured. Generate a new key pair or import an existing one.",
   "settings.ssh_regenerate": "Regenerate",
   "settings.ssh_generate": "Generate SSH Key",
+  "settings.private_key": "Private Key",
   "settings.ssh_import_key": "Import Key",
   "settings.key_type": "Key Type",
   "settings.fingerprint": "Fingerprint",
