@@ -176,7 +176,6 @@ onMounted(fetchConfig)
 <template>
   <div class="page-header flex items-center justify-between flex-wrap gap-2">
     <h2>{{ t('settings.endpoints') }}</h2>
-    <el-button type="primary" :loading="saving" @click="handleSave">{{ t('settings.save') }}</el-button>
   </div>
 
   <div v-loading="loading">
@@ -295,11 +294,6 @@ onMounted(fetchConfig)
               </template>
             </template>
           </el-form>
-          <div class="flex justify-end mt-3 pt-3 border-t">
-            <el-button size="small" type="primary" :loading="saving" @click="handleSave">
-              {{ t('settings.save_endpoint') }}
-            </el-button>
-          </div>
         </SdCard>
       </div>
 
