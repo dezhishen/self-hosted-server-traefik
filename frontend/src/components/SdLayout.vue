@@ -103,29 +103,39 @@ function handleUserCommand(command: string) {
 
           <!-- Right side controls -->
           <div class="ml-auto flex items-center gap-2">
-            <!-- Endpoint selector -->
-            <el-select
+            <!-- Endpoint selector: icon-only dropdown -->
+            <el-dropdown
               v-if="remoteStore.remotes.length > 0"
-              :model-value="remoteStore.current"
-              size="small"
-              class="w-24 sm:w-32"
-              @change="onRemoteChange"
+              trigger="click"
+              @command="onRemoteChange"
             >
-              <el-option
-                v-for="r in remoteStore.remotes"
-                :key="r.name"
-                :label="r.name"
-                :value="r.name"
-              />
-            </el-select>
+              <el-button size="small" text>
+                <el-icon><Connection /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item
+                    v-for="r in remoteStore.remotes"
+                    :key="r.name"
+                    :command="r.name"
+                    :class="{ 'is-active': r.name === remoteStore.current }"
+                  >
+                    {{ r.name }}
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
 
-            <!-- Dark mode toggle -->
+            <!-- Dark mode toggle: system → dark → light -->
             <el-button
               size="small"
               text
-              @click="themeStore.toggleDark()"
+              @click="themeStore.cycleMode()"
+              :title="themeStore.mode === 'system' ? t('theme.follow_system') : themeStore.mode === 'dark' ? t('theme.dark') : t('theme.light')"
             >
-              {{ themeStore.isDark ? '☀️' : '🌙' }}
+              <span v-if="themeStore.mode === 'system'">🌓</span>
+              <span v-else-if="themeStore.mode === 'dark'">🌙</span>
+              <span v-else>☀️</span>
             </el-button>
 
             <!-- Language switcher -->
