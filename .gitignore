@@ -5,6 +5,7 @@
 # Build artifacts
 bin/
 vendor/
+cli/cli
 *.exe
 *.test
 *.out
@@ -20,7 +21,7 @@ build/
 # Dev runtime
 .dev/
 .args/
-.args/
+*.pid
 
 # Runtime data (created on startup under base_data_dir)
 *.log
@@ -53,3 +54,6 @@ Thumbs.db
 
 # Temp
 tmp/
+
+# Agent thoughts/ledgers/designs (local session state, not project code)
+thoughts/
