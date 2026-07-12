@@ -7,7 +7,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
 import SdSidebar from './SdSidebar.vue'
 import RemoteSelect from './RemoteSelect.vue'
-import { Operation, Setting, Tickets, SwitchButton, User } from '@element-plus/icons-vue'
+import { Operation, Setting, Tickets, SwitchButton, User, Connection, Promotion } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -108,7 +108,7 @@ function handleUserCommand(command: string) {
               v-if="remoteStore.remotes.length > 0"
               :model-value="remoteStore.current"
               size="small"
-              class="w-32 hidden sm:inline-flex"
+              class="w-24 sm:w-32"
               @change="onRemoteChange"
             >
               <el-option
@@ -146,10 +146,10 @@ function handleUserCommand(command: string) {
                 </el-button>
                 <template #dropdown>
                   <el-dropdown-menu>
-                    <el-dropdown-item command="/migrate">
+                    <el-dropdown-item :icon="Promotion" command="/migrate">
                       {{ t('nav.migration') }}
                     </el-dropdown-item>
-                    <el-dropdown-item command="/endpoints">
+                    <el-dropdown-item :icon="Connection" command="/endpoints">
                       {{ t('nav.endpoints') }}
                     </el-dropdown-item>
                     <el-dropdown-item :icon="Setting" command="/settings">
