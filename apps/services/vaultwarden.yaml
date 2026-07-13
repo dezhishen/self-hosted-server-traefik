@@ -9,17 +9,30 @@ tags:
 dependencies:
   - traefik
 
+params:
+  - name: "self.SIGNUPS_ALLOWED"
+    type: string
+    label: "Signups Allowed"
+    default: "true"
+  - name: "self.VAULTWARDEN_DATABASE_WAL"
+    type: bool
+    label: "Vaultwarden Database Wal"
+    default: False
+  - name: "self.VAULTWARDEN_DATABASE_URL"
+    type: string
+    label: "Vaultwarden Database Url"
+
 container:
   name: vaultwarden
   image: vaultwarden/server:latest
   volumes:
     - "{{ .DataDir }}/vaultwarden/data:/data/"
   environment:
-    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
-    LANG: "{{ index .Custom "LANG" | default \"zh_CN.UTF-8\" }}"
-    SIGNUPS_ALLOWED: "{{ index .Custom "SIGNUPS_ALLOWED" | default \"true\" }}"
-    ENABLE_DB_WAL: "{{ index .Custom "VAULTWARDEN_DATABASE_WAL" | default \"false\" }}"
-    DATABASE_URL: "{{ index .Custom "VAULTWARDEN_DATABASE_URL" }}"
+    TZ: "{{ index .Custom "common.TZ" | default \"Asia/Shanghai\" }}"
+    LANG: "{{ index .Custom "common.LANG" | default \"zh_CN.UTF-8\" }}"
+    SIGNUPS_ALLOWED: "{{ index .Custom "self.SIGNUPS_ALLOWED" | default \"true\" }}"
+    ENABLE_DB_WAL: "{{ index .Custom "self.VAULTWARDEN_DATABASE_WAL" | default \"false\" }}"
+    DATABASE_URL: "{{ index .Custom "self.VAULTWARDEN_DATABASE_URL" }}"
   labels:
     traefik.docker.network: "{{ .NetworkName }}"
     traefik.enable: "true"
@@ -32,7 +45,7 @@ container:
     - "{{ .NetworkName }}"
   restart: unless-stopped
   privileged: false
-  user: "{{ index .Custom "PUID" | default \"1000\" }}:{{ index .Custom "PGID" | default \"1000\" }}"
+  user: "{{ index .Custom "common.PUID" | default \"1000\" }}:{{ index .Custom "common.PGID" | default \"1000\" }}"
 
   resources:
     memory: "256M"

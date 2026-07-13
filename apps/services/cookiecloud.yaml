@@ -26,7 +26,7 @@ container:
   networks:
     - "{{ .NetworkName }}"
   restart: unless-stopped
-  user: "{{ index .Custom "PUID" | default \"1000\" }}:{{ index .Custom "PGID" | default \"1000\" }}"
+  user: "{{ index .Custom "common.PUID" | default \"1000\" }}:{{ index .Custom "common.PGID" | default \"1000\" }}"
   privileged: false
   resources:
     memory: "64M"

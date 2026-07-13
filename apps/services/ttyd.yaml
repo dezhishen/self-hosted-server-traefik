@@ -5,6 +5,15 @@ category: utility
 tags: [terminal, ssh, web, tty]
 dependencies: []
 
+params:
+  - name: "self.TTYD_AUTH_USER"
+    type: string
+    label: "Ttyd Auth User"
+  - name: "self.TTYD_AUTH_DIGEST"
+    type: password
+    label: "Ttyd Auth Digest"
+    secret: true
+
 container:
   name: ttyd
   image: wettyoss/wetty
@@ -13,10 +22,10 @@ container:
   volumes:
     - "{{ .DataDir }}/ttyd/data:/data"
   environment:
-    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
+    TZ: "{{ index .Custom "common.TZ" | default \"Asia/Shanghai\" }}"
     LANG: "zh_CN.UTF-8"
-    UID: "{{ index .Custom "PUID" | default \"1000\" }}"
-    GID: "{{ index .Custom "PGID" | default \"1000\" }}"
+    UID: "{{ index .Custom "common.PUID" | default \"1000\" }}"
+    GID: "{{ index .Custom "common.PGID" | default \"1000\" }}"
   networks:
     - "{{ .NetworkName }}"
   restart: always
@@ -31,5 +40,5 @@ traefik:
   cert_resolver: traefik
   network_mode: bridge
   extra_labels:
-    traefik.http.middlewares.ttyd-auth.digestauth.users: "{{ index .Custom "TTYD_AUTH_USER" }}:traefik:{{ index .Custom "TTYD_AUTH_DIGEST" }}"
+    traefik.http.middlewares.ttyd-auth.digestauth.users: "{{ index .Custom "self.TTYD_AUTH_USER" }}:traefik:{{ index .Custom "self.TTYD_AUTH_DIGEST" }}"
     traefik.http.routers.ttyd.middlewares: ttyd-auth@docker

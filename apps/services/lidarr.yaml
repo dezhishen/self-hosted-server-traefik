@@ -17,10 +17,10 @@ container:
     - "{{ .DataDir }}/public/downloads:/downloads"
     - "{{ .DataDir }}/public/:/data"
   environment:
-    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
-    LANG: "{{ index .Custom "LANG" | default \"zh_CN.UTF-8\" }}"
-    PUID: "{{ index .Custom "PUID" | default \"1000\" }}"
-    PGID: "{{ index .Custom "PGID" | default \"1000\" }}"
+    TZ: "{{ index .Custom "common.TZ" | default \"Asia/Shanghai\" }}"
+    LANG: "{{ index .Custom "common.LANG" | default \"zh_CN.UTF-8\" }}"
+    PUID: "{{ index .Custom "common.PUID" | default \"1000\" }}"
+    PGID: "{{ index .Custom "common.PGID" | default \"1000\" }}"
   labels:
     traefik.enable: "true"
     traefik.http.routers.lidarr.rule: "Host(`lidarr.{{ .Domain }}`)"

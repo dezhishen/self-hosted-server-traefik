@@ -9,6 +9,18 @@ tags:
 dependencies:
   - dockerproxy
 
+params:
+  - name: "self.CF_API_EMAIL"
+    type: string
+    label: "Cf Api Email"
+  - name: "self.CF_DNS_API_TOKEN"
+    type: password
+    label: "Cf Dns Api Token"
+    secret: true
+  - name: "self.ACME_EMAIL"
+    type: string
+    label: "Acme Email"
+
 container:
   name: traefik
   ports:
@@ -17,12 +29,12 @@ container:
     - "443:443"
     - "443:443/udp"
   environment:
-    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
-    LANG: "{{ index .Custom "LANG" | default \"zh_CN.UTF-8\" }}"
-    UID: "{{ index .Custom "PUID" | default \"1000\" }}"
-    GID: "{{ index .Custom "PGID" | default \"1000\" }}"
-    CF_API_EMAIL: "{{ index .Custom "CF_API_EMAIL" }}"
-    CF_DNS_API_TOKEN: "{{ index .Custom "CF_DNS_API_TOKEN" }}"
+    TZ: "{{ index .Custom "common.TZ" | default \"Asia/Shanghai\" }}"
+    LANG: "{{ index .Custom "common.LANG" | default \"zh_CN.UTF-8\" }}"
+    UID: "{{ index .Custom "common.PUID" | default \"1000\" }}"
+    GID: "{{ index .Custom "common.PGID" | default \"1000\" }}"
+    CF_API_EMAIL: "{{ index .Custom "self.CF_API_EMAIL" }}"
+    CF_DNS_API_TOKEN: "{{ index .Custom "self.CF_DNS_API_TOKEN" }}"
   labels:
     traefik.enable: "true"
     traefik.http.middlewares.traefik.compress: "true"
@@ -58,7 +70,7 @@ container:
     - --entrypoints.websecure.address=:443
     - --entrypoints.web.http.redirections.entryPoint.to=websecure
     - --entrypoints.web.http.redirections.entryPoint.scheme=https
-    - --certificatesresolvers.traefik.acme.email={{ index .Custom "ACME_EMAIL" }}
+    - --certificatesresolvers.traefik.acme.email={{ index .Custom "self.ACME_EMAIL" }}
     - --certificatesresolvers.traefik.acme.storage=/acme/acme.json
     - --certificatesresolvers.traefik.acme.httpchallenge=true
     - --certificatesresolvers.traefik.acme.httpchallenge.entrypoint=web

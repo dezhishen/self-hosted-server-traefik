@@ -8,6 +8,27 @@ tags:
   - bot
 dependencies: []
 
+params:
+  - name: "self.RSS_BOT_DEBUG"
+    type: bool
+    label: "Rss Bot Debug"
+    default: False
+  - name: "self.RSS_BOT_TOKEN"
+    type: password
+    label: "Rss Bot Token"
+    secret: true
+  - name: "self.RSS_BOT_MANAGER"
+    type: string
+    label: "Rss Bot Manager"
+  - name: "self.RSS_BOT_DATABASE_URL"
+    type: string
+    label: "Rss Bot Database Url"
+    default: ""
+  - name: "self.RSS_BOT_TELEGRAPH_TOKEN"
+    type: password
+    label: "Rss Bot Telegraph Token"
+    secret: true
+
 container:
   name: rss-bot
   ports: []
@@ -17,11 +38,11 @@ container:
   environment:
     TZ: "Asia/Shanghai"
     LANG: "zh_CN.UTF-8"
-    DEBUG: "{{ index .Custom "RSS_BOT_DEBUG" | default \"0\" }}"
-    TOKEN: "{{ index .Custom "RSS_BOT_TOKEN" }}"
-    MANAGER: "{{ index .Custom "RSS_BOT_MANAGER" }}"
-    DATABASE_URL: "{{ index .Custom "RSS_BOT_DATABASE_URL" | default \"\" }}"
-    TELEGRAPH_TOKEN: "{{ index .Custom "RSS_BOT_TELEGRAPH_TOKEN" }}"
+    DEBUG: "{{ index .Custom "self.RSS_BOT_DEBUG" | default \"0\" }}"
+    TOKEN: "{{ index .Custom "self.RSS_BOT_TOKEN" }}"
+    MANAGER: "{{ index .Custom "self.RSS_BOT_MANAGER" }}"
+    DATABASE_URL: "{{ index .Custom "self.RSS_BOT_DATABASE_URL" | default \"\" }}"
+    TELEGRAPH_TOKEN: "{{ index .Custom "self.RSS_BOT_TELEGRAPH_TOKEN" }}"
   labels: {}
   networks:
     - "{{ .NetworkName }}"

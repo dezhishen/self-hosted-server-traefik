@@ -10,6 +10,21 @@ tags:
 dependencies:
   - traefik
 
+params:
+  - name: "self.EJBCA_DATABASE_JDBC_URL"
+    type: string
+    label: "Ejbca Database Jdbc Url"
+    default: "jdbc:h2:file:/mnt/persistent/h2/ejbca;DB_CLOSE_DELAY=-1"
+  - name: "self.EJBCA_DATABASE_USER"
+    type: string
+    label: "Ejbca Database User"
+    default: "root"
+  - name: "self.EJBCA_DATABASE_PASSWORD"
+    type: password
+    label: "Ejbca Database Password"
+    secret: true
+    default: ""
+
 container:
   name: ejbca
   ports: []
@@ -18,9 +33,9 @@ container:
   environment:
     TZ: "Asia/Shanghai"
     LANG: "zh_CN.UTF-8"
-    DATABASE_JDBC_URL: "{{ index .Custom "EJBCA_DATABASE_JDBC_URL" | default \"jdbc:h2:file:/mnt/persistent/h2/ejbca;DB_CLOSE_DELAY=-1\" }}"
-    DATABASE_USER: "{{ index .Custom "EJBCA_DATABASE_USER" | default \"root\" }}"
-    DATABASE_PASSWORD: "{{ index .Custom "EJBCA_DATABASE_PASSWORD" | default \"\" }}"
+    DATABASE_JDBC_URL: "{{ index .Custom "self.EJBCA_DATABASE_JDBC_URL" | default \"jdbc:h2:file:/mnt/persistent/h2/ejbca;DB_CLOSE_DELAY=-1\" }}"
+    DATABASE_USER: "{{ index .Custom "self.EJBCA_DATABASE_USER" | default \"root\" }}"
+    DATABASE_PASSWORD: "{{ index .Custom "self.EJBCA_DATABASE_PASSWORD" | default \"\" }}"
   labels:
     traefik.enable: "true"
     traefik.http.routers.ejbca.entrypoints: "websecure"
@@ -31,7 +46,7 @@ container:
   networks:
     - "{{ .NetworkName }}"
   restart: always
-  user: "{{ index .Custom "PUID" | default \"1000\" }}:{{ index .Custom "PGID" | default \"1000\" }}"
+  user: "{{ index .Custom "common.PUID" | default \"1000\" }}:{{ index .Custom "common.PGID" | default \"1000\" }}"
   privileged: false
   resources:
     memory: "2G"

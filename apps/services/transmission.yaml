@@ -8,6 +8,16 @@ tags:
 dependencies:
   - traefik
 
+params:
+  - name: "self.TRANSMISSION_USER"
+    type: string
+    label: "Transmission User"
+    default: "admin"
+  - name: "self.TRANSMISSION_PASSWORD"
+    type: password
+    label: "Transmission Password"
+    secret: true
+
 container:
   name: transmission
   image: linuxserver/transmission
@@ -16,12 +26,12 @@ container:
     - "{{ .DataDir }}/public/downloads:/data/downloads"
     - "{{ .DataDir }}/transmission/finished-torrents:/finished-torrents"
   environment:
-    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
-    LANG: "{{ index .Custom "LANG" | default \"zh_CN.UTF-8\" }}"
-    PUID: "{{ index .Custom "PUID" | default \"1000\" }}"
-    PGID: "{{ index .Custom "PGID" | default \"1000\" }}"
-    USER: "{{ index .Custom "TRANSMISSION_USER" | default \"admin\" }}"
-    PASS: "{{ index .Custom "TRANSMISSION_PASSWORD" }}"
+    TZ: "{{ index .Custom "common.TZ" | default \"Asia/Shanghai\" }}"
+    LANG: "{{ index .Custom "common.LANG" | default \"zh_CN.UTF-8\" }}"
+    PUID: "{{ index .Custom "common.PUID" | default \"1000\" }}"
+    PGID: "{{ index .Custom "common.PGID" | default \"1000\" }}"
+    USER: "{{ index .Custom "self.TRANSMISSION_USER" | default \"admin\" }}"
+    PASS: "{{ index .Custom "self.TRANSMISSION_PASSWORD" }}"
   networks:
     - "{{ .NetworkName }}"
   restart: unless-stopped

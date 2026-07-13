@@ -5,22 +5,48 @@ category: development
 tags: [coding, ide, development, ai]
 dependencies: []
 
+params:
+  - name: "self.OPENCODE_PORT"
+    type: number
+    label: "Opencode Port"
+    default: 4096
+  - name: "self.VIDEO_GID"
+    type: number
+    label: "Video Gid"
+    default: 44
+  - name: "self.RENDER_GID"
+    type: number
+    label: "Render Gid"
+    default: 104
+  - name: "self.OPENCODE_PASSWORD"
+    type: password
+    label: "Opencode Password"
+    secret: true
+  - name: "self.OPENCODE_APT_MIRROR"
+    type: string
+    label: "Opencode Apt Mirror"
+    default: "default"
+  - name: "self.OPENCODE_SSH_MODE"
+    type: string
+    label: "Opencode Ssh Mode"
+    default: "host"
+
 container:
   name: opencode
   image: opencode-custom:latest
-  user: "{{ index .Custom "PUID" | default \"1000\" }}:{{ index .Custom "PGID" | default \"1000\" }}"
+  user: "{{ index .Custom "common.PUID" | default \"1000\" }}:{{ index .Custom "common.PGID" | default \"1000\" }}"
   command:
     - serve
     - "--port"
-    - "{{ index .Custom "OPENCODE_PORT" | default \"4096\" }}"
+    - "{{ index .Custom "self.OPENCODE_PORT" | default \"4096\" }}"
     - "--hostname"
     - "0.0.0.0"
   shm_size: "1g"
   devices:
     - "/dev/dri:/dev/dri"
   group_add:
-    - "{{ index .Custom "VIDEO_GID" | default \"44\" }}"
-    - "{{ index .Custom "RENDER_GID" | default \"104\" }}"
+    - "{{ index .Custom "self.VIDEO_GID" | default \"44\" }}"
+    - "{{ index .Custom "self.RENDER_GID" | default \"104\" }}"
   volumes:
     - "{{ .DataDir }}/opencode/home:/home/opencode"
     - "{{ .DataDir }}/opencode/config:/home/opencode/.config/opencode"
@@ -28,17 +54,17 @@ container:
     - "{{ .DataDir }}/opencode/apt-cache:/var/cache/apt"
     - "{{ .HOME }}/.ssh:/home/opencode/.ssh"
   environment:
-    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
+    TZ: "{{ index .Custom "common.TZ" | default \"Asia/Shanghai\" }}"
     LANG: "zh_CN.UTF-8"
     HOME: /home/opencode
     XDG_CONFIG_HOME: /home/opencode/.config
     XDG_DATA_HOME: /home/opencode/.local/share
     XDG_CACHE_HOME: /home/opencode/.cache
     BUN_INSTALL: /home/opencode/.bun
-    OPENCODE_SERVER_PASSWORD: "{{ index .Custom "OPENCODE_PASSWORD" }}"
-    OPENCODE_PORT: "{{ index .Custom "OPENCODE_PORT" | default \"4096\" }}"
-    OPENCODE_APT_MIRROR: "{{ index .Custom "OPENCODE_APT_MIRROR" | default \"default\" }}"
-    OPENCODE_SSH_MODE: "{{ index .Custom "OPENCODE_SSH_MODE" | default \"host\" }}"
+    OPENCODE_SERVER_PASSWORD: "{{ index .Custom "self.OPENCODE_PASSWORD" }}"
+    OPENCODE_PORT: "{{ index .Custom "self.OPENCODE_PORT" | default \"4096\" }}"
+    OPENCODE_APT_MIRROR: "{{ index .Custom "self.OPENCODE_APT_MIRROR" | default \"default\" }}"
+    OPENCODE_SSH_MODE: "{{ index .Custom "self.OPENCODE_SSH_MODE" | default \"host\" }}"
   networks:
     - "{{ .NetworkName }}"
   restart: always

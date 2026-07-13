@@ -9,6 +9,25 @@ tags:
 dependencies:
   - traefik
 
+params:
+  - name: "app.MYSQL_HOST"
+    type: string
+    label: "Mysql Host"
+    default: ""
+  - name: "app.MYSQL_PASSWORD"
+    type: password
+    label: "Mysql Password"
+    secret: true
+    default: ""
+  - name: "app.MYSQL_DB_NAME"
+    type: string
+    label: "Mysql Db Name"
+    default: ""
+  - name: "app.MYSQL_USER"
+    type: string
+    label: "Mysql User"
+    default: ""
+
 container:
   name: music-tag-web
   ports: []
@@ -20,13 +39,13 @@ container:
     TZ: "Asia/Shanghai"
     LANG: "zh_CN.UTF-8"
     DEBUG: "True"
-    PUID: "{{ index .Custom "PUID" | default \"1000\" }}"
-    PGID: "{{ index .Custom "PGID" | default \"1000\" }}"
+    PUID: "{{ index .Custom "common.PUID" | default \"1000\" }}"
+    PGID: "{{ index .Custom "common.PGID" | default \"1000\" }}"
     WORKER_NUM: "4"
-    MYSQL_HOST: "{{ index .Custom "MYSQL_HOST" | default \"\" }}"
-    MYSQL_PASSWORD: "{{ index .Custom "MYSQL_PASSWORD" | default \"\" }}"
-    MYSQL_DB_NAME: "{{ index .Custom "MYSQL_DB_NAME" | default \"\" }}"
-    MYSQL_USER: "{{ index .Custom "MYSQL_USER" | default \"\" }}"
+    MYSQL_HOST: "{{ index .Custom "app.MYSQL_HOST" | default \"\" }}"
+    MYSQL_PASSWORD: "{{ index .Custom "app.MYSQL_PASSWORD" | default \"\" }}"
+    MYSQL_DB_NAME: "{{ index .Custom "app.MYSQL_DB_NAME" | default \"\" }}"
+    MYSQL_USER: "{{ index .Custom "app.MYSQL_USER" | default \"\" }}"
   labels:
     traefik.enable: "true"
     traefik.http.routers.music-tag-web.entrypoints: "websecure"

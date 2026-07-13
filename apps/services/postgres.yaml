@@ -5,17 +5,23 @@ category: database
 tags: [postgres, postgresql, database, sql]
 dependencies: []
 
+params:
+  - name: "app.POSTGRES_PASSWORD"
+    type: password
+    label: "Postgres Password"
+    secret: true
+
 container:
   name: postgres
   image: postgres:15
   volumes:
     - "{{ .DataDir }}/postgres/15/data:/var/lib/postgresql/data:Z"
   environment:
-    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
+    TZ: "{{ index .Custom "common.TZ" | default \"Asia/Shanghai\" }}"
     LANG: "C.UTF-8"
     LC_ALL: "C.UTF-8"
     POSTGRES_USER: root
-    POSTGRES_PASSWORD: "{{ index .Custom "POSTGRES_PASSWORD" }}"
+    POSTGRES_PASSWORD: "{{ index .Custom "app.POSTGRES_PASSWORD" }}"
   networks:
     - "{{ .NetworkName }}"
   restart: always

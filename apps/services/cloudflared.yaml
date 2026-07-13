@@ -5,6 +5,11 @@ category: network
 tags: [cloudflare, tunnel, proxy, network]
 dependencies: []
 
+params:
+  - name: "self.CLOUDFLARED_TUNNEL_ID"
+    type: string
+    label: "Cloudflared Tunnel Id"
+
 container:
   name: cloudflared
   image: cloudflare/cloudflared:latest
@@ -18,11 +23,11 @@ container:
     - "run"
     - "--url"
     - "https://traefik:443"
-    - "{{ index .Custom "CLOUDFLARED_TUNNEL_ID" }}"
+    - "{{ index .Custom "self.CLOUDFLARED_TUNNEL_ID" }}"
   volumes:
     - "{{ .DataDir }}/cloudflared/etc:/etc/cloudflared"
   environment:
-    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
+    TZ: "{{ index .Custom "common.TZ" | default \"Asia/Shanghai\" }}"
   networks:
     - "{{ .NetworkName }}"
   restart: always

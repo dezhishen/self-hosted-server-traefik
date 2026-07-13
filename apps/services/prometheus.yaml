@@ -8,12 +8,12 @@ dependencies: []
 container:
   name: prometheus
   image: prom/prometheus
-  user: "{{ index .Custom "PUID" | default \"1000\" }}:{{ index .Custom "PGID" | default \"1000\" }}"
+  user: "{{ index .Custom "common.PUID" | default \"1000\" }}:{{ index .Custom "common.PGID" | default \"1000\" }}"
   volumes:
     - "{{ .DataDir }}/prometheus/tsdb:/prometheus"
     - "{{ .DataDir }}/prometheus/config:/etc/prometheus"
   environment:
-    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
+    TZ: "{{ index .Custom "common.TZ" | default \"Asia/Shanghai\" }}"
     LANG: "zh_CN.UTF-8"
   networks:
     - "{{ .NetworkName }}"

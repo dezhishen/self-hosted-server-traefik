@@ -9,6 +9,250 @@ tags:
 dependencies:
   - traefik
 
+params:
+  - name: "self.MOVIEPILOT_AUTH_SITE"
+    type: string
+    label: "Moviepilot Auth Site"
+  - name: "self.IYUU_SIGN"
+    type: string
+    label: "Iyuu Sign"
+  - name: "self.HHCLUB_USERNAME"
+    type: string
+    label: "Hhclub Username"
+  - name: "self.HHCLUB_PASSKEY"
+    type: password
+    label: "Hhclub Passkey"
+    secret: true
+  - name: "self.AUDIENCES_UID"
+    type: number
+    label: "Audiences Uid"
+  - name: "self.AUDIENCES_PASSKEY"
+    type: password
+    label: "Audiences Passkey"
+    secret: true
+  - name: "self.HDDOLBY_ID"
+    type: string
+    label: "Hddolby Id"
+  - name: "self.HDDOLBY_PASSKEY"
+    type: password
+    label: "Hddolby Passkey"
+    secret: true
+  - name: "self.ZMPT_UID"
+    type: number
+    label: "Zmpt Uid"
+  - name: "self.ZMPT_PASSKEY"
+    type: password
+    label: "Zmpt Passkey"
+    secret: true
+  - name: "self.FREEFARM_UID"
+    type: number
+    label: "Freefarm Uid"
+  - name: "self.FREEFARM_PASSKEY"
+    type: password
+    label: "Freefarm Passkey"
+    secret: true
+  - name: "self.HDFANS_UID"
+    type: number
+    label: "Hdfans Uid"
+  - name: "self.HDFANS_PASSKEY"
+    type: password
+    label: "Hdfans Passkey"
+    secret: true
+  - name: "self.WINTERSAKURA_UID"
+    type: number
+    label: "Wintersakura Uid"
+  - name: "self.WINTERSAKURA_PASSKEY"
+    type: password
+    label: "Wintersakura Passkey"
+    secret: true
+  - name: "self.LEAVES_UID"
+    type: number
+    label: "Leaves Uid"
+  - name: "self.LEAVES_PASSKEY"
+    type: password
+    label: "Leaves Passkey"
+    secret: true
+  - name: "self.PTBA_UID"
+    type: number
+    label: "Ptba Uid"
+  - name: "self.PTBA_PASSKEY"
+    type: password
+    label: "Ptba Passkey"
+    secret: true
+  - name: "self.ICC2022_UID"
+    type: number
+    label: "Icc2022 Uid"
+  - name: "self.ICC2022_PASSKEY"
+    type: password
+    label: "Icc2022 Passkey"
+    secret: true
+  - name: "self.XINGTAN_UID"
+    type: number
+    label: "Xingtan Uid"
+  - name: "self.XINGTAN_PASSKEY"
+    type: password
+    label: "Xingtan Passkey"
+    secret: true
+  - name: "self.PTVICOMO_UID"
+    type: number
+    label: "Ptvicomo Uid"
+  - name: "self.PTVICOMO_PASSKEY"
+    type: password
+    label: "Ptvicomo Passkey"
+    secret: true
+  - name: "self.AGSVPT_UID"
+    type: number
+    label: "Agsvpt Uid"
+  - name: "self.AGSVPT_PASSKEY"
+    type: password
+    label: "Agsvpt Passkey"
+    secret: true
+  - name: "self.HDKYL_UID"
+    type: number
+    label: "Hdkyl Uid"
+  - name: "self.HDKYL_PASSKEY"
+    type: password
+    label: "Hdkyl Passkey"
+    secret: true
+  - name: "self.QINGWA_UID"
+    type: number
+    label: "Qingwa Uid"
+  - name: "self.QINGWA_PASSKEY"
+    type: password
+    label: "Qingwa Passkey"
+    secret: true
+  - name: "self.DISCFAN_UID"
+    type: number
+    label: "Discfan Uid"
+  - name: "self.DISCFAN_PASSKEY"
+    type: password
+    label: "Discfan Passkey"
+    secret: true
+  - name: "self.HAIDAN_ID"
+    type: string
+    label: "Haidan Id"
+  - name: "self.HAIDAN_PASSKEY"
+    type: password
+    label: "Haidan Passkey"
+    secret: true
+  - name: "self.ROUSI_UID"
+    type: number
+    label: "Rousi Uid"
+  - name: "self.ROUSI_PASSKEY"
+    type: password
+    label: "Rousi Passkey"
+    secret: true
+  - name: "self.SUNNY_UID"
+    type: number
+    label: "Sunny Uid"
+  - name: "self.SUNNY_PASSKEY"
+    type: password
+    label: "Sunny Passkey"
+    secret: true
+  - name: "self.PTCAFE_UID"
+    type: number
+    label: "Ptcafe Uid"
+  - name: "self.PTCAFE_PASSKEY"
+    type: password
+    label: "Ptcafe Passkey"
+    secret: true
+  - name: "self.PTZONE_UID"
+    type: number
+    label: "Ptzone Uid"
+  - name: "self.PTZONE_PASSKEY"
+    type: password
+    label: "Ptzone Passkey"
+    secret: true
+  - name: "self.KUFEI_UID"
+    type: number
+    label: "Kufei Uid"
+  - name: "self.KUFEI_PASSKEY"
+    type: password
+    label: "Kufei Passkey"
+    secret: true
+  - name: "self.YEMAPT_UID"
+    type: number
+    label: "Yemapt Uid"
+  - name: "self.YEMAPT_PASSKEY"
+    type: password
+    label: "Yemapt Passkey"
+    secret: true
+  - name: "self.HSPT_UID"
+    type: number
+    label: "Hspt Uid"
+  - name: "self.HSPT_PASSKEY"
+    type: password
+    label: "Hspt Passkey"
+    secret: true
+  - name: "self.XINGYUNGE_UID"
+    type: number
+    label: "Xingyunge Uid"
+  - name: "self.XINGYUNGE_PASSKEY"
+    type: password
+    label: "Xingyunge Passkey"
+    secret: true
+  - name: "self.CSPT_UID"
+    type: number
+    label: "Cspt Uid"
+  - name: "self.CSPT_PASSKEY"
+    type: password
+    label: "Cspt Passkey"
+    secret: true
+  - name: "self.TMPT_UID"
+    type: number
+    label: "Tmpt Uid"
+  - name: "self.TMPT_PASSKEY"
+    type: password
+    label: "Tmpt Passkey"
+    secret: true
+  - name: "self.RAINGFH_UID"
+    type: number
+    label: "Raingfh Uid"
+  - name: "self.RAINGFH_PASSKEY"
+    type: password
+    label: "Raingfh Passkey"
+    secret: true
+  - name: "self.GTKPW_UID"
+    type: number
+    label: "Gtkpw Uid"
+  - name: "self.GTKPW_PASSKEY"
+    type: password
+    label: "Gtkpw Passkey"
+    secret: true
+  - name: "self.PTLGS_UID"
+    type: number
+    label: "Ptlgs Uid"
+  - name: "self.PTLGS_PASSKEY"
+    type: password
+    label: "Ptlgs Passkey"
+    secret: true
+  - name: "self.HDBAO_UID"
+    type: number
+    label: "Hdbao Uid"
+  - name: "self.HDBAO_PASSKEY"
+    type: password
+    label: "Hdbao Passkey"
+    secret: true
+  - name: "self.SEWERPT_UID"
+    type: number
+    label: "Sewerpt Uid"
+  - name: "self.SEWERPT_PASSKEY"
+    type: password
+    label: "Sewerpt Passkey"
+    secret: true
+  - name: "self.GITHUB_READ_ACCESS_TOKEN"
+    type: password
+    label: "Github Read Access Token"
+    secret: true
+  - name: "self.MP_DB_TYPE"
+    type: string
+    label: "Mp Db Type"
+    default: "sqlite"
+  - name: "self.MP_DB_WAL_ENABLE"
+    type: bool
+    label: "Mp Db Wal Enable"
+    default: False
+
 container:
   name: moviepilot
   image: jxxghp/moviepilot-v2:latest
@@ -18,82 +262,82 @@ container:
     - "{{ .DataDir }}/moviepilot-v2/.cloakbrowser:/moviepilot/.cloakbrowser"
     - "/var/run/docker.sock:/var/run/docker.sock:ro"
   environment:
-    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
-    LANG: "{{ index .Custom "LANG" | default \"zh_CN.UTF-8\" }}"
-    PUID: "{{ index .Custom "PUID" | default \"1000\" }}"
-    PGID: "{{ index .Custom "PGID" | default \"1000\" }}"
+    TZ: "{{ index .Custom "common.TZ" | default \"Asia/Shanghai\" }}"
+    LANG: "{{ index .Custom "common.LANG" | default \"zh_CN.UTF-8\" }}"
+    PUID: "{{ index .Custom "common.PUID" | default \"1000\" }}"
+    PGID: "{{ index .Custom "common.PGID" | default \"1000\" }}"
     UMASK: "022"
     LOG_LEVEL: "WARNING"
     DOH: "False"
-    AUTH_SITE: "{{ index .Custom "MOVIEPILOT_AUTH_SITE" }}"
-    IYUU_SIGN: "{{ index .Custom "IYUU_SIGN" }}"
-    HHCLUB_USERNAME: "{{ index .Custom "HHCLUB_USERNAME" }}"
-    HHCLUB_PASSKEY: "{{ index .Custom "HHCLUB_PASSKEY" }}"
-    AUDIENCES_UID: "{{ index .Custom "AUDIENCES_UID" }}"
-    AUDIENCES_PASSKEY: "{{ index .Custom "AUDIENCES_PASSKEY" }}"
-    HDDOLBY_ID: "{{ index .Custom "HDDOLBY_ID" }}"
-    HDDOLBY_PASSKEY: "{{ index .Custom "HDDOLBY_PASSKEY" }}"
-    ZMPT_UID: "{{ index .Custom "ZMPT_UID" }}"
-    ZMPT_PASSKEY: "{{ index .Custom "ZMPT_PASSKEY" }}"
-    FREEFARM_UID: "{{ index .Custom "FREEFARM_UID" }}"
-    FREEFARM_PASSKEY: "{{ index .Custom "FREEFARM_PASSKEY" }}"
-    HDFANS_UID: "{{ index .Custom "HDFANS_UID" }}"
-    HDFANS_PASSKEY: "{{ index .Custom "HDFANS_PASSKEY" }}"
-    WINTERSAKURA_UID: "{{ index .Custom "WINTERSAKURA_UID" }}"
-    WINTERSAKURA_PASSKEY: "{{ index .Custom "WINTERSAKURA_PASSKEY" }}"
-    LEAVES_UID: "{{ index .Custom "LEAVES_UID" }}"
-    LEAVES_PASSKEY: "{{ index .Custom "LEAVES_PASSKEY" }}"
-    PTBA_UID: "{{ index .Custom "PTBA_UID" }}"
-    PTBA_PASSKEY: "{{ index .Custom "PTBA_PASSKEY" }}"
-    ICC2022_UID: "{{ index .Custom "ICC2022_UID" }}"
-    ICC2022_PASSKEY: "{{ index .Custom "ICC2022_PASSKEY" }}"
-    XINGTAN_UID: "{{ index .Custom "XINGTAN_UID" }}"
-    XINGTAN_PASSKEY: "{{ index .Custom "XINGTAN_PASSKEY" }}"
-    PTVICOMO_UID: "{{ index .Custom "PTVICOMO_UID" }}"
-    PTVICOMO_PASSKEY: "{{ index .Custom "PTVICOMO_PASSKEY" }}"
-    AGSVPT_UID: "{{ index .Custom "AGSVPT_UID" }}"
-    AGSVPT_PASSKEY: "{{ index .Custom "AGSVPT_PASSKEY" }}"
-    HDKYL_UID: "{{ index .Custom "HDKYL_UID" }}"
-    HDKYL_PASSKEY: "{{ index .Custom "HDKYL_PASSKEY" }}"
-    QINGWA_UID: "{{ index .Custom "QINGWA_UID" }}"
-    QINGWA_PASSKEY: "{{ index .Custom "QINGWA_PASSKEY" }}"
-    DISCFAN_UID: "{{ index .Custom "DISCFAN_UID" }}"
-    DISCFAN_PASSKEY: "{{ index .Custom "DISCFAN_PASSKEY" }}"
-    HAIDAN_ID: "{{ index .Custom "HAIDAN_ID" }}"
-    HAIDAN_PASSKEY: "{{ index .Custom "HAIDAN_PASSKEY" }}"
-    ROUSI_UID: "{{ index .Custom "ROUSI_UID" }}"
-    ROUSI_PASSKEY: "{{ index .Custom "ROUSI_PASSKEY" }}"
-    SUNNY_UID: "{{ index .Custom "SUNNY_UID" }}"
-    SUNNY_PASSKEY: "{{ index .Custom "SUNNY_PASSKEY" }}"
-    PTCAFE_UID: "{{ index .Custom "PTCAFE_UID" }}"
-    PTCAFE_PASSKEY: "{{ index .Custom "PTCAFE_PASSKEY" }}"
-    PTZONE_UID: "{{ index .Custom "PTZONE_UID" }}"
-    PTZONE_PASSKEY: "{{ index .Custom "PTZONE_PASSKEY" }}"
-    KUFEI_UID: "{{ index .Custom "KUFEI_UID" }}"
-    KUFEI_PASSKEY: "{{ index .Custom "KUFEI_PASSKEY" }}"
-    YEMAPT_UID: "{{ index .Custom "YEMAPT_UID" }}"
-    YEMAPT_PASSKEY: "{{ index .Custom "YEMAPT_PASSKEY" }}"
-    HSPT_UID: "{{ index .Custom "HSPT_UID" }}"
-    HSPT_PASSKEY: "{{ index .Custom "HSPT_PASSKEY" }}"
-    XINGYUNGE_UID: "{{ index .Custom "XINGYUNGE_UID" }}"
-    XINGYUNGE_PASSKEY: "{{ index .Custom "XINGYUNGE_PASSKEY" }}"
-    CSPT_UID: "{{ index .Custom "CSPT_UID" }}"
-    CSPT_PASSKEY: "{{ index .Custom "CSPT_PASSKEY" }}"
-    TMPT_UID: "{{ index .Custom "TMPT_UID" }}"
-    TMPT_PASSKEY: "{{ index .Custom "TMPT_PASSKEY" }}"
-    RAINGFH_UID: "{{ index .Custom "RAINGFH_UID" }}"
-    RAINGFH_PASSKEY: "{{ index .Custom "RAINGFH_PASSKEY" }}"
-    GTKPW_UID: "{{ index .Custom "GTKPW_UID" }}"
-    GTKPW_PASSKEY: "{{ index .Custom "GTKPW_PASSKEY" }}"
-    PTLGS_UID: "{{ index .Custom "PTLGS_UID" }}"
-    PTLGS_PASSKEY: "{{ index .Custom "PTLGS_PASSKEY" }}"
-    HDBAO_UID: "{{ index .Custom "HDBAO_UID" }}"
-    HDBAO_PASSKEY: "{{ index .Custom "HDBAO_PASSKEY" }}"
-    SEWERPT_UID: "{{ index .Custom "SEWERPT_UID" }}"
-    SEWERPT_PASSKEY: "{{ index .Custom "SEWERPT_PASSKEY" }}"
-    GITHUB_TOKEN: "{{ index .Custom "GITHUB_READ_ACCESS_TOKEN" }}"
-    DB_TYPE: "{{ index .Custom "MP_DB_TYPE" | default \"sqlite\" }}"
-    DB_SQLITE_WAL_ENABLE: "{{ index .Custom "MP_DB_WAL_ENABLE" | default \"false\" }}"
+    AUTH_SITE: "{{ index .Custom "self.MOVIEPILOT_AUTH_SITE" }}"
+    IYUU_SIGN: "{{ index .Custom "self.IYUU_SIGN" }}"
+    HHCLUB_USERNAME: "{{ index .Custom "self.HHCLUB_USERNAME" }}"
+    HHCLUB_PASSKEY: "{{ index .Custom "self.HHCLUB_PASSKEY" }}"
+    AUDIENCES_UID: "{{ index .Custom "self.AUDIENCES_UID" }}"
+    AUDIENCES_PASSKEY: "{{ index .Custom "self.AUDIENCES_PASSKEY" }}"
+    HDDOLBY_ID: "{{ index .Custom "self.HDDOLBY_ID" }}"
+    HDDOLBY_PASSKEY: "{{ index .Custom "self.HDDOLBY_PASSKEY" }}"
+    ZMPT_UID: "{{ index .Custom "self.ZMPT_UID" }}"
+    ZMPT_PASSKEY: "{{ index .Custom "self.ZMPT_PASSKEY" }}"
+    FREEFARM_UID: "{{ index .Custom "self.FREEFARM_UID" }}"
+    FREEFARM_PASSKEY: "{{ index .Custom "self.FREEFARM_PASSKEY" }}"
+    HDFANS_UID: "{{ index .Custom "self.HDFANS_UID" }}"
+    HDFANS_PASSKEY: "{{ index .Custom "self.HDFANS_PASSKEY" }}"
+    WINTERSAKURA_UID: "{{ index .Custom "self.WINTERSAKURA_UID" }}"
+    WINTERSAKURA_PASSKEY: "{{ index .Custom "self.WINTERSAKURA_PASSKEY" }}"
+    LEAVES_UID: "{{ index .Custom "self.LEAVES_UID" }}"
+    LEAVES_PASSKEY: "{{ index .Custom "self.LEAVES_PASSKEY" }}"
+    PTBA_UID: "{{ index .Custom "self.PTBA_UID" }}"
+    PTBA_PASSKEY: "{{ index .Custom "self.PTBA_PASSKEY" }}"
+    ICC2022_UID: "{{ index .Custom "self.ICC2022_UID" }}"
+    ICC2022_PASSKEY: "{{ index .Custom "self.ICC2022_PASSKEY" }}"
+    XINGTAN_UID: "{{ index .Custom "self.XINGTAN_UID" }}"
+    XINGTAN_PASSKEY: "{{ index .Custom "self.XINGTAN_PASSKEY" }}"
+    PTVICOMO_UID: "{{ index .Custom "self.PTVICOMO_UID" }}"
+    PTVICOMO_PASSKEY: "{{ index .Custom "self.PTVICOMO_PASSKEY" }}"
+    AGSVPT_UID: "{{ index .Custom "self.AGSVPT_UID" }}"
+    AGSVPT_PASSKEY: "{{ index .Custom "self.AGSVPT_PASSKEY" }}"
+    HDKYL_UID: "{{ index .Custom "self.HDKYL_UID" }}"
+    HDKYL_PASSKEY: "{{ index .Custom "self.HDKYL_PASSKEY" }}"
+    QINGWA_UID: "{{ index .Custom "self.QINGWA_UID" }}"
+    QINGWA_PASSKEY: "{{ index .Custom "self.QINGWA_PASSKEY" }}"
+    DISCFAN_UID: "{{ index .Custom "self.DISCFAN_UID" }}"
+    DISCFAN_PASSKEY: "{{ index .Custom "self.DISCFAN_PASSKEY" }}"
+    HAIDAN_ID: "{{ index .Custom "self.HAIDAN_ID" }}"
+    HAIDAN_PASSKEY: "{{ index .Custom "self.HAIDAN_PASSKEY" }}"
+    ROUSI_UID: "{{ index .Custom "self.ROUSI_UID" }}"
+    ROUSI_PASSKEY: "{{ index .Custom "self.ROUSI_PASSKEY" }}"
+    SUNNY_UID: "{{ index .Custom "self.SUNNY_UID" }}"
+    SUNNY_PASSKEY: "{{ index .Custom "self.SUNNY_PASSKEY" }}"
+    PTCAFE_UID: "{{ index .Custom "self.PTCAFE_UID" }}"
+    PTCAFE_PASSKEY: "{{ index .Custom "self.PTCAFE_PASSKEY" }}"
+    PTZONE_UID: "{{ index .Custom "self.PTZONE_UID" }}"
+    PTZONE_PASSKEY: "{{ index .Custom "self.PTZONE_PASSKEY" }}"
+    KUFEI_UID: "{{ index .Custom "self.KUFEI_UID" }}"
+    KUFEI_PASSKEY: "{{ index .Custom "self.KUFEI_PASSKEY" }}"
+    YEMAPT_UID: "{{ index .Custom "self.YEMAPT_UID" }}"
+    YEMAPT_PASSKEY: "{{ index .Custom "self.YEMAPT_PASSKEY" }}"
+    HSPT_UID: "{{ index .Custom "self.HSPT_UID" }}"
+    HSPT_PASSKEY: "{{ index .Custom "self.HSPT_PASSKEY" }}"
+    XINGYUNGE_UID: "{{ index .Custom "self.XINGYUNGE_UID" }}"
+    XINGYUNGE_PASSKEY: "{{ index .Custom "self.XINGYUNGE_PASSKEY" }}"
+    CSPT_UID: "{{ index .Custom "self.CSPT_UID" }}"
+    CSPT_PASSKEY: "{{ index .Custom "self.CSPT_PASSKEY" }}"
+    TMPT_UID: "{{ index .Custom "self.TMPT_UID" }}"
+    TMPT_PASSKEY: "{{ index .Custom "self.TMPT_PASSKEY" }}"
+    RAINGFH_UID: "{{ index .Custom "self.RAINGFH_UID" }}"
+    RAINGFH_PASSKEY: "{{ index .Custom "self.RAINGFH_PASSKEY" }}"
+    GTKPW_UID: "{{ index .Custom "self.GTKPW_UID" }}"
+    GTKPW_PASSKEY: "{{ index .Custom "self.GTKPW_PASSKEY" }}"
+    PTLGS_UID: "{{ index .Custom "self.PTLGS_UID" }}"
+    PTLGS_PASSKEY: "{{ index .Custom "self.PTLGS_PASSKEY" }}"
+    HDBAO_UID: "{{ index .Custom "self.HDBAO_UID" }}"
+    HDBAO_PASSKEY: "{{ index .Custom "self.HDBAO_PASSKEY" }}"
+    SEWERPT_UID: "{{ index .Custom "self.SEWERPT_UID" }}"
+    SEWERPT_PASSKEY: "{{ index .Custom "self.SEWERPT_PASSKEY" }}"
+    GITHUB_TOKEN: "{{ index .Custom "self.GITHUB_READ_ACCESS_TOKEN" }}"
+    DB_TYPE: "{{ index .Custom "self.MP_DB_TYPE" | default \"sqlite\" }}"
+    DB_SQLITE_WAL_ENABLE: "{{ index .Custom "self.MP_DB_WAL_ENABLE" | default \"false\" }}"
   labels:
     traefik.enable: "true"
     traefik.http.middlewares.moviepilot.compress: "true"

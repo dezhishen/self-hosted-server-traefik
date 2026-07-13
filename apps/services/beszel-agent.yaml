@@ -5,18 +5,32 @@ category: monitoring
 tags: [monitoring, metrics, agent]
 dependencies: [beszel]
 
+params:
+  - name: "app.BESZEL_PUBLIC_KEY"
+    type: password
+    label: "Beszel Public Key"
+    secret: true
+  - name: "app.BESZEL_HUB_URL"
+    type: string
+    label: "Beszel Hub Url"
+    default: "http://beszel:8090"
+  - name: "app.BESZEL_TOKEN"
+    type: password
+    label: "Beszel Token"
+    secret: true
+
 container:
   name: beszel-agent
   image: henrygd/beszel-agent
   volumes:
     - "/var/run/docker.sock:/var/run/docker.sock:ro"
   environment:
-    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
+    TZ: "{{ index .Custom "common.TZ" | default \"Asia/Shanghai\" }}"
     LANG: "zh_CN.UTF-8"
     PORT: "45876"
-    KEY: "{{ index .Custom "BESZEL_PUBLIC_KEY" }}"
-    HUB_URL: "{{ index .Custom "BESZEL_HUB_URL" | default \"http://beszel:8090\" }}"
-    TOKEN: "{{ index .Custom "BESZEL_TOKEN" }}"
+    KEY: "{{ index .Custom "app.BESZEL_PUBLIC_KEY" }}"
+    HUB_URL: "{{ index .Custom "app.BESZEL_HUB_URL" | default \"http://beszel:8090\" }}"
+    TOKEN: "{{ index .Custom "app.BESZEL_TOKEN" }}"
   networks:
     - "{{ .NetworkName }}"
   restart: always

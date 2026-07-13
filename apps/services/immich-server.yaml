@@ -5,13 +5,47 @@ category: media
 tags: [immich, photos, videos, management]
 dependencies: [immich-database]
 
+params:
+  - name: "self.IMMICH_VERSION"
+    type: string
+    label: "Immich Version"
+    default: "latest"
+  - name: "self.VIDEO_GID"
+    type: number
+    label: "Video Gid"
+    default: 44
+  - name: "self.RENDER_GID"
+    type: number
+    label: "Render Gid"
+    default: 104
+  - name: "self.IMMICH_DATA_PASSWORD"
+    type: password
+    label: "Immich Data Password"
+    secret: true
+  - name: "app.REDIS_HOST"
+    type: string
+    label: "Redis Host"
+    default: "redis"
+  - name: "app.REDIS_PORT"
+    type: number
+    label: "Redis Port"
+    default: 6379
+  - name: "app.REDIS_PASSWORD"
+    type: password
+    label: "Redis Password"
+    secret: true
+  - name: "self.IMMICH_REDIS_DBINDEX"
+    type: number
+    label: "Immich Redis Dbindex"
+    default: 0
+
 container:
   name: immich-server
-  image: "ghcr.nju.edu.cn/immich-app/immich-server:{{ index .Custom "IMMICH_VERSION" | default \"latest\" }}"
-  user: "{{ index .Custom "PUID" | default \"1000\" }}:{{ index .Custom "PGID" | default \"1000\" }}"
+  image: "ghcr.nju.edu.cn/immich-app/immich-server:{{ index .Custom "self.IMMICH_VERSION" | default \"latest\" }}"
+  user: "{{ index .Custom "common.PUID" | default \"1000\" }}:{{ index .Custom "common.PGID" | default \"1000\" }}"
   group_add:
-    - "{{ index .Custom "VIDEO_GID" | default \"44\" }}"
-    - "{{ index .Custom "RENDER_GID" | default \"104\" }}"
+    - "{{ index .Custom "self.VIDEO_GID" | default \"44\" }}"
+    - "{{ index .Custom "self.RENDER_GID" | default \"104\" }}"
   devices:
     - "/dev/dri:/dev/dri"
   volumes:
@@ -22,17 +56,17 @@ container:
     - "{{ .DataDir }}/immich/data/profile:/data/profile"
     - "{{ .DataDir }}/immich/data/backups:/data/backups"
   environment:
-    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
+    TZ: "{{ index .Custom "common.TZ" | default \"Asia/Shanghai\" }}"
     LANG: "C.UTF-8"
     DB_HOSTNAME: immich-database
     DB_USERNAME: postgres
-    DB_PASSWORD: "{{ index .Custom "IMMICH_DATA_PASSWORD" }}"
+    DB_PASSWORD: "{{ index .Custom "self.IMMICH_DATA_PASSWORD" }}"
     DB_DATABASE_NAME: immich
     DB_PORT: "5432"
-    REDIS_HOSTNAME: "{{ index .Custom "REDIS_HOST" | default \"redis\" }}"
-    REDIS_PORT: "{{ index .Custom "REDIS_PORT" | default \"6379\" }}"
-    REDIS_PASSWORD: "{{ index .Custom "REDIS_PASSWORD" }}"
-    REDIS_DBINDEX: "{{ index .Custom "IMMICH_REDIS_DBINDEX" | default \"0\" }}"
+    REDIS_HOSTNAME: "{{ index .Custom "app.REDIS_HOST" | default \"redis\" }}"
+    REDIS_PORT: "{{ index .Custom "app.REDIS_PORT" | default \"6379\" }}"
+    REDIS_PASSWORD: "{{ index .Custom "app.REDIS_PASSWORD" }}"
+    REDIS_DBINDEX: "{{ index .Custom "self.IMMICH_REDIS_DBINDEX" | default \"0\" }}"
   networks:
     - "{{ .NetworkName }}"
   restart: always

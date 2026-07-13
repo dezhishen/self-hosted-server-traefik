@@ -8,6 +8,12 @@ tags:
   - smart-home
 dependencies: []
 
+params:
+  - name: "self.PIP_INDEX_URL"
+    type: string
+    label: "Pip Index Url"
+    default: "https://mirrors.aliyun.com/pypi/simple"
+
 container:
   name: homeassistant
   image: homeassistant/home-assistant:latest
@@ -17,11 +23,11 @@ container:
   devices:
     - "/dev/net/tun:/dev/net/tun:rwm"
   environment:
-    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
-    LANG: "{{ index .Custom "LANG" | default \"zh_CN.UTF-8\" }}"
-    PUID: "{{ index .Custom "PUID" | default \"1000\" }}"
-    PGID: "{{ index .Custom "PGID" | default \"1000\" }}"
-    PIP_INDEX_URL: "{{ index .Custom "PIP_INDEX_URL" | default \"https://mirrors.aliyun.com/pypi/simple\" }}"
+    TZ: "{{ index .Custom "common.TZ" | default \"Asia/Shanghai\" }}"
+    LANG: "{{ index .Custom "common.LANG" | default \"zh_CN.UTF-8\" }}"
+    PUID: "{{ index .Custom "common.PUID" | default \"1000\" }}"
+    PGID: "{{ index .Custom "common.PGID" | default \"1000\" }}"
+    PIP_INDEX_URL: "{{ index .Custom "self.PIP_INDEX_URL" | default \"https://mirrors.aliyun.com/pypi/simple\" }}"
   restart: unless-stopped
   privileged: true
   network_mode: host

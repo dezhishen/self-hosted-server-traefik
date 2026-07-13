@@ -8,6 +8,28 @@ tags:
 dependencies:
   - traefik
 
+params:
+  - name: "self.VIDEO_GID"
+    type: number
+    label: "Video Gid"
+    default: 44
+  - name: "self.RENDER_GID"
+    type: number
+    label: "Render Gid"
+    default: 107
+  - name: "self.HERMES_USERNAME"
+    type: string
+    label: "Hermes Username"
+    default: "admin"
+  - name: "self.HERMES_PASSWORD"
+    type: password
+    label: "Hermes Password"
+    secret: true
+  - name: "self.HERMES_SECRET"
+    type: password
+    label: "Hermes Secret"
+    secret: true
+
 container:
   name: hermes
   ports: []
@@ -16,14 +38,14 @@ container:
   devices:
     - "/dev/dri:/dev/dri"
   group_add:
-    - "{{ index .Custom "VIDEO_GID" | default \"44\" }}"
-    - "{{ index .Custom "RENDER_GID" | default \"107\" }}"
+    - "{{ index .Custom "self.VIDEO_GID" | default \"44\" }}"
+    - "{{ index .Custom "self.RENDER_GID" | default \"107\" }}"
   environment:
     HERMES_DASHBOARD: "1"
     HERMES_DASHBOARD_HOST: "0.0.0.0"
-    HERMES_DASHBOARD_BASIC_AUTH_USERNAME: "{{ index .Custom "HERMES_USERNAME" | default \"admin\" }}"
-    HERMES_DASHBOARD_BASIC_AUTH_PASSWORD: "{{ index .Custom "HERMES_PASSWORD" }}"
-    HERMES_DASHBOARD_BASIC_AUTH_SECRET: "{{ index .Custom "HERMES_SECRET" }}"
+    HERMES_DASHBOARD_BASIC_AUTH_USERNAME: "{{ index .Custom "self.HERMES_USERNAME" | default \"admin\" }}"
+    HERMES_DASHBOARD_BASIC_AUTH_PASSWORD: "{{ index .Custom "self.HERMES_PASSWORD" }}"
+    HERMES_DASHBOARD_BASIC_AUTH_SECRET: "{{ index .Custom "self.HERMES_SECRET" }}"
     TZ: "Asia/Shanghai"
     LANG: "zh_CN.UTF-8"
   labels:

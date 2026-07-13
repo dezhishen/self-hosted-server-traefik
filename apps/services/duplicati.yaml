@@ -13,9 +13,9 @@ container:
     - "{{ .DataDir }}/duplicati/backups:/backups"
     - "{{ .DataDir }}:/source"
   environment:
-    PUID: "{{ index .Custom "PUID" | default \"1000\" }}"
-    PGID: "{{ index .Custom "PGID" | default \"1000\" }}"
-    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
+    PUID: "{{ index .Custom "common.PUID" | default \"1000\" }}"
+    PGID: "{{ index .Custom "common.PGID" | default \"1000\" }}"
+    TZ: "{{ index .Custom "common.TZ" | default \"Asia/Shanghai\" }}"
     LANG: "zh_CN.UTF-8"
   networks:
     - "{{ .NetworkName }}"

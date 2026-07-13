@@ -5,10 +5,19 @@ category: storage
 tags: [s3, storage, object-storage]
 dependencies: []
 
+params:
+  - name: "self.MINIO_ROOT_USER"
+    type: string
+    label: "Minio Root User"
+  - name: "self.MINIO_ROOT_PASSWORD"
+    type: password
+    label: "Minio Root Password"
+    secret: true
+
 container:
   name: minio
   image: minio/minio:latest
-  user: "{{ index .Custom "PUID" | default \"1000\" }}:{{ index .Custom "PGID" | default \"1000\" }}"
+  user: "{{ index .Custom "common.PUID" | default \"1000\" }}:{{ index .Custom "common.PGID" | default \"1000\" }}"
   command:
     - server
     - /data
@@ -17,11 +26,11 @@ container:
   volumes:
     - "{{ .DataDir }}/minio/latest/data:/data"
   environment:
-    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
+    TZ: "{{ index .Custom "common.TZ" | default \"Asia/Shanghai\" }}"
     LANG: "C.UTF-8"
     LC_ALL: "C.UTF-8"
-    MINIO_ROOT_USER: "{{ index .Custom "MINIO_ROOT_USER" }}"
-    MINIO_ROOT_PASSWORD: "{{ index .Custom "MINIO_ROOT_PASSWORD" }}"
+    MINIO_ROOT_USER: "{{ index .Custom "self.MINIO_ROOT_USER" }}"
+    MINIO_ROOT_PASSWORD: "{{ index .Custom "self.MINIO_ROOT_PASSWORD" }}"
   networks:
     - "{{ .NetworkName }}"
   restart: always

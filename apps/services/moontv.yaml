@@ -9,17 +9,32 @@ tags:
 dependencies:
   - traefik
 
+params:
+  - name: "self.MOONTV_PASSWORD"
+    type: password
+    label: "Moontv Password"
+    secret: true
+  - name: "app.REDIS_PASSWORD"
+    type: password
+    label: "Redis Password"
+    secret: true
+    default: ""
+  - name: "self.MOONTV_REDIS_DBINDEX"
+    type: number
+    label: "Moontv Redis Dbindex"
+    default: 0
+
 container:
   name: moontv
   image: ghcr.io/senshinya/moontv:latest
   environment:
-    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
-    LANG: "{{ index .Custom "LANG" | default \"zh_CN.UTF-8\" }}"
+    TZ: "{{ index .Custom "common.TZ" | default \"Asia/Shanghai\" }}"
+    LANG: "{{ index .Custom "common.LANG" | default \"zh_CN.UTF-8\" }}"
     USERNAME: "admin"
-    PASSWORD: "{{ index .Custom "MOONTV_PASSWORD" }}"
+    PASSWORD: "{{ index .Custom "self.MOONTV_PASSWORD" }}"
     NEXT_PUBLIC_STORAGE_TYPE: "redis"
     NEXT_PUBLIC_ENABLE_REGISTER: "false"
-    REDIS_URL: "redis://{{ index .Custom "REDIS_PASSWORD" | default \"\" }}@redis:6379/{{ index .Custom "MOONTV_REDIS_DBINDEX" | default \"0\" }}"
+    REDIS_URL: "redis://{{ index .Custom "app.REDIS_PASSWORD" | default \"\" }}@redis:6379/{{ index .Custom "self.MOONTV_REDIS_DBINDEX" | default \"0\" }}"
   labels:
     traefik.enable: "true"
     traefik.http.routers.moontv.rule: "Host(`moontv.{{ .Domain }}`)"

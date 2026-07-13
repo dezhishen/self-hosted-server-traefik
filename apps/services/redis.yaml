@@ -5,13 +5,19 @@ category: database
 tags: [redis, valkey, cache, key-value]
 dependencies: []
 
+params:
+  - name: "app.REDIS_PASSWORD"
+    type: password
+    label: "Redis Password"
+    secret: true
+
 container:
   name: redis
   image: valkey/valkey
-  user: "{{ index .Custom "PUID" | default \"1000\" }}:{{ index .Custom "PGID" | default \"1000\" }}"
+  user: "{{ index .Custom "common.PUID" | default \"1000\" }}:{{ index .Custom "common.PGID" | default \"1000\" }}"
   command:
     - "--requirepass"
-    - "{{ index .Custom "REDIS_PASSWORD" }}"
+    - "{{ index .Custom "app.REDIS_PASSWORD" }}"
   volumes:
     - "{{ .DataDir }}/redis/data:/data"
   networks:

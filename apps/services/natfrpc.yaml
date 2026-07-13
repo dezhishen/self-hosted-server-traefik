@@ -5,14 +5,23 @@ category: network
 tags: [nat, tunnel, frp, proxy]
 dependencies: []
 
+params:
+  - name: "self.NATFRPC_TOKEN"
+    type: password
+    label: "Natfrpc Token"
+    secret: true
+  - name: "self.NATFRPC_TUNNELS"
+    type: string
+    label: "Natfrpc Tunnels"
+
 container:
   name: natfrpc
   image: ghcr.io/natfrp/frpc:latest
   command:
     - "-f"
-    - "{{ index .Custom "NATFRPC_TOKEN" }}:{{ index .Custom "NATFRPC_TUNNELS" }}"
+    - "{{ index .Custom "self.NATFRPC_TOKEN" }}:{{ index .Custom "self.NATFRPC_TUNNELS" }}"
   environment:
-    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
+    TZ: "{{ index .Custom "common.TZ" | default \"Asia/Shanghai\" }}"
   networks:
     - "{{ .NetworkName }}"
   restart: always

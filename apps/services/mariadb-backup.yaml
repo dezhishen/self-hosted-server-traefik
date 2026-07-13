@@ -5,20 +5,30 @@ category: database
 tags: [mariadb, mysql, backup, database]
 dependencies: [mariadb]
 
+params:
+  - name: "app.MYSQL_HOST"
+    type: string
+    label: "Mysql Host"
+    default: "mariadb"
+  - name: "app.MYSQL_PASSWORD"
+    type: password
+    label: "Mysql Password"
+    secret: true
+
 container:
   name: mariadb-backup
   image: databack/mysql-backup
-  user: "{{ index .Custom "PUID" | default \"1000\" }}:{{ index .Custom "PGID" | default \"1000\" }}"
+  user: "{{ index .Custom "common.PUID" | default \"1000\" }}:{{ index .Custom "common.PGID" | default \"1000\" }}"
   command:
     - dump
   volumes:
     - "{{ .DataDir }}/mariadb-backup/backup:/db"
   environment:
-    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
+    TZ: "{{ index .Custom "common.TZ" | default \"Asia/Shanghai\" }}"
     LANG: "zh_CN.UTF-8"
-    DB_SERVER: "{{ index .Custom "MYSQL_HOST" | default \"mariadb\" }}"
+    DB_SERVER: "{{ index .Custom "app.MYSQL_HOST" | default \"mariadb\" }}"
     DB_USER: root
-    DB_PASS: "{{ index .Custom "MYSQL_PASSWORD" }}"
+    DB_PASS: "{{ index .Custom "app.MYSQL_PASSWORD" }}"
     DB_DUMP_FREQUENCY: "60"
     DB_DUMP_BEGIN: "0000"
     DB_DUMP_TARGET: /db

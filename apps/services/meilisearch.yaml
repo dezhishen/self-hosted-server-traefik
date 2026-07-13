@@ -9,6 +9,12 @@ tags:
 dependencies:
   - traefik
 
+params:
+  - name: "self.MEILI_MASTER_KEY"
+    type: password
+    label: "Meili Master Key"
+    secret: true
+
 container:
   name: meilisearch
   ports:
@@ -27,7 +33,7 @@ container:
   networks:
     - "{{ .NetworkName }}"
   restart: always
-  user: "{{ index .Custom "PUID" | default \"1000\" }}:{{ index .Custom "PGID" | default \"1000\" }}"
+  user: "{{ index .Custom "common.PUID" | default \"1000\" }}:{{ index .Custom "common.PGID" | default \"1000\" }}"
   privileged: false
   resources:
     memory: "1200M"
@@ -36,7 +42,7 @@ container:
     - --log-level
     - info
     - --max-indexing-memory=512M
-    - --master-key={{ index .Custom "MEILI_MASTER_KEY" }}
+    - --master-key={{ index .Custom "self.MEILI_MASTER_KEY" }}
     - --max-indexing-threads=2
 
 traefik:

@@ -12,8 +12,8 @@ container:
   name: flaresolverr
   image: ghcr.io/flaresolverr/flaresolverr:latest
   environment:
-    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
-    LANG: "{{ index .Custom "LANG" | default \"zh_CN.UTF-8\" }}"
+    TZ: "{{ index .Custom "common.TZ" | default \"Asia/Shanghai\" }}"
+    LANG: "{{ index .Custom "common.LANG" | default \"zh_CN.UTF-8\" }}"
     LOG_LEVEL: "info"
     TEST_URL: "https://www.baidu.com"
     BROWSER_TIMEOUT: "80000"

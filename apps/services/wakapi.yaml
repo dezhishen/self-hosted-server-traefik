@@ -5,21 +5,41 @@ category: utility
 tags: [coding, stats, wakatime, tracking]
 dependencies: []
 
+params:
+  - name: "self.WAKAPI_PASSWORD_SALT"
+    type: password
+    label: "Wakapi Password Salt"
+    secret: true
+  - name: "app.MYSQL_HOST"
+    type: string
+    label: "Mysql Host"
+  - name: "app.MYSQL_PORT"
+    type: number
+    label: "Mysql Port"
+    default: 3306
+  - name: "app.MYSQL_USER"
+    type: string
+    label: "Mysql User"
+  - name: "app.MYSQL_PASSWORD"
+    type: password
+    label: "Mysql Password"
+    secret: true
+
 container:
   name: wakapi
   image: ghcr.io/muety/wakapi:latest
   volumes:
     - "{{ .DataDir }}/wakapi/data:/data"
   environment:
-    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
+    TZ: "{{ index .Custom "common.TZ" | default \"Asia/Shanghai\" }}"
     LANG: "zh_CN.UTF-8"
-    WAKAPI_PASSWORD_SALT: "{{ index .Custom "WAKAPI_PASSWORD_SALT" }}"
+    WAKAPI_PASSWORD_SALT: "{{ index .Custom "self.WAKAPI_PASSWORD_SALT" }}"
     WAKAPI_DB_TYPE: mysql
-    WAKAPI_DB_HOST: "{{ index .Custom "MYSQL_HOST" }}"
-    WAKAPI_DB_PORT: "{{ index .Custom "MYSQL_PORT" | default \"3306\" }}"
+    WAKAPI_DB_HOST: "{{ index .Custom "app.MYSQL_HOST" }}"
+    WAKAPI_DB_PORT: "{{ index .Custom "app.MYSQL_PORT" | default \"3306\" }}"
     WAKAPI_DB_NAME: wakapi
-    WAKAPI_DB_USER: "{{ index .Custom "MYSQL_USER" }}"
-    WAKAPI_DB_PASSWORD: "{{ index .Custom "MYSQL_PASSWORD" }}"
+    WAKAPI_DB_USER: "{{ index .Custom "app.MYSQL_USER" }}"
+    WAKAPI_DB_PASSWORD: "{{ index .Custom "app.MYSQL_PASSWORD" }}"
   networks:
     - "{{ .NetworkName }}"
   restart: always
