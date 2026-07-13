@@ -347,6 +347,13 @@ func (r *Runtime) ContainerUpdateLabels(containerID string, labels map[string]st
 	return nil
 }
 
+func (r *Runtime) ContainerRename(containerID string, newName string) error {
+	_, err := r.client.ContainerRename(context.Background(), containerID, client.ContainerRenameOptions{
+		NewName: newName,
+	})
+	return err
+}
+
 // ---------------------------------------------------------------------------
 // Image operations
 // ---------------------------------------------------------------------------

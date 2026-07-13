@@ -353,6 +353,7 @@ type ContainerRuntime interface {
 	ContainerLogs(containerID string, tail int) (string, error)
 	ContainerList(all bool) ([]ContainerInfo, error)
 	ContainerUpdateLabels(containerID string, labels map[string]string) error
+	ContainerRename(containerID string, newName string) error
 	PullImage(image string) error
 	ImageList() ([]ImageInfo, error)
 	NetworkCreate(params NetworkCreateParams) (string, error)

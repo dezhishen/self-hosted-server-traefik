@@ -185,22 +185,14 @@ func (m *migrateService) Adopt(req *contracts.AdoptRequest) (*contracts.AdoptRes
 		return nil, fmt.Errorf("container %s is already managed", req.ContainerID)
 	}
 
+	origName := strings.TrimPrefix(container.Name, "/")
 	serviceName := req.ServiceName
 	if serviceName == "" {
-		serviceName = strings.TrimPrefix(container.Name, "/")
+		serviceName = origName
 	}
 
-	version := req.Version
-	if version == "" {
-		version = "adopted"
-	}
-
-	repoName := req.RepoName
-	if repoName == "" {
-		repoName = "adopted"
-	}
-
-	managedLabels := contracts.ManagedLabels(serviceName, repoName, version, m.name, "docker")
+	// Adopted containers don't come from a repo; leave repo and version empty.
+	managedLabels := contracts.ManagedLabels(serviceName, req.RepoName, req.Version, m.name, "docker")
 	var newID string
 
 	if req.ServiceName != "" && len(req.Params) > 0 {
@@ -210,16 +202,27 @@ func (m *migrateService) Adopt(req *contracts.AdoptRequest) (*contracts.AdoptRes
 			return nil, fmt.Errorf("install service: %w", err)
 		}
 	} else {
-		// No template match: clone the container from its current config.
+		// Rename the original container to free its name for the clone,
+		// so the new container inherits network aliases automatically.
+		tempName := origName + "-old"
+		if err := m.runtime.ContainerRename(req.ContainerID, tempName); err != nil {
+			m.log.Warn("rename old container for name preservation", logger.String("id", req.ContainerID), logger.Error(err))
+		}
+
+		// Clone the container with the original name.
 		runParams := containerToRunParams(container, managedLabels)
-		runParams.Name = "" // Let Docker generate a unique name to avoid conflict with the original
+		runParams.Name = origName
 		newID, err = m.runtime.ContainerRun(runParams)
 		if err != nil {
+			// Attempt to restore original name before returning.
+			if rerr := m.runtime.ContainerRename(req.ContainerID, origName); rerr != nil {
+				m.log.Warn("restore original container name", logger.String("id", req.ContainerID), logger.Error(rerr))
+			}
 			return nil, fmt.Errorf("clone container: %w", err)
 		}
 	}
 
-	// Stop and remove the original container.
+	// Stop and remove the original container (now under temp name).
 	if err := m.runtime.ContainerStop(req.ContainerID); err != nil {
 		m.log.Warn("stop old container", logger.String("id", req.ContainerID), logger.Error(err))
 	}
@@ -245,7 +248,7 @@ func (m *migrateService) Adopt(req *contracts.AdoptRequest) (*contracts.AdoptRes
 	return &contracts.AdoptResult{
 		ContainerID: newID,
 		ServiceName: serviceName,
-		RepoName:    repoName,
+		RepoName:    req.RepoName,
 		Endpoint:    m.name,
 		Labels:      resultLabels,
 	}, nil
