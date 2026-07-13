@@ -212,6 +212,7 @@ func (m *migrateService) Adopt(req *contracts.AdoptRequest) (*contracts.AdoptRes
 	} else {
 		// No template match: clone the container from its current config.
 		runParams := containerToRunParams(container, managedLabels)
+		runParams.Name = "" // Let Docker generate a unique name to avoid conflict with the original
 		newID, err = m.runtime.ContainerRun(runParams)
 		if err != nil {
 			return nil, fmt.Errorf("clone container: %w", err)

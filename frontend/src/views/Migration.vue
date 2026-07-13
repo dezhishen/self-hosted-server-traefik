@@ -192,8 +192,8 @@ const generateSvcName = ref('')
 const generating = ref(false)
 
 function handleGenerate() {
-  if (!selected.value || !selected.value.matched_service) return
-  generateSvcName.value = selected.value.matched_service
+  if (!selected.value) return
+  generateSvcName.value = selected.value.matched_service || selected.value.container.name
   generateDialogVisible.value = true
 }
 
