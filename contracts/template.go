@@ -11,7 +11,7 @@ type TemplateData struct {
 	Params      []*ParamValue         `yaml:"params,omitempty" json:"params,omitempty"`
 	ParamMap    map[string]interface{} `yaml:"-" json:"-"`
 	Endpoint    *EndpointConfig       `yaml:"endpoint,omitempty" json:"endpoint,omitempty"`
-	Custom      map[string]string     `yaml:"custom,omitempty" json:"custom,omitempty"`
+	Custom      map[string]interface{} `yaml:"custom,omitempty" json:"custom,omitempty"`
 	Environment map[string]string     `yaml:"environment,omitempty" json:"environment,omitempty"`
 	Runtime     *RuntimeInfo          `yaml:"runtime,omitempty" json:"runtime,omitempty"`
 	Extra       map[string]interface{} `yaml:"extra,omitempty" json:"extra,omitempty"`
