@@ -13,10 +13,10 @@ container:
   volumes:
     - "{{ .DataDir }}/ttyd/data:/data"
   environment:
-    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
+    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
     LANG: "zh_CN.UTF-8"
-    UID: "{{ .Custom.PUID | default \"1000\" }}"
-    GID: "{{ .Custom.PGID | default \"1000\" }}"
+    UID: "{{ index .Custom "PUID" | default \"1000\" }}"
+    GID: "{{ index .Custom "PGID" | default \"1000\" }}"
   networks:
     - "{{ .NetworkName }}"
   restart: always
@@ -31,5 +31,5 @@ traefik:
   cert_resolver: traefik
   network_mode: bridge
   extra_labels:
-    traefik.http.middlewares.ttyd-auth.digestauth.users: "{{ .Custom.TTYD_AUTH_USER }}:traefik:{{ .Custom.TTYD_AUTH_DIGEST }}"
+    traefik.http.middlewares.ttyd-auth.digestauth.users: "{{ index .Custom "TTYD_AUTH_USER" }}:traefik:{{ index .Custom "TTYD_AUTH_DIGEST" }}"
     traefik.http.routers.ttyd.middlewares: ttyd-auth@docker

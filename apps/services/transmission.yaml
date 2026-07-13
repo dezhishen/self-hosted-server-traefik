@@ -16,12 +16,12 @@ container:
     - "{{ .DataDir }}/public/downloads:/data/downloads"
     - "{{ .DataDir }}/transmission/finished-torrents:/finished-torrents"
   environment:
-    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
-    LANG: "{{ .Custom.LANG | default \"zh_CN.UTF-8\" }}"
-    PUID: "{{ .Custom.PUID | default \"1000\" }}"
-    PGID: "{{ .Custom.PGID | default \"1000\" }}"
-    USER: "{{ .Custom.TRANSMISSION_USER | default \"admin\" }}"
-    PASS: "{{ .Custom.TRANSMISSION_PASSWORD }}"
+    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
+    LANG: "{{ index .Custom "LANG" | default \"zh_CN.UTF-8\" }}"
+    PUID: "{{ index .Custom "PUID" | default \"1000\" }}"
+    PGID: "{{ index .Custom "PGID" | default \"1000\" }}"
+    USER: "{{ index .Custom "TRANSMISSION_USER" | default \"admin\" }}"
+    PASS: "{{ index .Custom "TRANSMISSION_PASSWORD" }}"
   networks:
     - "{{ .NetworkName }}"
   restart: unless-stopped

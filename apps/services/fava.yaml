@@ -23,12 +23,12 @@ container:
     traefik.http.routers.fava.entrypoints: "websecure"
     traefik.http.routers.fava.rule: "Host(`fava.{{ .Domain }}`)"
     traefik.http.routers.fava.tls.certresolver: "traefik"
-    traefik.http.middlewares.fava-auth.digestauth.users: "{{ .Custom.FAVA_AUTH_USER | default \"admin\" }}:traefik:{{ .Custom.FAVA_AUTH_DIGEST }}"
+    traefik.http.middlewares.fava-auth.digestauth.users: "{{ index .Custom "FAVA_AUTH_USER" | default \"admin\" }}:traefik:{{ index .Custom "FAVA_AUTH_DIGEST" }}"
     traefik.http.routers.fava.middlewares: "fava-auth@docker"
   networks:
     - "{{ .NetworkName }}"
   restart: always
-  user: "{{ .Custom.PUID | default \"1000\" }}:{{ .Custom.PGID | default \"1000\" }}"
+  user: "{{ index .Custom "PUID" | default \"1000\" }}:{{ index .Custom "PGID" | default \"1000\" }}"
   privileged: false
   resources:
     memory: "512M"

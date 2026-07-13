@@ -11,7 +11,7 @@
 #   {{ .InternalNet }}      - Internal network name
 #   {{ .TLSEnabled }}       - TLS enabled (true/false)
 #   {{ .ServiceName }}      - Service name
-#   {{ .Custom.KEY }}       - User-defined variables (from ParamStore)
+#   {{ index .Custom "KEY" }}       - User-defined variables (from ParamStore)
 # =============================================================================
 
 # ---- Top-level fields ----

@@ -61,6 +61,7 @@ func (l *Loader) LoadAll() ([]*contracts.ServiceDefinition, error) {
 
 func (l *Loader) Load(name string) (*contracts.ServiceDefinition, error) {
 	for _, dir := range l.paths {
+		// Try direct lookup first (for flat directories)
 		svc, err := l.loadFile(filepath.Join(dir, name+".yaml"))
 		if err == nil {
 			return svc, nil
@@ -68,6 +69,23 @@ func (l *Loader) Load(name string) (*contracts.ServiceDefinition, error) {
 		svc, err = l.loadFile(filepath.Join(dir, name+".yml"))
 		if err == nil {
 			return svc, nil
+		}
+
+		// If the directory has an index.yaml, search its entries for the service.
+		// This handles nested layouts like apps/services/{name}.yaml.
+		idx, err := loadLocalIndex(filepath.Join(dir, "index.yaml"))
+		if err != nil {
+			continue
+		}
+		for _, entry := range *idx {
+			stem := strings.TrimSuffix(entry, ".yaml")
+			stem = strings.TrimSuffix(stem, ".yml")
+			if filepath.Base(stem) == name {
+				svc, err := l.loadFile(filepath.Join(dir, entry))
+				if err == nil {
+					return svc, nil
+				}
+			}
 		}
 	}
 	return nil, fmt.Errorf("service %q not found", name)

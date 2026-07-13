@@ -16,10 +16,10 @@ container:
     - "{{ .DataDir }}/public/downloads:/downloads"
     - "{{ .DataDir }}/public/:/data"
   environment:
-    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
-    LANG: "{{ .Custom.LANG | default \"zh_CN.UTF-8\" }}"
-    PUID: "{{ .Custom.PUID | default \"1000\" }}"
-    PGID: "{{ .Custom.PGID | default \"1000\" }}"
+    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
+    LANG: "{{ index .Custom "LANG" | default \"zh_CN.UTF-8\" }}"
+    PUID: "{{ index .Custom "PUID" | default \"1000\" }}"
+    PGID: "{{ index .Custom "PGID" | default \"1000\" }}"
   labels:
     traefik.enable: "true"
     traefik.http.routers.jackett.rule: "Host(`jackett.{{ .Domain }}`)"

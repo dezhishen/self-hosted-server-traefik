@@ -239,6 +239,7 @@ type ServiceStatusResult struct {
 
 type ServiceManager interface {
 	List() ([]*ServiceDefinition, error)
+	ListInstalled() ([]*ServiceDefinition, error)
 	Get(name string) (*ServiceDefinition, error)
 	GetByCategory(category string) ([]*ServiceDefinition, error)
 	Search(query string) ([]*ServiceDefinition, error)
@@ -249,4 +250,5 @@ type ServiceManager interface {
 	Update(name string) error
 	PreCheck(name string, params []*ParamValue) error
 	RenderConfig(name string, params []*ParamValue) (map[string]string, error)
+	Preview(name string, params []*ParamValue) (*ContainerRunParams, error)
 }

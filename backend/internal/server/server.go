@@ -133,9 +133,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/services/", s.handleWithEndpoint(s.handleServiceByID))
 	mux.HandleFunc("/api/containers", s.handleWithEndpoint(s.handleContainers))
 	mux.HandleFunc("/api/migrate/analyze", s.handleWithEndpoint(s.handleMigrateAnalyze))
-	mux.HandleFunc("/api/migrate/execute", s.handleWithEndpoint(s.handleMigrateExecute))
 	mux.HandleFunc("/api/migrate/generate", s.handleWithEndpoint(s.handleMigrateGenerate))
 	mux.HandleFunc("/api/migrate/adopt", s.handleWithEndpoint(s.handleMigrateAdopt))
+	mux.HandleFunc("/api/migrate/preview", s.handleWithEndpoint(s.handleMigratePreview))
 	mux.HandleFunc("/api/ssh/keygen", s.handle(s.withAuth(s.handleSSHKeygen)))
 	mux.HandleFunc("/api/ssh/import", s.handle(s.withAuth(s.handleSSHImport)))
 	mux.HandleFunc("/api/ssh/keys", s.handle(s.withAuth(s.handleSSHKeys)))
@@ -455,6 +455,7 @@ func (s *Server) handleServices(w http.ResponseWriter, r *http.Request, ep *endp
 	case http.MethodGet:
 		category := r.URL.Query().Get("category")
 		query := r.URL.Query().Get("query")
+		installed := r.URL.Query().Get("installed")
 		var services []*contracts.ServiceDefinition
 		var err error
 		switch {
@@ -462,6 +463,8 @@ func (s *Server) handleServices(w http.ResponseWriter, r *http.Request, ep *endp
 			services, err = ep.ServiceManager.Search(query)
 		case category != "":
 			services, err = ep.ServiceManager.GetByCategory(category)
+		case installed == "true":
+			services, err = ep.ServiceManager.ListInstalled()
 		default:
 			services, err = ep.ServiceManager.List()
 		}
@@ -576,6 +579,22 @@ func (s *Server) handleServiceByID(w http.ResponseWriter, r *http.Request, ep *e
 		}
 		return NotFoundError(ErrServiceNotFound, "service not installed").
 			WithDetail("service", name)
+
+	case r.Method == http.MethodPost && action == "preview":
+		var req struct {
+			Params []*contracts.ParamValue `json:"params"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			return ValidationError(ErrInvalidJSON, "invalid request")
+		}
+		runParams, err := ep.ServiceManager.Preview(name, req.Params)
+		if err != nil {
+			return InternalError(ErrInternal, err.Error()).
+				WithCause(err).
+				WithDetail("service", name)
+		}
+		jsonResp(w, runParams)
+		return nil
 
 	case r.Method == http.MethodPost && action == "render":
 		var req struct {
@@ -758,24 +777,6 @@ func (s *Server) handleMigrateAnalyze(w http.ResponseWriter, r *http.Request, ep
 	return nil
 }
 
-// POST /api/migrate/execute
-func (s *Server) handleMigrateExecute(w http.ResponseWriter, r *http.Request, ep *endpoint.Context) *APIError {
-	if r.Method != http.MethodPost {
-		return MethodNotAllowed()
-	}
-	var req contracts.MigrationRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return ValidationError(ErrInvalidJSON, "invalid request body")
-	}
-	newID, err := ep.MigrateService.Execute(&req)
-	if err != nil {
-		return InternalError(ErrInternal, err.Error()).
-			WithCause(err)
-	}
-	jsonResp(w, map[string]string{"container_id": newID})
-	return nil
-}
-
 // POST /api/migrate/generate
 func (s *Server) handleMigrateGenerate(w http.ResponseWriter, r *http.Request, ep *endpoint.Context) *APIError {
 	if r.Method != http.MethodPost {
@@ -810,6 +811,27 @@ func (s *Server) handleMigrateAdopt(w http.ResponseWriter, r *http.Request, ep *
 		return ValidationError(ErrMissingField, "container_id is required")
 	}
 	result, err := ep.MigrateService.Adopt(&req)
+	if err != nil {
+		return InternalError(ErrInternal, err.Error()).
+			WithCause(err)
+	}
+	jsonResp(w, result)
+	return nil
+}
+
+// POST /api/migrate/preview
+func (s *Server) handleMigratePreview(w http.ResponseWriter, r *http.Request, ep *endpoint.Context) *APIError {
+	if r.Method != http.MethodPost {
+		return MethodNotAllowed()
+	}
+	var req contracts.AdoptPreviewRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return ValidationError(ErrInvalidJSON, "invalid request body")
+	}
+	if req.ContainerID == "" {
+		return ValidationError(ErrMissingField, "container_id is required")
+	}
+	result, err := ep.MigrateService.PreviewAdopt(&req)
 	if err != nil {
 		return InternalError(ErrInternal, err.Error()).
 			WithCause(err)

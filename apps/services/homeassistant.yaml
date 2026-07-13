@@ -17,11 +17,11 @@ container:
   devices:
     - "/dev/net/tun:/dev/net/tun:rwm"
   environment:
-    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
-    LANG: "{{ .Custom.LANG | default \"zh_CN.UTF-8\" }}"
-    PUID: "{{ .Custom.PUID | default \"1000\" }}"
-    PGID: "{{ .Custom.PGID | default \"1000\" }}"
-    PIP_INDEX_URL: "{{ .Custom.PIP_INDEX_URL | default \"https://mirrors.aliyun.com/pypi/simple\" }}"
+    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
+    LANG: "{{ index .Custom "LANG" | default \"zh_CN.UTF-8\" }}"
+    PUID: "{{ index .Custom "PUID" | default \"1000\" }}"
+    PGID: "{{ index .Custom "PGID" | default \"1000\" }}"
+    PIP_INDEX_URL: "{{ index .Custom "PIP_INDEX_URL" | default \"https://mirrors.aliyun.com/pypi/simple\" }}"
   restart: unless-stopped
   privileged: true
   network_mode: host

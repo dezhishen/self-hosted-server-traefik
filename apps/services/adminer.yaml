@@ -8,7 +8,7 @@ dependencies: []
 container:
   name: adminer
   image: library/adminer
-  user: "{{ .Custom.PUID | default \"1000\" }}:{{ .Custom.PGID | default \"1000\" }}"
+  user: "{{ index .Custom "PUID" | default \"1000\" }}:{{ index .Custom "PGID" | default \"1000\" }}"
   volumes:
     - "{{ .DataDir }}/adminer/data:/data"
   networks:

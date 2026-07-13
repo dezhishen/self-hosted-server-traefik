@@ -19,8 +19,8 @@ container:
     - "{{ .DataDir }}/adguardhome/work:/opt/adguardhome/work"
     - "{{ .DataDir }}/adguardhome/conf:/opt/adguardhome/conf"
   environment:
-    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
-    LANG: "{{ .Custom.LANG | default \"zh_CN.UTF-8\" }}"
+    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
+    LANG: "{{ index .Custom "LANG" | default \"zh_CN.UTF-8\" }}"
   labels:
     traefik.enable: "true"
     traefik.http.routers.adguardhome.rule: "Host(`adguardhome.{{ .Domain }}`)"

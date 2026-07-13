@@ -42,6 +42,7 @@ func NewContext(opts ContextOpts) *Context {
 		TemplateEngine: opts.TemplateEngine,
 		Logger:         opts.Logger,
 		Name:           opts.Name,
+		Endpoint:       opts.Config,
 	})
 
 	generatedDir := filepath.Join(opts.BaseDataDir, "apps", "generated")

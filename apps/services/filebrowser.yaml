@@ -17,8 +17,8 @@ container:
     - "{{ .DataDir }}/filebrowser/database.db:/database.db"
     - "{{ .DataDir }}/filebrowser/filebrowser.json:/.filebrowser.json"
   environment:
-    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
-    LANG: "{{ .Custom.LANG | default \"zh_CN.UTF-8\" }}"
+    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
+    LANG: "{{ index .Custom "LANG" | default \"zh_CN.UTF-8\" }}"
   labels:
     traefik.enable: "true"
     traefik.http.routers.filebrowser.rule: "Host(`filebrowser.{{ .Domain }}`)"
@@ -30,7 +30,7 @@ container:
     - "{{ .NetworkName }}"
   restart: unless-stopped
   privileged: false
-  user: "{{ .Custom.PUID | default \"1000\" }}:{{ .Custom.PGID | default \"1000\" }}"
+  user: "{{ index .Custom "PUID" | default \"1000\" }}:{{ index .Custom "PGID" | default \"1000\" }}"
 
   healthcheck:
     test: ["CMD", "curl", "-f", "http://localhost:8080/health"]

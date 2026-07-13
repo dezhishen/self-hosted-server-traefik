@@ -17,11 +17,11 @@ container:
   environment:
     TZ: "Asia/Shanghai"
     LANG: "zh_CN.UTF-8"
-    DEBUG: "{{ .Custom.RSS_BOT_DEBUG | default \"0\" }}"
-    TOKEN: "{{ .Custom.RSS_BOT_TOKEN }}"
-    MANAGER: "{{ .Custom.RSS_BOT_MANAGER }}"
-    DATABASE_URL: "{{ .Custom.RSS_BOT_DATABASE_URL | default \"\" }}"
-    TELEGRAPH_TOKEN: "{{ .Custom.RSS_BOT_TELEGRAPH_TOKEN }}"
+    DEBUG: "{{ index .Custom "RSS_BOT_DEBUG" | default \"0\" }}"
+    TOKEN: "{{ index .Custom "RSS_BOT_TOKEN" }}"
+    MANAGER: "{{ index .Custom "RSS_BOT_MANAGER" }}"
+    DATABASE_URL: "{{ index .Custom "RSS_BOT_DATABASE_URL" | default \"\" }}"
+    TELEGRAPH_TOKEN: "{{ index .Custom "RSS_BOT_TELEGRAPH_TOKEN" }}"
   labels: {}
   networks:
     - "{{ .NetworkName }}"

@@ -220,8 +220,10 @@ func (d *DeviceMapping) parseDeviceString(s string) error {
 type ContainerRunParams struct {
 	Image         string            `yaml:"image" json:"image"`
 	Name          string            `yaml:"name,omitempty" json:"name,omitempty"`
+	Hostname      string            `yaml:"hostname,omitempty" json:"hostname,omitempty"`
 	Command       []string          `yaml:"command,omitempty" json:"command,omitempty"`
 	Entrypoint    []string          `yaml:"entrypoint,omitempty" json:"entrypoint,omitempty"`
+	WorkingDir    string            `yaml:"working_dir,omitempty" json:"working_dir,omitempty"`
 	Env           map[string]string `yaml:"env,omitempty" json:"env,omitempty"`
 	Ports         []PortMapping     `yaml:"ports,omitempty" json:"ports,omitempty"`
 	Volumes       []VolumeMount     `yaml:"volumes,omitempty" json:"volumes,omitempty"`
@@ -234,6 +236,7 @@ type ContainerRunParams struct {
 	CapAdd        []string          `yaml:"cap_add,omitempty" json:"cap_add,omitempty"`
 	CapDrop       []string          `yaml:"cap_drop,omitempty" json:"cap_drop,omitempty"`
 	Sysctls       map[string]string `yaml:"sysctls,omitempty" json:"sysctls,omitempty"`
+	Tty           bool              `yaml:"tty,omitempty" json:"tty,omitempty"`
 	Healthcheck   *HealthcheckConfig `yaml:"healthcheck,omitempty" json:"healthcheck,omitempty"`
 	Resources     *ResourceLimits   `yaml:"resources,omitempty" json:"resources,omitempty"`
 	ExtraHosts    []string          `yaml:"extra_hosts,omitempty" json:"extra_hosts,omitempty"`
@@ -256,14 +259,22 @@ type ContainerInfo struct {
 	Mounts        []VolumeMount     `yaml:"mounts,omitempty" json:"mounts,omitempty"`
 	Command       []string          `yaml:"command,omitempty" json:"command,omitempty"`
 	Entrypoint    []string          `yaml:"entrypoint,omitempty" json:"entrypoint,omitempty"`
+	WorkingDir    string            `yaml:"working_dir,omitempty" json:"working_dir,omitempty"`
 	User          string            `yaml:"user,omitempty" json:"user,omitempty"`
+	Hostname      string            `yaml:"hostname,omitempty" json:"hostname,omitempty"`
 	RestartPolicy string            `yaml:"restart_policy,omitempty" json:"restart_policy,omitempty"`
 	NetworkMode   string            `yaml:"network_mode,omitempty" json:"network_mode,omitempty"`
 	Privileged    bool              `yaml:"privileged,omitempty" json:"privileged,omitempty"`
 	CapAdd        []string          `yaml:"cap_add,omitempty" json:"cap_add,omitempty"`
 	CapDrop       []string          `yaml:"cap_drop,omitempty" json:"cap_drop,omitempty"`
+	Sysctls       map[string]string `yaml:"sysctls,omitempty" json:"sysctls,omitempty"`
 	DNS           []string          `yaml:"dns,omitempty" json:"dns,omitempty"`
+	DNSSearch     []string          `yaml:"dns_search,omitempty" json:"dns_search,omitempty"`
 	ExtraHosts    []string          `yaml:"extra_hosts,omitempty" json:"extra_hosts,omitempty"`
+	Devices       []DeviceMapping   `yaml:"devices,omitempty" json:"devices,omitempty"`
+	Tty           bool              `yaml:"tty,omitempty" json:"tty,omitempty"`
+	Healthcheck   *HealthcheckConfig `yaml:"healthcheck,omitempty" json:"healthcheck,omitempty"`
+	Resources     *ResourceLimits   `yaml:"resources,omitempty" json:"resources,omitempty"`
 }
 
 type ImageInfo struct {

@@ -11,7 +11,6 @@ import (
 	"net"
 	"net/http"
 	"net/netip"
-	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -311,7 +310,6 @@ func (r *Runtime) ContainerList(all bool) ([]contracts.ContainerInfo, error) {
 // stopping or recreating it. Uses the Docker API's /containers/{id}/update
 // endpoint which supports Labels since API v1.40.
 func (r *Runtime) ContainerUpdateLabels(containerID string, labels map[string]string) error {
-	// Build payload: the Docker API accepts Labels in the update body.
 	payload := map[string]map[string]string{"Labels": labels}
 	body, err := json.Marshal(payload)
 	if err != nil {
@@ -319,9 +317,15 @@ func (r *Runtime) ContainerUpdateLabels(containerID string, labels map[string]st
 	}
 
 	version := r.client.ClientVersion()
-	apiPath := path.Join("/", "v"+strings.TrimPrefix(version, "v"), "containers", containerID, "update")
+	apiPath := "/v" + strings.TrimPrefix(version, "v") + "/containers/" + containerID + "/update"
 
-	reqURL := "http://" + r.daemonHost + apiPath
+	// daemonHost may include scheme prefix (e.g. "http://docker" for unix sockets).
+	// Construct the URL correctly in either case.
+	host := r.daemonHost
+	if !strings.HasPrefix(host, "http://") && !strings.HasPrefix(host, "https://") {
+		host = "http://" + host
+	}
+	reqURL := host + apiPath
 
 	req, err := http.NewRequestWithContext(context.Background(), "POST", reqURL, bytes.NewReader(body))
 	if err != nil {
@@ -560,6 +564,18 @@ func toContainerInfo(resp *container.InspectResponse) *contracts.ContainerInfo {
 		info.Command = resp.Config.Cmd
 		info.Entrypoint = resp.Config.Entrypoint
 		info.User = resp.Config.User
+		info.WorkingDir = resp.Config.WorkingDir
+		info.Hostname = resp.Config.Hostname
+		info.Tty = resp.Config.Tty
+		if resp.Config.Healthcheck != nil {
+			info.Healthcheck = &contracts.HealthcheckConfig{
+				Test:        resp.Config.Healthcheck.Test,
+				Interval:    resp.Config.Healthcheck.Interval.String(),
+				Timeout:     resp.Config.Healthcheck.Timeout.String(),
+				Retries:     resp.Config.Healthcheck.Retries,
+				StartPeriod: resp.Config.Healthcheck.StartPeriod.String(),
+			}
+		}
 	}
 
 	// Host config
@@ -567,6 +583,12 @@ func toContainerInfo(resp *container.InspectResponse) *contracts.ContainerInfo {
 		info.Privileged = resp.HostConfig.Privileged
 		info.CapAdd = resp.HostConfig.CapAdd
 		info.CapDrop = resp.HostConfig.CapDrop
+		info.Sysctls = resp.HostConfig.Sysctls
+		info.ExtraHosts = resp.HostConfig.ExtraHosts
+		info.NetworkMode = string(resp.HostConfig.NetworkMode)
+		if resp.HostConfig.RestartPolicy.Name != "" {
+			info.RestartPolicy = string(resp.HostConfig.RestartPolicy.Name)
+		}
 		if len(resp.HostConfig.DNS) > 0 {
 			dns := make([]string, len(resp.HostConfig.DNS))
 			for i, addr := range resp.HostConfig.DNS {
@@ -574,10 +596,35 @@ func toContainerInfo(resp *container.InspectResponse) *contracts.ContainerInfo {
 			}
 			info.DNS = dns
 		}
-		info.ExtraHosts = resp.HostConfig.ExtraHosts
-		info.NetworkMode = string(resp.HostConfig.NetworkMode)
-		if resp.HostConfig.RestartPolicy.Name != "" {
-			info.RestartPolicy = string(resp.HostConfig.RestartPolicy.Name)
+		if len(resp.HostConfig.DNSSearch) > 0 {
+			info.DNSSearch = resp.HostConfig.DNSSearch
+		}
+		if len(resp.HostConfig.Devices) > 0 {
+			info.Devices = make([]contracts.DeviceMapping, 0, len(resp.HostConfig.Devices))
+			for _, d := range resp.HostConfig.Devices {
+				info.Devices = append(info.Devices, contracts.DeviceMapping{
+					HostPath:      d.PathOnHost,
+					ContainerPath: d.PathInContainer,
+					Permissions:   d.CgroupPermissions,
+				})
+			}
+		}
+		if resp.HostConfig.Memory > 0 || resp.HostConfig.NanoCPUs > 0 {
+			info.Resources = &contracts.ResourceLimits{}
+			if resp.HostConfig.NanoCPUs > 0 {
+				info.Resources.CPUs = fmt.Sprintf("%.2f", float64(resp.HostConfig.NanoCPUs)/1e9)
+			}
+			if resp.HostConfig.Memory > 0 {
+				info.Resources.Memory = fmt.Sprintf("%d", resp.HostConfig.Memory)
+			}
+		}
+	}
+
+	// Network settings
+	if resp.NetworkSettings != nil && len(resp.NetworkSettings.Networks) > 0 {
+		info.Networks = make(map[string]string, len(resp.NetworkSettings.Networks))
+		for name, ns := range resp.NetworkSettings.Networks {
+			info.Networks[name] = ns.IPAddress.String()
 		}
 	}
 

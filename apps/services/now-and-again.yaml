@@ -14,8 +14,8 @@ container:
   volumes:
     - "{{ .DataDir }}/now-and-again/data:/data"
   environment:
-    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
-    LANG: "{{ .Custom.LANG | default \"zh_CN.UTF-8\" }}"
+    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
+    LANG: "{{ index .Custom "LANG" | default \"zh_CN.UTF-8\" }}"
     NA_DATA_DIR: "/data"
     GIN_MODE: "release"
   labels:
@@ -29,7 +29,7 @@ container:
     - "{{ .NetworkName }}"
   restart: unless-stopped
   privileged: false
-  user: "{{ .Custom.PUID | default \"1000\" }}:{{ .Custom.PGID | default \"1000\" }}"
+  user: "{{ index .Custom "PUID" | default \"1000\" }}:{{ index .Custom "PGID" | default \"1000\" }}"
 
   resources:
     memory: "256M"

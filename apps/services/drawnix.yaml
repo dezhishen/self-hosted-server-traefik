@@ -20,7 +20,7 @@ container:
     traefik.http.routers.drawnix.entrypoints: "websecure"
     traefik.http.routers.drawnix.rule: "Host(`drawnix.{{ .Domain }}`)"
     traefik.http.routers.drawnix.tls.certresolver: "traefik"
-    traefik.http.middlewares.common-auth.digestauth.users: "{{ .Custom.COMMON_AUTH_USERLIST }}"
+    traefik.http.middlewares.common-auth.digestauth.users: "{{ index .Custom "COMMON_AUTH_USERLIST" }}"
     traefik.http.routers.drawnix.middlewares: "common-auth@docker"
   networks:
     - "{{ .NetworkName }}"

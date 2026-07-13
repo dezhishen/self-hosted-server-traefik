@@ -22,8 +22,8 @@ container:
     - "{{ .DataDir }}/qinglong/scripts:/ql/scripts"
     - "{{ .DataDir }}:{{ .DataDir }}"
   environment:
-    PUID: "{{ .Custom.PUID | default \"1000\" }}"
-    PGID: "{{ .Custom.PGID | default \"1000\" }}"
+    PUID: "{{ index .Custom "PUID" | default \"1000\" }}"
+    PGID: "{{ index .Custom "PGID" | default \"1000\" }}"
     UMASK: "022"
     TZ: "Asia/Shanghai"
     LANG: "zh_CN.UTF-8"

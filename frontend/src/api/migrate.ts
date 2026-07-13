@@ -24,19 +24,8 @@ export interface MigrationCandidate {
   extracted_params: ParamValue[]
 }
 
-export interface MigrationRequest {
-  container_id: string
-  service_name: string
-  params: ParamValue[]
-  remove_old: boolean
-}
-
 export function analyzeMigrations(): Promise<{ data: MigrationCandidate[] }> {
   return client.get('/migrate/analyze')
-}
-
-export function executeMigration(req: MigrationRequest): Promise<{ data: { container_id: string } }> {
-  return client.post('/migrate/execute', req)
 }
 
 export interface GenerateAppRequest {
@@ -55,8 +44,11 @@ export function generateApp(req: GenerateAppRequest): Promise<{ data: GenerateAp
 
 export interface AdoptRequest {
   container_id: string
-  service_name?: string
+  service_name: string
+  repo_name?: string
   version?: string
+  params?: ParamValue[]
+  rebuild?: boolean
 }
 
 export interface AdoptResult {

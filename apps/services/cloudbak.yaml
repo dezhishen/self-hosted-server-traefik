@@ -11,9 +11,9 @@ container:
   volumes:
     - "{{ .DataDir }}/cloudbak/data:/app/data"
   environment:
-    PUID: "{{ .Custom.PUID | default \"1000\" }}"
-    PGID: "{{ .Custom.PGID | default \"1000\" }}"
-    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
+    PUID: "{{ index .Custom "PUID" | default \"1000\" }}"
+    PGID: "{{ index .Custom "PGID" | default \"1000\" }}"
+    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
     LANG: "zh_CN.UTF-8"
   networks:
     - "{{ .NetworkName }}"

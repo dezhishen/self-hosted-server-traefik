@@ -13,13 +13,13 @@ container:
   name: moontv
   image: ghcr.io/senshinya/moontv:latest
   environment:
-    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
-    LANG: "{{ .Custom.LANG | default \"zh_CN.UTF-8\" }}"
+    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
+    LANG: "{{ index .Custom "LANG" | default \"zh_CN.UTF-8\" }}"
     USERNAME: "admin"
-    PASSWORD: "{{ .Custom.MOONTV_PASSWORD }}"
+    PASSWORD: "{{ index .Custom "MOONTV_PASSWORD" }}"
     NEXT_PUBLIC_STORAGE_TYPE: "redis"
     NEXT_PUBLIC_ENABLE_REGISTER: "false"
-    REDIS_URL: "redis://{{ .Custom.REDIS_PASSWORD | default \"\" }}@redis:6379/{{ .Custom.MOONTV_REDIS_DBINDEX | default \"0\" }}"
+    REDIS_URL: "redis://{{ index .Custom "REDIS_PASSWORD" | default \"\" }}@redis:6379/{{ index .Custom "MOONTV_REDIS_DBINDEX" | default \"0\" }}"
   labels:
     traefik.enable: "true"
     traefik.http.routers.moontv.rule: "Host(`moontv.{{ .Domain }}`)"

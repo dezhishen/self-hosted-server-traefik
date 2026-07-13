@@ -8,7 +8,7 @@ dependencies: []
 container:
   name: baikal
   image: ckulka/baikal:nginx
-  user: "{{ .Custom.PUID | default \"1000\" }}:{{ .Custom.PGID | default \"1000\" }}"
+  user: "{{ index .Custom "PUID" | default \"1000\" }}:{{ index .Custom "PGID" | default \"1000\" }}"
   volumes:
     - "{{ .DataDir }}/baikal/config:/var/www/baikal/config"
     - "{{ .DataDir }}/baikal/data:/var/www/baikal/Specific"
@@ -17,8 +17,8 @@ container:
   environment:
     BAIKAL_SERVERNAME: "baikal.{{ .Domain }}"
     BAIKAL_SKIP_CHOWN: "False"
-    PUID: "{{ .Custom.PUID | default \"1000\" }}"
-    PGID: "{{ .Custom.PGID | default \"1000\" }}"
+    PUID: "{{ index .Custom "PUID" | default \"1000\" }}"
+    PGID: "{{ index .Custom "PGID" | default \"1000\" }}"
   networks:
     - "{{ .NetworkName }}"
   restart: always

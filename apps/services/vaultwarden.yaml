@@ -15,11 +15,11 @@ container:
   volumes:
     - "{{ .DataDir }}/vaultwarden/data:/data/"
   environment:
-    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
-    LANG: "{{ .Custom.LANG | default \"zh_CN.UTF-8\" }}"
-    SIGNUPS_ALLOWED: "{{ .Custom.SIGNUPS_ALLOWED | default \"true\" }}"
-    ENABLE_DB_WAL: "{{ .Custom.VAULTWARDEN_DATABASE_WAL | default \"false\" }}"
-    DATABASE_URL: "{{ .Custom.VAULTWARDEN_DATABASE_URL }}"
+    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
+    LANG: "{{ index .Custom "LANG" | default \"zh_CN.UTF-8\" }}"
+    SIGNUPS_ALLOWED: "{{ index .Custom "SIGNUPS_ALLOWED" | default \"true\" }}"
+    ENABLE_DB_WAL: "{{ index .Custom "VAULTWARDEN_DATABASE_WAL" | default \"false\" }}"
+    DATABASE_URL: "{{ index .Custom "VAULTWARDEN_DATABASE_URL" }}"
   labels:
     traefik.docker.network: "{{ .NetworkName }}"
     traefik.enable: "true"
@@ -32,7 +32,7 @@ container:
     - "{{ .NetworkName }}"
   restart: unless-stopped
   privileged: false
-  user: "{{ .Custom.PUID | default \"1000\" }}:{{ .Custom.PGID | default \"1000\" }}"
+  user: "{{ index .Custom "PUID" | default \"1000\" }}:{{ index .Custom "PGID" | default \"1000\" }}"
 
   resources:
     memory: "256M"

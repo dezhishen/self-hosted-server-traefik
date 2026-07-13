@@ -8,11 +8,11 @@ dependencies: []
 container:
   name: grafana
   image: grafana/grafana
-  user: "{{ .Custom.PUID | default \"1000\" }}:{{ .Custom.PGID | default \"1000\" }}"
+  user: "{{ index .Custom "PUID" | default \"1000\" }}:{{ index .Custom "PGID" | default \"1000\" }}"
   volumes:
     - "{{ .DataDir }}/grafana:/var/lib/grafana"
   environment:
-    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
+    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
     LANG: "zh_CN.UTF-8"
     GF_SERVER_ROOT_URL: "https://grafana.{{ .Domain }}"
   networks:

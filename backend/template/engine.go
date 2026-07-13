@@ -34,6 +34,12 @@ func NewEngine() *Engine {
 			"lower":    strings.ToLower,
 			"title":    strings.Title,
 			"quote":    func(s string) string { return `"` + s + `"` },
+			"default": func(def, val interface{}) interface{} {
+				if val == nil || val == "" {
+					return def
+				}
+				return val
+			},
 		},
 	}
 }

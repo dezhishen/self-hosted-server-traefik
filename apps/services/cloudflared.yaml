@@ -18,11 +18,11 @@ container:
     - "run"
     - "--url"
     - "https://traefik:443"
-    - "{{ .Custom.CLOUDFLARED_TUNNEL_ID }}"
+    - "{{ index .Custom "CLOUDFLARED_TUNNEL_ID" }}"
   volumes:
     - "{{ .DataDir }}/cloudflared/etc:/etc/cloudflared"
   environment:
-    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
+    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
   networks:
     - "{{ .NetworkName }}"
   restart: always

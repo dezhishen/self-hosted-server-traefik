@@ -10,9 +10,9 @@ container:
   image: ghcr.io/natfrp/frpc:latest
   command:
     - "-f"
-    - "{{ .Custom.NATFRPC_TOKEN }}:{{ .Custom.NATFRPC_TUNNELS }}"
+    - "{{ index .Custom "NATFRPC_TOKEN" }}:{{ index .Custom "NATFRPC_TUNNELS" }}"
   environment:
-    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
+    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
   networks:
     - "{{ .NetworkName }}"
   restart: always

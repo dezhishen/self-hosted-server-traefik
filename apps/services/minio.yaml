@@ -8,7 +8,7 @@ dependencies: []
 container:
   name: minio
   image: minio/minio:latest
-  user: "{{ .Custom.PUID | default \"1000\" }}:{{ .Custom.PGID | default \"1000\" }}"
+  user: "{{ index .Custom "PUID" | default \"1000\" }}:{{ index .Custom "PGID" | default \"1000\" }}"
   command:
     - server
     - /data
@@ -17,11 +17,11 @@ container:
   volumes:
     - "{{ .DataDir }}/minio/latest/data:/data"
   environment:
-    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
+    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
     LANG: "C.UTF-8"
     LC_ALL: "C.UTF-8"
-    MINIO_ROOT_USER: "{{ .Custom.MINIO_ROOT_USER }}"
-    MINIO_ROOT_PASSWORD: "{{ .Custom.MINIO_ROOT_PASSWORD }}"
+    MINIO_ROOT_USER: "{{ index .Custom "MINIO_ROOT_USER" }}"
+    MINIO_ROOT_PASSWORD: "{{ index .Custom "MINIO_ROOT_PASSWORD" }}"
   networks:
     - "{{ .NetworkName }}"
   restart: always

@@ -7,11 +7,11 @@ dependencies: [immich-database]
 
 container:
   name: immich-server
-  image: "ghcr.nju.edu.cn/immich-app/immich-server:{{ .Custom.IMMICH_VERSION | default \"latest\" }}"
-  user: "{{ .Custom.PUID | default \"1000\" }}:{{ .Custom.PGID | default \"1000\" }}"
+  image: "ghcr.nju.edu.cn/immich-app/immich-server:{{ index .Custom "IMMICH_VERSION" | default \"latest\" }}"
+  user: "{{ index .Custom "PUID" | default \"1000\" }}:{{ index .Custom "PGID" | default \"1000\" }}"
   group_add:
-    - "{{ .Custom.VIDEO_GID | default \"44\" }}"
-    - "{{ .Custom.RENDER_GID | default \"104\" }}"
+    - "{{ index .Custom "VIDEO_GID" | default \"44\" }}"
+    - "{{ index .Custom "RENDER_GID" | default \"104\" }}"
   devices:
     - "/dev/dri:/dev/dri"
   volumes:
@@ -22,17 +22,17 @@ container:
     - "{{ .DataDir }}/immich/data/profile:/data/profile"
     - "{{ .DataDir }}/immich/data/backups:/data/backups"
   environment:
-    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
+    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
     LANG: "C.UTF-8"
     DB_HOSTNAME: immich-database
     DB_USERNAME: postgres
-    DB_PASSWORD: "{{ .Custom.IMMICH_DATA_PASSWORD }}"
+    DB_PASSWORD: "{{ index .Custom "IMMICH_DATA_PASSWORD" }}"
     DB_DATABASE_NAME: immich
     DB_PORT: "5432"
-    REDIS_HOSTNAME: "{{ .Custom.REDIS_HOST | default \"redis\" }}"
-    REDIS_PORT: "{{ .Custom.REDIS_PORT | default \"6379\" }}"
-    REDIS_PASSWORD: "{{ .Custom.REDIS_PASSWORD }}"
-    REDIS_DBINDEX: "{{ .Custom.IMMICH_REDIS_DBINDEX | default \"0\" }}"
+    REDIS_HOSTNAME: "{{ index .Custom "REDIS_HOST" | default \"redis\" }}"
+    REDIS_PORT: "{{ index .Custom "REDIS_PORT" | default \"6379\" }}"
+    REDIS_PASSWORD: "{{ index .Custom "REDIS_PASSWORD" }}"
+    REDIS_DBINDEX: "{{ index .Custom "IMMICH_REDIS_DBINDEX" | default \"0\" }}"
   networks:
     - "{{ .NetworkName }}"
   restart: always

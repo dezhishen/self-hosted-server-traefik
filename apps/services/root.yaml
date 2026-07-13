@@ -16,8 +16,8 @@ container:
     - "{{ .DataDir }}/root/data:/usr/share/nginx/html"
     - "{{ .DataDir }}/root/conf.d:/etc/nginx/conf.d"
   environment:
-    USER_UID: "{{ .Custom.PUID | default \"1000\" }}"
-    USER_GID: "{{ .Custom.PGID | default \"1000\" }}"
+    USER_UID: "{{ index .Custom "PUID" | default \"1000\" }}"
+    USER_GID: "{{ index .Custom "PGID" | default \"1000\" }}"
     TZ: "Asia/Shanghai"
     LANG: "zh_CN.UTF-8"
   labels:
@@ -25,7 +25,7 @@ container:
     traefik.http.routers.root.entrypoints: "websecure"
     traefik.http.routers.root.rule: "Host(`root.{{ .Domain }}`)"
     traefik.http.routers.root.tls.certresolver: "traefik"
-    traefik.http.middlewares.root-auth.digestauth.users: "{{ .Custom.ROOT_AUTH_USER | default \"admin\" }}:traefik:{{ .Custom.ROOT_AUTH_DIGEST }}"
+    traefik.http.middlewares.root-auth.digestauth.users: "{{ index .Custom "ROOT_AUTH_USER" | default \"admin\" }}:traefik:{{ index .Custom "ROOT_AUTH_DIGEST" }}"
     traefik.http.routers.root.middlewares: "root-auth@docker"
   networks:
     - "{{ .NetworkName }}"

@@ -132,37 +132,7 @@ func (m *migrateService) Analyze(epName string) ([]*contracts.MigrationCandidate
 	return candidates, nil
 }
 
-func (m *migrateService) Execute(req *contracts.MigrationRequest) (string, error) {
-	container, err := m.runtime.ContainerInspect(req.ContainerID)
-	if err != nil {
-		return "", fmt.Errorf("inspect container: %w", err)
-	}
 
-	if container.Labels[contracts.ManagedLabelKey] == contracts.ManagedLabelValue {
-		return "", fmt.Errorf("container %s is already managed", req.ContainerID)
-	}
-
-	newID, err := m.serviceMgr.Install(req.ServiceName, req.Params, m.name)
-	if err != nil {
-		return "", fmt.Errorf("install service: %w", err)
-	}
-
-	if req.RemoveOld {
-		if err := m.runtime.ContainerStop(req.ContainerID); err != nil {
-			m.log.Warn("stop old container", logger.String("id", req.ContainerID), logger.Error(err))
-		}
-		if err := m.runtime.ContainerRemove(req.ContainerID, true); err != nil {
-			m.log.Warn("remove old container", logger.String("id", req.ContainerID), logger.Error(err))
-		}
-	}
-
-	m.log.Info("migration complete",
-		logger.String("service", req.ServiceName),
-		logger.String("old_id", req.ContainerID),
-		logger.String("new_id", newID),
-	)
-	return newID, nil
-}
 
 func (m *migrateService) Generate(req *contracts.GenerateAppRequest) (*contracts.GenerateAppResult, error) {
 	container, err := m.runtime.ContainerInspect(req.ContainerID)
@@ -200,23 +170,23 @@ func (m *migrateService) Generate(req *contracts.GenerateAppRequest) (*contracts
 	}, nil
 }
 
-// Adopt takes an existing running container and makes it a managed service by
-// adding management labels. The container is NOT stopped or recreated — labels
-// are applied in-place via the Docker API's container update endpoint.
+// Adopt rebuilds an existing container as a managed service.
+// The original container is stopped and removed, then a new container is created
+// with the same configuration plus managed labels. If req.ServiceName matches a
+// known service template, the template's install pipeline is used; otherwise the
+// container is cloned directly from its current configuration.
 func (m *migrateService) Adopt(req *contracts.AdoptRequest) (*contracts.AdoptResult, error) {
 	container, err := m.runtime.ContainerInspect(req.ContainerID)
 	if err != nil {
 		return nil, fmt.Errorf("inspect container: %w", err)
 	}
 
-	// Check if already managed
 	if container.Labels[contracts.ManagedLabelKey] == contracts.ManagedLabelValue {
 		return nil, fmt.Errorf("container %s is already managed", req.ContainerID)
 	}
 
 	serviceName := req.ServiceName
 	if serviceName == "" {
-		// Default to container name (strip leading /)
 		serviceName = strings.TrimPrefix(container.Name, "/")
 	}
 
@@ -230,38 +200,53 @@ func (m *migrateService) Adopt(req *contracts.AdoptRequest) (*contracts.AdoptRes
 		repoName = "adopted"
 	}
 
-	// Build the managed labels
 	managedLabels := contracts.ManagedLabels(serviceName, repoName, version, m.name, "docker")
+	var newID string
 
-	// Apply labels to the running container
-	if err := m.runtime.ContainerUpdateLabels(req.ContainerID, managedLabels); err != nil {
-		return nil, fmt.Errorf("update container labels: %w", err)
-	}
-
-	// Save container params to the param store so the service appears as managed
-	params := m.buildAdoptParams(serviceName, container)
-	for _, p := range params {
-		if err := m.paramStore.Set(p); err != nil {
-			m.log.Warn("failed to save adopt param",
-				logger.String("param", p.Name),
-				logger.Error(err),
-			)
+	if req.ServiceName != "" && len(req.Params) > 0 {
+		// Rebuild via service template: install with params, label the new container.
+		newID, err = m.serviceMgr.Install(req.ServiceName, req.Params, m.name)
+		if err != nil {
+			return nil, fmt.Errorf("install service: %w", err)
+		}
+	} else {
+		// No template match: clone the container from its current config.
+		runParams := containerToRunParams(container, managedLabels)
+		newID, err = m.runtime.ContainerRun(runParams)
+		if err != nil {
+			return nil, fmt.Errorf("clone container: %w", err)
 		}
 	}
 
-	m.log.Info("container adopted as managed service",
-		logger.String("container_id", req.ContainerID),
+	// Stop and remove the original container.
+	if err := m.runtime.ContainerStop(req.ContainerID); err != nil {
+		m.log.Warn("stop old container", logger.String("id", req.ContainerID), logger.Error(err))
+	}
+	if err := m.runtime.ContainerRemove(req.ContainerID, true); err != nil {
+		m.log.Warn("remove old container", logger.String("id", req.ContainerID), logger.Error(err))
+	}
+
+	newContainer, err := m.runtime.ContainerInspect(newID)
+	if err != nil {
+		return nil, fmt.Errorf("inspect new container: %w", err)
+	}
+	resultLabels := newContainer.Labels
+	if resultLabels == nil {
+		resultLabels = managedLabels
+	}
+
+	m.log.Info("container rebuilt and adopted",
 		logger.String("service", serviceName),
-		logger.String("repo", repoName),
-		logger.String("endpoint", m.name),
+		logger.String("old_id", req.ContainerID),
+		logger.String("new_id", newID),
 	)
 
 	return &contracts.AdoptResult{
-		ContainerID: req.ContainerID,
+		ContainerID: newID,
 		ServiceName: serviceName,
 		RepoName:    repoName,
 		Endpoint:    m.name,
-		Labels:      managedLabels,
+		Labels:      resultLabels,
 	}, nil
 }
 
@@ -417,4 +402,171 @@ func (m *migrateService) buildServiceDef(name string, c *contracts.ContainerInfo
 	}
 
 	return svc
+}
+
+// containerToRunParams converts a ContainerInfo into ContainerRunParams,
+// merging in the given labels (which should include managed service labels).
+func containerToRunParams(c *contracts.ContainerInfo, labels map[string]string) contracts.ContainerRunParams {
+	mergedLabels := make(map[string]string)
+	for k, v := range c.Labels {
+		mergedLabels[k] = v
+	}
+	for k, v := range labels {
+		mergedLabels[k] = v
+	}
+
+	env := make(map[string]string)
+	for k, v := range c.Env {
+		env[k] = v
+	}
+
+	return contracts.ContainerRunParams{
+		Image:         c.Image,
+		Name:          c.Name,
+		Hostname:      c.Hostname,
+		Command:       c.Command,
+		Entrypoint:    c.Entrypoint,
+		WorkingDir:    c.WorkingDir,
+		Env:           env,
+		Ports:         c.Ports,
+		Volumes:       c.Mounts,
+		Devices:       c.Devices,
+		NetworkMode:   c.NetworkMode,
+		RestartPolicy: contracts.RestartPolicy(c.RestartPolicy),
+		Privileged:    c.Privileged,
+		User:          c.User,
+		Labels:        mergedLabels,
+		CapAdd:        c.CapAdd,
+		CapDrop:       c.CapDrop,
+		Sysctls:       c.Sysctls,
+		Tty:           c.Tty,
+		Healthcheck:   c.Healthcheck,
+		Resources:     c.Resources,
+		ExtraHosts:    c.ExtraHosts,
+		DNS:           c.DNS,
+		DNSSearch:     c.DNSSearch,
+	}
+}
+
+// PreviewAdopt returns a preview of what would happen during adoption without
+// actually creating the container. It inspects the container, builds the run
+// parameters, and generates a human-readable docker run command.
+func (m *migrateService) PreviewAdopt(req *contracts.AdoptPreviewRequest) (*contracts.AdoptPreviewResult, error) {
+	container, err := m.runtime.ContainerInspect(req.ContainerID)
+	if err != nil {
+		return nil, fmt.Errorf("inspect container: %w", err)
+	}
+
+	serviceName := req.ServiceName
+	if serviceName == "" {
+		serviceName = strings.TrimPrefix(container.Name, "/")
+	}
+
+	// If params are provided via a known template, use serviceMgr.Preview instead.
+	if req.ServiceName != "" && len(req.Params) > 0 {
+		runParams, err := m.serviceMgr.Preview(req.ServiceName, req.Params)
+		if err != nil {
+			return nil, fmt.Errorf("preview service install: %w", err)
+		}
+		if runParams == nil {
+			return nil, fmt.Errorf("preview returned nil params for service %q", req.ServiceName)
+		}
+		dockerCmd := generateDockerRunCmd(runParams)
+		return &contracts.AdoptPreviewResult{
+			RunParams:      runParams,
+			DockerRunCmd:   dockerCmd,
+			ServiceName:    serviceName,
+			OriginalLabels: container.Labels,
+		}, nil
+	}
+
+	// No template: clone from current container config.
+	managedLabels := contracts.ManagedLabels(serviceName, "adopted", "adopted", m.name, "docker")
+	runParams := containerToRunParams(container, managedLabels)
+	dockerCmd := generateDockerRunCmd(&runParams)
+
+	return &contracts.AdoptPreviewResult{
+		RunParams:      &runParams,
+		DockerRunCmd:   dockerCmd,
+		ServiceName:    serviceName,
+		OriginalLabels: container.Labels,
+	}, nil
+}
+
+// generateDockerRunCmd produces a human-readable `docker run` command string
+// from the given ContainerRunParams.
+func generateDockerRunCmd(params *contracts.ContainerRunParams) string {
+	var parts []string
+	parts = append(parts, "docker", "run", "-d")
+
+	if params.Name != "" {
+		parts = append(parts, "--name", params.Name)
+	}
+	if params.Hostname != "" {
+		parts = append(parts, "--hostname", params.Hostname)
+	}
+	if params.User != "" {
+		parts = append(parts, "--user", params.User)
+	}
+	if params.WorkingDir != "" {
+		parts = append(parts, "--workdir", params.WorkingDir)
+	}
+	if params.RestartPolicy != "" {
+		parts = append(parts, "--restart", string(params.RestartPolicy))
+	}
+	if params.NetworkMode != "" {
+		parts = append(parts, "--network", params.NetworkMode)
+	}
+	if params.Privileged {
+		parts = append(parts, "--privileged")
+	}
+	if params.Tty {
+		parts = append(parts, "-t")
+	}
+	for _, cap := range params.CapAdd {
+		parts = append(parts, "--cap-add", cap)
+	}
+	for _, cap := range params.CapDrop {
+		parts = append(parts, "--cap-drop", cap)
+	}
+	for k, v := range params.Labels {
+		parts = append(parts, "--label", k+"="+v)
+	}
+	for k, v := range params.Env {
+		parts = append(parts, "-e", k+"="+v)
+	}
+	for _, p := range params.Ports {
+		portStr := fmt.Sprintf("%d:%d", p.HostPort, p.ContainerPort)
+		proto := strings.ToLower(p.Protocol)
+		if proto != "" && proto != "tcp" {
+			portStr += "/" + proto
+		}
+		parts = append(parts, "-p", portStr)
+	}
+	for _, v := range params.Volumes {
+		volStr := v.Source + ":" + v.Target
+		if v.ReadOnly {
+			volStr += ":ro"
+		}
+		parts = append(parts, "-v", volStr)
+	}
+	for _, d := range params.Devices {
+		devStr := d.HostPath
+		if d.ContainerPath != "" && d.ContainerPath != d.HostPath {
+			devStr += ":" + d.ContainerPath
+		}
+		parts = append(parts, "--device", devStr)
+	}
+	for _, h := range params.ExtraHosts {
+		parts = append(parts, "--add-host", h)
+	}
+	for _, dns := range params.DNS {
+		parts = append(parts, "--dns", dns)
+	}
+	if len(params.Command) > 0 {
+		parts = append(parts, "--")
+		parts = append(parts, params.Command...)
+	}
+
+	return strings.Join(parts, " ")
 }

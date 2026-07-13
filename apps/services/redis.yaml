@@ -8,10 +8,10 @@ dependencies: []
 container:
   name: redis
   image: valkey/valkey
-  user: "{{ .Custom.PUID | default \"1000\" }}:{{ .Custom.PGID | default \"1000\" }}"
+  user: "{{ index .Custom "PUID" | default \"1000\" }}:{{ index .Custom "PGID" | default \"1000\" }}"
   command:
     - "--requirepass"
-    - "{{ .Custom.REDIS_PASSWORD }}"
+    - "{{ index .Custom "REDIS_PASSWORD" }}"
   volumes:
     - "{{ .DataDir }}/redis/data:/data"
   networks:

@@ -43,8 +43,11 @@ export interface ServiceLogs {
   logs: string
 }
 
-export function listServices(keyword?: string): Promise<{ data: Service[] }> {
-  return client.get('/services', { params: { query: keyword } })
+export function listServices(keyword?: string, installed?: boolean): Promise<{ data: Service[] }> {
+  const params: Record<string, string> = {}
+  if (keyword) params.query = keyword
+  if (installed) params.installed = 'true'
+  return client.get('/services', { params })
 }
 
 export function getService(name: string): Promise<{ data: ServiceDetail }> {
@@ -65,4 +68,28 @@ export function restartService(name: string): Promise<void> {
 
 export function getServiceLogs(name: string, tail?: number): Promise<{ data: ServiceLogs }> {
   return client.post(`/services/${name}/logs`, { tail })
+}
+
+export interface ContainerRunParams {
+  image?: string
+  name?: string
+  command?: string[]
+  entrypoint?: string[]
+  env?: Record<string, string>
+  ports?: PortMapping[]
+  volumes?: { source: string; target: string; read_only?: boolean }[]
+  devices?: { host_path: string; container_path: string; cgroup_permissions?: string }[]
+  network_mode?: string
+  restart_policy?: string
+  privileged?: boolean
+  user?: string
+  labels?: Record<string, string>
+  cap_add?: string[]
+  cap_drop?: string[]
+  extra_hosts?: string[]
+  dns?: string[]
+}
+
+export function previewService(name: string, params: { name: string; value: unknown }[]): Promise<{ data: ContainerRunParams }> {
+  return client.post(`/services/${name}/preview`, { params })
 }

@@ -17,12 +17,12 @@ container:
     - "443:443"
     - "443:443/udp"
   environment:
-    TZ: "{{ .Custom.TZ | default \"Asia/Shanghai\" }}"
-    LANG: "{{ .Custom.LANG | default \"zh_CN.UTF-8\" }}"
-    UID: "{{ .Custom.PUID | default \"1000\" }}"
-    GID: "{{ .Custom.PGID | default \"1000\" }}"
-    CF_API_EMAIL: "{{ .Custom.CF_API_EMAIL }}"
-    CF_DNS_API_TOKEN: "{{ .Custom.CF_DNS_API_TOKEN }}"
+    TZ: "{{ index .Custom "TZ" | default \"Asia/Shanghai\" }}"
+    LANG: "{{ index .Custom "LANG" | default \"zh_CN.UTF-8\" }}"
+    UID: "{{ index .Custom "PUID" | default \"1000\" }}"
+    GID: "{{ index .Custom "PGID" | default \"1000\" }}"
+    CF_API_EMAIL: "{{ index .Custom "CF_API_EMAIL" }}"
+    CF_DNS_API_TOKEN: "{{ index .Custom "CF_DNS_API_TOKEN" }}"
   labels:
     traefik.enable: "true"
     traefik.http.middlewares.traefik.compress: "true"
@@ -58,7 +58,7 @@ container:
     - --entrypoints.websecure.address=:443
     - --entrypoints.web.http.redirections.entryPoint.to=websecure
     - --entrypoints.web.http.redirections.entryPoint.scheme=https
-    - --certificatesresolvers.traefik.acme.email={{ .Custom.ACME_EMAIL }}
+    - --certificatesresolvers.traefik.acme.email={{ index .Custom "ACME_EMAIL" }}
     - --certificatesresolvers.traefik.acme.storage=/acme/acme.json
     - --certificatesresolvers.traefik.acme.httpchallenge=true
     - --certificatesresolvers.traefik.acme.httpchallenge.entrypoint=web

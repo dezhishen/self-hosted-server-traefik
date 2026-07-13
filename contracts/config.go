@@ -25,6 +25,7 @@ type EndpointConfig struct {
 	Name       string            `yaml:"name" json:"name" mapstructure:"name"`
 	Connection *ConnectionConfig `yaml:"connection" json:"connection" mapstructure:"connection"`
 	Default    bool              `yaml:"default" json:"default" mapstructure:"default"`
+	Custom     map[string]string `yaml:"custom,omitempty" json:"custom,omitempty" mapstructure:"custom"`
 }
 
 type ConfigStore interface {

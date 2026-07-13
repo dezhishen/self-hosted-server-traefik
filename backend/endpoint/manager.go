@@ -18,6 +18,7 @@ type ServiceManagerOpts struct {
 	TemplateEngine contracts.TemplateEngine
 	Logger         logger.Logger
 	Name           string
+	Endpoint       *contracts.EndpointConfig
 }
 
 type serviceManager struct {
@@ -27,6 +28,7 @@ type serviceManager struct {
 	templateEngine contracts.TemplateEngine
 	log            logger.Logger
 	name           string
+	endpoint       *contracts.EndpointConfig
 }
 
 // NewServiceManager creates a ServiceManager that operates within an endpoint scope.
@@ -38,11 +40,27 @@ func NewServiceManager(opts ServiceManagerOpts) contracts.ServiceManager {
 		templateEngine: opts.TemplateEngine,
 		log:            opts.Logger,
 		name:           opts.Name,
+		endpoint:       opts.Endpoint,
 	}
 }
 
 func (m *serviceManager) List() ([]*contracts.ServiceDefinition, error) {
 	return m.serviceLoader.LoadAll()
+}
+
+func (m *serviceManager) ListInstalled() ([]*contracts.ServiceDefinition, error) {
+	all, err := m.serviceLoader.LoadAll()
+	if err != nil {
+		return nil, err
+	}
+	var result []*contracts.ServiceDefinition
+	for _, svc := range all {
+		status, _ := m.Status(svc.Name)
+		if status != nil && status.Status != contracts.ServiceStatusNotInstalled {
+			result = append(result, svc)
+		}
+	}
+	return result, nil
 }
 
 func (m *serviceManager) Get(name string) (*contracts.ServiceDefinition, error) {
@@ -230,6 +248,14 @@ func (m *serviceManager) PreCheck(name string, params []*contracts.ParamValue) e
 	return nil
 }
 
+func (m *serviceManager) Preview(name string, params []*contracts.ParamValue) (*contracts.ContainerRunParams, error) {
+	svc, err := m.serviceLoader.Load(name)
+	if err != nil {
+		return nil, err
+	}
+	return m.buildRunParams(svc, params)
+}
+
 func (m *serviceManager) RenderConfig(name string, params []*contracts.ParamValue) (map[string]string, error) {
 	svc, err := m.serviceLoader.Load(name)
 	if err != nil {
@@ -238,11 +264,7 @@ func (m *serviceManager) RenderConfig(name string, params []*contracts.ParamValu
 	if svc.Container == nil {
 		return nil, nil
 	}
-	data := &contracts.TemplateData{
-		Service: svc,
-		Params:  params,
-		Endpoint: &contracts.EndpointConfig{Name: m.name},
-	}
+	data := m.newTemplateData(svc, params)
 	result := make(map[string]string)
 	if svc.Container.Env != nil {
 		for k, v := range svc.Container.Env {
@@ -261,25 +283,33 @@ func (m *serviceManager) buildRunParams(svc *contracts.ServiceDefinition, params
 		return nil, fmt.Errorf("service %q has no container config", svc.Name)
 	}
 
-	// Merge params into env
+	data := m.newTemplateData(svc, params)
+
+	// Render env vars through template engine to resolve {{ .Custom.* }} and {{ index .Params "*" }}
 	env := make(map[string]string)
 	for k, v := range svc.Container.Env {
-		env[k] = v
+		rendered, err := m.templateEngine.RenderString(v, data)
+		if err != nil {
+			m.log.Warn("template render failed, using raw value",
+				logger.String("key", k), logger.Error(err))
+			env[k] = v
+		} else {
+			env[k] = rendered
+		}
 	}
+
+	// Apply param-based env overrides from EnvMapping
 	paramMap := make(map[string]*contracts.ParamValue, len(params))
 	for _, p := range params {
 		paramMap[p.Name] = p
 	}
-
-	// Resolve param-based env vars from definition
 	for _, def := range svc.Params {
 		if pv, ok := paramMap[def.Name]; ok {
 			if def.EnvMapping != nil {
-				for envKey, envVal := range def.EnvMapping {
+				for envKey := range def.EnvMapping {
 					if val, ok := pv.Value.(string); ok {
 						env[envKey] = val
 					}
-					_ = envVal
 				}
 			}
 		}
@@ -321,6 +351,20 @@ func (m *serviceManager) buildRunParams(svc *contracts.ServiceDefinition, params
 		Resources:     nil,
 	}
 	return runParams, nil
+}
+
+// newTemplateData builds a TemplateData with Custom values from the endpoint config.
+func (m *serviceManager) newTemplateData(svc *contracts.ServiceDefinition, params []*contracts.ParamValue) *contracts.TemplateData {
+	data := &contracts.TemplateData{
+		Service:  svc,
+		Params:   params,
+		Endpoint: m.endpoint,
+	}
+	if m.endpoint != nil && len(m.endpoint.Custom) > 0 {
+		data.Custom = m.endpoint.Custom
+	}
+	data.BuildParamMap()
+	return data
 }
 
 func (m *serviceManager) executeHook(hook *contracts.PostInstallHook) {
