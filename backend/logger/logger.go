@@ -3,6 +3,7 @@ package logger
 import "go.uber.org/zap"
 
 type Logger interface {
+	Debug(msg string, fields ...Field)
 	Info(msg string, fields ...Field)
 	Warn(msg string, fields ...Field)
 	Error(msg string, fields ...Field)
@@ -21,8 +22,9 @@ func NewNop() Logger {
 
 type nopLogger struct{}
 
-func (n *nopLogger) Info(msg string, fields ...Field) {}
-func (n *nopLogger) Warn(msg string, fields ...Field) {}
+func (n *nopLogger) Debug(msg string, fields ...Field) {}
+func (n *nopLogger) Info(msg string, fields ...Field)  {}
+func (n *nopLogger) Warn(msg string, fields ...Field)  {}
 func (n *nopLogger) Error(msg string, fields ...Field) {}
 func (n *nopLogger) With(fields ...Field) Logger       { return n }
 func (n *nopLogger) Sync() error                       { return nil }

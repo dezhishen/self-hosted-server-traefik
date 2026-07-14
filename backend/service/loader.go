@@ -2,12 +2,12 @@ package service
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/dezhishen/self-hosted-server-traefik/contracts"
+	"github.com/dezhishen/self-hosted-server-traefik/backend/logger"
 	"gopkg.in/yaml.v3"
 )
 
@@ -15,11 +15,12 @@ import (
 var _ contracts.ServiceLoader = (*Loader)(nil)
 
 type Loader struct {
-	paths []string
+	paths  []string
+	logger logger.Logger
 }
 
-func NewLoader(paths []string) *Loader {
-	return &Loader{paths: paths}
+func NewLoader(paths []string, log logger.Logger) *Loader {
+	return &Loader{paths: paths, logger: log}
 }
 
 // deriveSource returns a human-readable source label for a template directory.
@@ -46,16 +47,16 @@ func (l *Loader) LoadAll() ([]*contracts.ServiceDefinition, error) {
 	// (built-in, subscriptions, generated) are all visible.
 	seen := make(map[string]bool)
 	for _, dir := range l.paths {
-		log.Printf("DEBUG LoadAll: loading dir=%s", dir)
+		l.logger.Debug("loading dir", logger.String("dir", dir))
 		services, err := l.loadDir(dir, seen)
 		if err != nil {
-			log.Printf("DEBUG LoadAll: dir=%s error=%v, skipping", dir, err)
+			l.logger.Debug("skipping dir", logger.String("dir", dir), logger.Error(err))
 			continue
 		}
-		log.Printf("DEBUG LoadAll: dir=%s found %d services", dir, len(services))
+		l.logger.Debug("loaded dir", logger.String("dir", dir), logger.Int("count", len(services)))
 		result = append(result, services...)
 	}
-	log.Printf("DEBUG LoadAll: total services = %d", len(result))
+	l.logger.Debug("total services loaded", logger.Int("count", len(result)))
 	return result, nil
 }
 
@@ -120,10 +121,10 @@ func (l *Loader) loadDir(dir string, seen map[string]bool) ([]*contracts.Service
 func (l *Loader) loadIndex(indexPath, baseDir string, seen map[string]bool) ([]*contracts.ServiceDefinition, error) {
 	idx, err := loadLocalIndex(indexPath)
 	if err != nil {
-		log.Printf("DEBUG loadIndex: loadLocalIndex(%s) error: %v", indexPath, err)
+		l.logger.Debug("loading index", logger.String("path", indexPath), logger.Error(err))
 		return nil, err
 	}
-	log.Printf("DEBUG loadIndex: index has %d entries", len(*idx))
+	l.logger.Debug("index loaded", logger.String("path", indexPath), logger.Int("entries", len(*idx)))
 
 	source := deriveSource(baseDir)
 	var result []*contracts.ServiceDefinition
@@ -131,7 +132,7 @@ func (l *Loader) loadIndex(indexPath, baseDir string, seen map[string]bool) ([]*
 		svcPath := filepath.Join(baseDir, entry)
 		svc, err := l.loadFile(svcPath)
 		if err != nil {
-			log.Printf("DEBUG loadIndex: skipping %s: %v", svcPath, err)
+			l.logger.Debug("skipping service file", logger.String("path", svcPath), logger.Error(err))
 			continue
 		}
 		key := source + ":" + svc.Name
@@ -142,7 +143,7 @@ func (l *Loader) loadIndex(indexPath, baseDir string, seen map[string]bool) ([]*
 		svc.Source = source
 		result = append(result, svc)
 	}
-	log.Printf("DEBUG loadIndex: loaded %d services", len(result))
+	l.logger.Debug("services loaded from index", logger.String("source", source), logger.Int("count", len(result)))
 	return result, nil
 }
 

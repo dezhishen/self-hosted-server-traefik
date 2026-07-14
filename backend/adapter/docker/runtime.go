@@ -212,10 +212,42 @@ func (r *Runtime) ContainerRun(params contracts.ContainerRunParams) (string, err
 		}
 	}
 
+	// Build networking config with per-network aliases
+	var networkingCfg *network.NetworkingConfig
+	if len(params.Networks) > 0 {
+		networkingCfg = &network.NetworkingConfig{
+			EndpointsConfig: make(map[string]*network.EndpointSettings, len(params.Networks)),
+		}
+		for netName, ep := range params.Networks {
+			eps := &network.EndpointSettings{
+				Aliases: ep.Aliases,
+			}
+			if ep.IPAddress != "" {
+				if addr, err := netip.ParseAddr(ep.IPAddress); err == nil {
+					eps.IPAddress = addr
+				}
+			}
+			if ep.Gateway != "" {
+				if addr, err := netip.ParseAddr(ep.Gateway); err == nil {
+					eps.Gateway = addr
+				}
+			}
+			networkingCfg.EndpointsConfig[netName] = eps
+		}
+		// Ensure NetworkMode is set to the first network if not explicitly provided
+		if params.NetworkMode == "" {
+			for netName := range params.Networks {
+				hostCfg.NetworkMode = container.NetworkMode(netName)
+				break
+			}
+		}
+	}
+
 	resp, err := r.client.ContainerCreate(context.Background(), client.ContainerCreateOptions{
-		Config:     cfg,
-		HostConfig: hostCfg,
-		Name:       params.Name,
+		Config:           cfg,
+		HostConfig:       hostCfg,
+		Name:             params.Name,
+		NetworkingConfig: networkingCfg,
 	})
 	if err != nil {
 		return "", fmt.Errorf("container create: %w", err)
@@ -380,6 +412,31 @@ func (r *Runtime) ImageList() ([]contracts.ImageInfo, error) {
 		result = append(result, *toImageInfo(&img))
 	}
 	return result, nil
+}
+
+func (r *Runtime) ImageInspect(image string) (*contracts.ImageConfig, error) {
+	resp, err := r.client.ImageInspect(context.Background(), image)
+	if err != nil {
+		return nil, fmt.Errorf("image inspect %q: %w", image, err)
+	}
+	cfg := &contracts.ImageConfig{}
+	if resp.Config != nil {
+		if resp.Config.Labels != nil {
+			cfg.Labels = make(map[string]string, len(resp.Config.Labels))
+			for k, v := range resp.Config.Labels {
+				cfg.Labels[k] = v
+			}
+		}
+		if len(resp.Config.Env) > 0 {
+			cfg.Env = make(map[string]string, len(resp.Config.Env))
+			for _, e := range resp.Config.Env {
+				if idx := strings.Index(e, "="); idx > 0 {
+					cfg.Env[e[:idx]] = e[idx+1:]
+				}
+			}
+		}
+	}
+	return cfg, nil
 }
 
 // ---------------------------------------------------------------------------
@@ -627,11 +684,20 @@ func toContainerInfo(resp *container.InspectResponse) *contracts.ContainerInfo {
 		}
 	}
 
-	// Network settings
+	// Network settings with aliases
 	if resp.NetworkSettings != nil && len(resp.NetworkSettings.Networks) > 0 {
-		info.Networks = make(map[string]string, len(resp.NetworkSettings.Networks))
+		info.Networks = make(map[string]*contracts.NetworkEndpoint, len(resp.NetworkSettings.Networks))
 		for name, ns := range resp.NetworkSettings.Networks {
-			info.Networks[name] = ns.IPAddress.String()
+			endpoint := &contracts.NetworkEndpoint{
+				IPAddress: ns.IPAddress.String(),
+				Gateway:   ns.Gateway.String(),
+			}
+			// Collect all aliases: Docker's default container-name alias + user-specified aliases
+			if len(ns.Aliases) > 0 {
+				endpoint.Aliases = make([]string, len(ns.Aliases))
+				copy(endpoint.Aliases, ns.Aliases)
+			}
+			info.Networks[name] = endpoint
 		}
 	}
 
@@ -691,11 +757,18 @@ func toContainerSummaryInfo(c *container.Summary) *contracts.ContainerInfo {
 		}
 	}
 
-	// Networks
+	// Networks with aliases (summary has limited info, only available in ContainerSummaryNetworkSettings)
 	if c.NetworkSettings != nil && len(c.NetworkSettings.Networks) > 0 {
-		info.Networks = make(map[string]string)
+		info.Networks = make(map[string]*contracts.NetworkEndpoint)
 		for name, settings := range c.NetworkSettings.Networks {
-			info.Networks[name] = settings.IPAddress.String()
+			endpoint := &contracts.NetworkEndpoint{
+				IPAddress: settings.IPAddress.String(),
+			}
+			if len(settings.Aliases) > 0 {
+				endpoint.Aliases = make([]string, len(settings.Aliases))
+				copy(endpoint.Aliases, settings.Aliases)
+			}
+			info.Networks[name] = endpoint
 		}
 	}
 

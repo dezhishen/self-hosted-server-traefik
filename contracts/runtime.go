@@ -217,64 +217,73 @@ func (d *DeviceMapping) parseDeviceString(s string) error {
 	return nil
 }
 
+// NetworkEndpoint represents a container's connection to one network.
+type NetworkEndpoint struct {
+	IPAddress string   `yaml:"ip_address,omitempty" json:"ip_address,omitempty"`
+	Aliases   []string `yaml:"aliases,omitempty" json:"aliases,omitempty"`
+	Gateway   string   `yaml:"gateway,omitempty" json:"gateway,omitempty"`
+}
+
 type ContainerRunParams struct {
-	Image         string            `yaml:"image" json:"image"`
-	Name          string            `yaml:"name,omitempty" json:"name,omitempty"`
-	Hostname      string            `yaml:"hostname,omitempty" json:"hostname,omitempty"`
-	Command       []string          `yaml:"command,omitempty" json:"command,omitempty"`
-	Entrypoint    []string          `yaml:"entrypoint,omitempty" json:"entrypoint,omitempty"`
-	WorkingDir    string            `yaml:"working_dir,omitempty" json:"working_dir,omitempty"`
-	Env           map[string]string `yaml:"env,omitempty" json:"env,omitempty"`
-	Ports         []PortMapping     `yaml:"ports,omitempty" json:"ports,omitempty"`
-	Volumes       []VolumeMount     `yaml:"volumes,omitempty" json:"volumes,omitempty"`
-	Devices       []DeviceMapping   `yaml:"devices,omitempty" json:"devices,omitempty"`
-	NetworkMode   string            `yaml:"network_mode,omitempty" json:"network_mode,omitempty"`
-	RestartPolicy RestartPolicy     `yaml:"restart_policy,omitempty" json:"restart_policy,omitempty"`
-	Privileged    bool              `yaml:"privileged,omitempty" json:"privileged,omitempty"`
-	User          string            `yaml:"user,omitempty" json:"user,omitempty"`
-	Labels        map[string]string `yaml:"labels,omitempty" json:"labels,omitempty"`
-	CapAdd        []string          `yaml:"cap_add,omitempty" json:"cap_add,omitempty"`
-	CapDrop       []string          `yaml:"cap_drop,omitempty" json:"cap_drop,omitempty"`
-	Sysctls       map[string]string `yaml:"sysctls,omitempty" json:"sysctls,omitempty"`
-	Tty           bool              `yaml:"tty,omitempty" json:"tty,omitempty"`
-	Healthcheck   *HealthcheckConfig `yaml:"healthcheck,omitempty" json:"healthcheck,omitempty"`
-	Resources     *ResourceLimits   `yaml:"resources,omitempty" json:"resources,omitempty"`
-	ExtraHosts    []string          `yaml:"extra_hosts,omitempty" json:"extra_hosts,omitempty"`
-	DNS           []string          `yaml:"dns,omitempty" json:"dns,omitempty"`
-	DNSSearch     []string          `yaml:"dns_search,omitempty" json:"dns_search,omitempty"`
-	NetworkAliases []string         `yaml:"network_aliases,omitempty" json:"network_aliases,omitempty"`
+	Image         string                      `yaml:"image" json:"image"`
+	Name          string                      `yaml:"name,omitempty" json:"name,omitempty"`
+	Hostname      string                      `yaml:"hostname,omitempty" json:"hostname,omitempty"`
+	Command       []string                    `yaml:"command,omitempty" json:"command,omitempty"`
+	Entrypoint    []string                    `yaml:"entrypoint,omitempty" json:"entrypoint,omitempty"`
+	WorkingDir    string                      `yaml:"working_dir,omitempty" json:"working_dir,omitempty"`
+	Env           map[string]string            `yaml:"env,omitempty" json:"env,omitempty"`
+	Ports         []PortMapping                `yaml:"ports,omitempty" json:"ports,omitempty"`
+	Volumes       []VolumeMount                `yaml:"volumes,omitempty" json:"volumes,omitempty"`
+	Devices       []DeviceMapping              `yaml:"devices,omitempty" json:"devices,omitempty"`
+	NetworkMode   string                      `yaml:"network_mode,omitempty" json:"network_mode,omitempty"`
+	RestartPolicy RestartPolicy               `yaml:"restart_policy,omitempty" json:"restart_policy,omitempty"`
+	Privileged    bool                        `yaml:"privileged,omitempty" json:"privileged,omitempty"`
+	User          string                      `yaml:"user,omitempty" json:"user,omitempty"`
+	Labels        map[string]string            `yaml:"labels,omitempty" json:"labels,omitempty"`
+	CapAdd        []string                    `yaml:"cap_add,omitempty" json:"cap_add,omitempty"`
+	CapDrop       []string                    `yaml:"cap_drop,omitempty" json:"cap_drop,omitempty"`
+	Sysctls       map[string]string            `yaml:"sysctls,omitempty" json:"sysctls,omitempty"`
+	Tty           bool                        `yaml:"tty,omitempty" json:"tty,omitempty"`
+	Healthcheck   *HealthcheckConfig          `yaml:"healthcheck,omitempty" json:"healthcheck,omitempty"`
+	Resources     *ResourceLimits              `yaml:"resources,omitempty" json:"resources,omitempty"`
+	ExtraHosts    []string                    `yaml:"extra_hosts,omitempty" json:"extra_hosts,omitempty"`
+	DNS           []string                    `yaml:"dns,omitempty" json:"dns,omitempty"`
+	DNSSearch     []string                    `yaml:"dns_search,omitempty" json:"dns_search,omitempty"`
+	// Networks maps network name → endpoint config (IP, aliases) for multi-network setups.
+	// When set, each network will be connected with its aliases at container creation.
+	Networks map[string]*NetworkEndpoint `yaml:"networks,omitempty" json:"networks,omitempty"`
 }
 
 type ContainerInfo struct {
-	ID            string            `yaml:"id" json:"id"`
-	Name          string            `yaml:"name" json:"name"`
-	Image         string            `yaml:"image" json:"image"`
-	Status        string            `yaml:"status" json:"status"`
-	State         string            `yaml:"state" json:"state"`
-	CreatedAt     string            `yaml:"created_at" json:"created_at"`
-	Env           map[string]string `yaml:"env,omitempty" json:"env,omitempty"`
-	Ports         []PortMapping     `yaml:"ports,omitempty" json:"ports,omitempty"`
-	Networks      map[string]string `yaml:"networks,omitempty" json:"networks,omitempty"`
-	Labels        map[string]string `yaml:"labels,omitempty" json:"labels,omitempty"`
-	Mounts        []VolumeMount     `yaml:"mounts,omitempty" json:"mounts,omitempty"`
-	Command       []string          `yaml:"command,omitempty" json:"command,omitempty"`
-	Entrypoint    []string          `yaml:"entrypoint,omitempty" json:"entrypoint,omitempty"`
-	WorkingDir    string            `yaml:"working_dir,omitempty" json:"working_dir,omitempty"`
-	User          string            `yaml:"user,omitempty" json:"user,omitempty"`
-	Hostname      string            `yaml:"hostname,omitempty" json:"hostname,omitempty"`
-	RestartPolicy string            `yaml:"restart_policy,omitempty" json:"restart_policy,omitempty"`
-	NetworkMode   string            `yaml:"network_mode,omitempty" json:"network_mode,omitempty"`
-	Privileged    bool              `yaml:"privileged,omitempty" json:"privileged,omitempty"`
-	CapAdd        []string          `yaml:"cap_add,omitempty" json:"cap_add,omitempty"`
-	CapDrop       []string          `yaml:"cap_drop,omitempty" json:"cap_drop,omitempty"`
-	Sysctls       map[string]string `yaml:"sysctls,omitempty" json:"sysctls,omitempty"`
-	DNS           []string          `yaml:"dns,omitempty" json:"dns,omitempty"`
-	DNSSearch     []string          `yaml:"dns_search,omitempty" json:"dns_search,omitempty"`
-	ExtraHosts    []string          `yaml:"extra_hosts,omitempty" json:"extra_hosts,omitempty"`
-	Devices       []DeviceMapping   `yaml:"devices,omitempty" json:"devices,omitempty"`
-	Tty           bool              `yaml:"tty,omitempty" json:"tty,omitempty"`
-	Healthcheck   *HealthcheckConfig `yaml:"healthcheck,omitempty" json:"healthcheck,omitempty"`
-	Resources     *ResourceLimits   `yaml:"resources,omitempty" json:"resources,omitempty"`
+	ID            string                      `yaml:"id" json:"id"`
+	Name          string                      `yaml:"name" json:"name"`
+	Image         string                      `yaml:"image" json:"image"`
+	Status        string                      `yaml:"status" json:"status"`
+	State         string                      `yaml:"state" json:"state"`
+	CreatedAt     string                      `yaml:"created_at" json:"created_at"`
+	Env           map[string]string            `yaml:"env,omitempty" json:"env,omitempty"`
+	Ports         []PortMapping                `yaml:"ports,omitempty" json:"ports,omitempty"`
+	Networks      map[string]*NetworkEndpoint  `yaml:"networks,omitempty" json:"networks,omitempty"`
+	Labels        map[string]string            `yaml:"labels,omitempty" json:"labels,omitempty"`
+	Mounts        []VolumeMount                `yaml:"mounts,omitempty" json:"mounts,omitempty"`
+	Command       []string                    `yaml:"command,omitempty" json:"command,omitempty"`
+	Entrypoint    []string                    `yaml:"entrypoint,omitempty" json:"entrypoint,omitempty"`
+	WorkingDir    string                      `yaml:"working_dir,omitempty" json:"working_dir,omitempty"`
+	User          string                      `yaml:"user,omitempty" json:"user,omitempty"`
+	Hostname      string                      `yaml:"hostname,omitempty" json:"hostname,omitempty"`
+	RestartPolicy string                      `yaml:"restart_policy,omitempty" json:"restart_policy,omitempty"`
+	NetworkMode   string                      `yaml:"network_mode,omitempty" json:"network_mode,omitempty"`
+	Privileged    bool                        `yaml:"privileged,omitempty" json:"privileged,omitempty"`
+	CapAdd        []string                    `yaml:"cap_add,omitempty" json:"cap_add,omitempty"`
+	CapDrop       []string                    `yaml:"cap_drop,omitempty" json:"cap_drop,omitempty"`
+	Sysctls       map[string]string            `yaml:"sysctls,omitempty" json:"sysctls,omitempty"`
+	DNS           []string                    `yaml:"dns,omitempty" json:"dns,omitempty"`
+	DNSSearch     []string                    `yaml:"dns_search,omitempty" json:"dns_search,omitempty"`
+	ExtraHosts    []string                    `yaml:"extra_hosts,omitempty" json:"extra_hosts,omitempty"`
+	Devices       []DeviceMapping              `yaml:"devices,omitempty" json:"devices,omitempty"`
+	Tty           bool                        `yaml:"tty,omitempty" json:"tty,omitempty"`
+	Healthcheck   *HealthcheckConfig           `yaml:"healthcheck,omitempty" json:"healthcheck,omitempty"`
+	Resources     *ResourceLimits              `yaml:"resources,omitempty" json:"resources,omitempty"`
 }
 
 type ImageInfo struct {
@@ -283,6 +292,12 @@ type ImageInfo struct {
 	CreatedAt string            `yaml:"created_at" json:"created_at"`
 	Size      int64             `yaml:"size" json:"size"`
 	Labels    map[string]string `yaml:"labels,omitempty" json:"labels,omitempty"`
+}
+
+// ImageConfig holds the default labels and environment variables baked into a container image.
+type ImageConfig struct {
+	Labels map[string]string `yaml:"labels,omitempty" json:"labels,omitempty"`
+	Env    map[string]string `yaml:"env,omitempty" json:"env,omitempty"`
 }
 
 type NetworkCreateParams struct {
@@ -356,6 +371,7 @@ type ContainerRuntime interface {
 	ContainerRename(containerID string, newName string) error
 	PullImage(image string) error
 	ImageList() ([]ImageInfo, error)
+	ImageInspect(image string) (*ImageConfig, error)
 	NetworkCreate(params NetworkCreateParams) (string, error)
 	NetworkRemove(networkID string) error
 	NetworkInspect(networkID string) (*NetworkInfo, error)

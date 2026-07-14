@@ -150,7 +150,7 @@ func NewApp(configPath string) (*App, error) {
 	tmpLogger := logger.NewNop()
 
 	// 2. Load config
-	cfgMgr := NewConfigManager(config.NewLoader(), configPath)
+	cfgMgr := NewConfigManager(config.NewLoader(tmpLogger), configPath)
 	cfg, err := cfgMgr.LoadOrInit()
 	if err != nil {
 		return nil, fmt.Errorf("load config: %w", err)
@@ -194,7 +194,7 @@ func NewApp(configPath string) (*App, error) {
 	// Resolve to absolute path since CWD may differ (e.g. make dev uses -C backend)
 	appsDir := resolveAppsDir(cfg.BaseDataDir)
 	log.Info("resolved apps directory", logger.String("dir", appsDir))
-	svcLoader := service.NewLoader([]string{appsDir})
+	svcLoader := service.NewLoader([]string{appsDir}, log)
 	svcValidator := service.NewValidator()
 
 	// 5b. Create subscription manager

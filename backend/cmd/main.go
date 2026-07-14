@@ -80,7 +80,7 @@ func passwdCmd(configPath string, args []string) int {
 		return 1
 	}
 
-	cfgMgr := core.NewConfigManager(config.NewLoader(), configPath)
+	cfgMgr := core.NewConfigManager(config.NewLoader(logger.NewNop()), configPath)
 	cfg, err := cfgMgr.LoadOrInit()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading config: %v\n", err)

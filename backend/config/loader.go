@@ -2,13 +2,13 @@ package config
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 
 	"github.com/spf13/viper"
 
 	"github.com/dezhishen/self-hosted-server-traefik/contracts"
+	"github.com/dezhishen/self-hosted-server-traefik/backend/logger"
 )
 
 // Compile-time check: *Loader implements contracts.AppConfigLoader.
@@ -17,11 +17,12 @@ var _ contracts.AppConfigLoader = (*Loader)(nil)
 // Loader implements contracts.AppConfigLoader using viper.
 // Config is stored in a directory as system.yaml + endpoints.yaml.
 type Loader struct {
-	migratedPath string // set after Load() migrates from old file format
+	migratedPath string
+	logger       logger.Logger
 }
 
-func NewLoader() *Loader {
-	return &Loader{}
+func NewLoader(log logger.Logger) *Loader {
+	return &Loader{logger: log}
 }
 
 // MigratedPath returns the new directory path if a migration occurred during Load().
@@ -62,11 +63,11 @@ func (l *Loader) Load(path string) (*contracts.AppConfig, error) {
 	// Auto-migrate to directory format
 	newDir, err := l.migrateToDir(path, cfg)
 	if err != nil {
-		log.Printf("WARN: failed to migrate config to directory format: %v (continuing with old format)", err)
+		l.logger.Warn("failed to migrate config to directory format", logger.Error(err), logger.String("path", path))
 		return cfg, nil
 	}
 	l.migratedPath = newDir
-	log.Printf("Config migrated from %s to %s/ (directory format)", path, newDir)
+	l.logger.Info("config migrated to directory format", logger.String("old", path), logger.String("new", newDir))
 	return cfg, nil
 }
 

@@ -33,6 +33,10 @@ func (a *zapAdapter) log(level zapcore.Level, msg string, fields ...Field) {
 	ce.Write(toZapFields(fields)...)
 }
 
+func (a *zapAdapter) Debug(msg string, fields ...Field) {
+	a.log(zapcore.DebugLevel, msg, fields...)
+}
+
 func (a *zapAdapter) Info(msg string, fields ...Field) {
 	a.log(zapcore.InfoLevel, msg, fields...)
 }

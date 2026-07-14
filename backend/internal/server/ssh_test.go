@@ -23,7 +23,7 @@ func newTestApp(t *testing.T) *core.App {
 	// Ensure config directory exists
 	os.MkdirAll(filepath.Join(dir, "config"), 0755)
 
-	cfgLoader := config.NewLoader()
+	cfgLoader := config.NewLoader(logger.NewNop())
 	cfgMgr := core.NewConfigManager(cfgLoader, dir)
 	cfgMgr.SaveEndpoints(make(map[string]*contracts.EndpointConfig))
 
